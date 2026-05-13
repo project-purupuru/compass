@@ -1,0 +1,141 @@
+{
+  "phase": "prd",
+  "document": "grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/prd.md",
+  "timestamp": "2026-05-13T22:30:00Z",
+  "mode": "manual-fallback",
+  "fallback_reason": "flatline-orchestrator.sh hit same 2026-05-12 regression class (all 6 Phase-1 model-adapter calls return bare banners; no .run/model-invoke.jsonl envelope written despite cycle-107 routing default-on)",
+  "voices": {
+    "opus": {
+      "artifact": "grimoires/loa/a2a/flatline/cycle-1-prd-opus-structural-2026-05-13.md",
+      "role": "improver/structural (the model that authored the PRD; self-review for grounding fidelity)",
+      "counts": { "blocker": 3, "high": 5, "medium": 5, "scope": 3 }
+    },
+    "codex": {
+      "artifact": "grimoires/loa/a2a/flatline/cycle-1-prd-codex-skeptic-2026-05-13.md",
+      "role": "skeptic (independent voice via codex CLI bypass)",
+      "counts": { "blocker": 4, "high": 5, "medium": 5, "scope": 5 }
+    }
+  },
+  "verdict": "REVISE-BEFORE-ARCHITECT",
+  "model_agreement_percent": 72,
+
+  "high_consensus": [
+    {
+      "id": "HC-1",
+      "topic": "AC-7 / golden replay event sequence is incomplete",
+      "opus_finding": "BLK-3",
+      "codex_finding": "SKP-BLOCKER-002",
+      "consensus": "AC-7's resolver event sequence misses CardCommitted (UI-or-command-emitted) AND DaemonReacted (resolver-or-event-emitted). Validation_rules.md golden replay declares the full stream as CardCommitted → ZoneActivated → ZoneEventStarted → DaemonReacted (+ RewardGranted from event resolver steps).",
+      "integration": "Update AC-7 to assert full 5-event stream. Add to FR-13: define which layer emits CardCommitted (recommend: command-queue on accepted enqueue) and DaemonReacted (recommend: event-resolver-step-derived when daemon present at zone). Update FR-16 sequencer trigger to be event-source-agnostic.",
+      "severity": "BLOCKER"
+    },
+    {
+      "id": "HC-2",
+      "topic": "Telemetry shape misrepresented",
+      "opus_finding": "HIGH-5",
+      "codex_finding": "SKP-HIGH-003",
+      "consensus": "telemetry.card_activation_clarity.yaml declares ONE event (CardActivationClarity) with 7 aggregate properties, not 4 separate events keyed to semantic beats. PRD AC-13 mistakes the shape.",
+      "integration": "Rewrite AC-13: emit ONE CardActivationClarity record at sequence-end (unlock_input beat) with the 7 declared properties populated from semantic events. JSONL trail destination only if D11/Q-SDD-5 is resolved now; otherwise cut FR-26 from S5 until SDD.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "HC-3",
+      "topic": "Anchor-binding 100% claim is ill-defined",
+      "opus_finding": "HIGH-2 (partial)",
+      "codex_finding": "SKP-HIGH-005",
+      "consensus": "Sequence beats target 5 declared anchors PLUS actors (actor.kaori_chibi), daemons (daemon.wood_puruhani_primary), UI surfaces (ui.reward_preview), audio buses (audio.bus.sfx). 100% anchor-binding test is meaningless without distinguishing target classes.",
+      "integration": "Replace AC-8 wording: anchor-required beats must resolve declared anchors; actor/daemon/UI/audio targets resolve through separate registries. SDD §1 specs the 4-registry shape (Anchor / Actor / UI-mount / Audio-bus).",
+      "severity": "HIGH"
+    }
+  ],
+
+  "opus_unique_integrate": [
+    { "id": "OU-1", "from": "BLK-1", "topic": "validation_rules.md not vendored", "integration": "Add vendoring to FR-2; add lint-rule enforcement to FR-13 resolver", "severity": "BLOCKER" },
+    { "id": "OU-2", "from": "BLK-2", "topic": "resolver ops list missing set_flag + add_resource", "integration": "Update FR-13 to: activate_zone + spawn_event + grant_reward + set_flag + add_resource", "severity": "BLOCKER" },
+    { "id": "OU-3", "from": "HIGH-1", "topic": "ZoneToken needs 9-state gameplay + 6-state UI compose", "integration": "FR-22 clarifies orthogonal state spaces", "severity": "HIGH" },
+    { "id": "OU-4", "from": "HIGH-3", "topic": "input-lock owner registry not specified", "integration": "Add FR-11a: lib/purupuru/runtime/input-lock.ts with acquireLock/releaseLock/transferLock", "severity": "HIGH" },
+    { "id": "OU-5", "from": "HIGH-4", "topic": "sky-eye terminology mismatch (growth_rings vs sky_eye_leaf)", "integration": "FR-14: use harness terminology sky_eye_leaf for wood", "severity": "HIGH" },
+    { "id": "OU-6", "from": "MED-1", "topic": "daemon_affinity reward vs D10", "integration": "Clarify D10 wording: gameplay-axis is BEHAVIOR (Assist state), not player-rewards-keyed-to-daemons", "severity": "MEDIUM" },
+    { "id": "OU-7", "from": "MED-2", "topic": "EndTurnCommand undecided", "integration": "FR-13 declares EndTurnCommand as no-op stub emitting TurnEnded for cycle 1", "severity": "MEDIUM" },
+    { "id": "OU-8", "from": "MED-3", "topic": "pack manifest two-pass loader", "integration": "FR-3 declares two-pass: load pack first, iterate files[] with per-entry schema", "severity": "MEDIUM" },
+    { "id": "OU-9", "from": "MED-4", "topic": "sky-eyes-motifs forward-decl cuttable", "integration": "Cut FR-14 to wood-only; defer other 4 elements to cycle 2 (move from de-scope ladder item 2 to default)", "severity": "MEDIUM" },
+    { "id": "OU-10", "from": "MED-5", "topic": "no static check for daemon state read", "integration": "AC-9-equivalent grep test: resolver MUST NOT import daemons getter from game-state", "severity": "MEDIUM" },
+    { "id": "OU-11", "from": "CONTRA-1+2", "topic": "internal contradiction tightening", "integration": "§6.2 invariant 6 + FR-20 camera→viewport terminology", "severity": "LOW" }
+  ],
+
+  "codex_unique_integrate": [
+    { "id": "CU-1", "from": "SKP-BLOCKER-001", "topic": "12-beat vs 11-beat sequence", "integration": "Replace 12 → 11 everywhere in PRD (§0 TL;DR, AC-8, FR-17 enumeration, sprint graph). Sequence has 11 beats: lock_input · card_anticipation · launch_petal_arc · play_launch_audio · impact_seedling · start_local_sakura_weather · activate_focus_ring · kaori_gesture · daemon_reaction · reward_preview · unlock_input.", "severity": "BLOCKER", "verified_against": "sequence.wood_activation.yaml grep -c '^  - id:' = 11" },
+    { "id": "CU-2", "from": "SKP-BLOCKER-003", "topic": "5 zones requirement vs 1 vendored YAML", "integration": "OPERATOR-DECISION required — see judgment calls Q1", "severity": "BLOCKER", "decision_pending": true },
+    { "id": "CU-3", "from": "SKP-BLOCKER-004", "topic": "CardStack type-incompatibility with harness cardType", "integration": "OPERATOR-DECISION required — see judgment calls Q2", "severity": "BLOCKER", "decision_pending": true },
+    { "id": "CU-4", "from": "SKP-HIGH-001", "topic": "SemanticEvent count fabricated (PRD says 18)", "integration": "FR-2: SemanticEvent union has 15 types per contracts.ts:151-166. README §9 lists 20 names; 5 (CardConsumed · ZoneBecameValidTarget · ZonePreviewed · DaemonRoutineChanged · TurnEnded) are README-only and deferred from cycle 1 contract. Cycle 1 implements the 15 union members.", "severity": "HIGH", "verified": "contracts.ts has 15 union members; README has 20 names" },
+    { "id": "CU-5", "from": "SKP-HIGH-002", "topic": "contracts.ts is pseudocode, not canonical TypeScript", "integration": "Update D2 + §6.2 + grounding section: 'JSON schemas are canonical for persisted-content shape; contracts.ts is advisory for runtime boundaries (file header says engine-agnostic pseudocode). resolver.steps (YAML) maps to resolverSteps (TS) via loader normalizer.'", "severity": "HIGH", "verified": "contracts.ts:1-7 declares engine-agnostic-pseudocode" },
+    { "id": "CU-6", "from": "SKP-HIGH-004", "topic": "S5 gate typo (sprint-4 review under Sprint 5)", "integration": "PRD §9 sprint graph S5 closing block: /review-sprint sprint-5 + /audit-sprint sprint-5 gate the cycle. Build doc has same typo at line 312-313 — fix at source.", "severity": "HIGH" },
+    { "id": "CU-7", "from": "SKP-MEDIUM-002", "topic": "pack manifest paths reference examples/*.yaml", "integration": "FR-3 loader rewrites manifest paths during vendoring OR treats manifest as provenance-only and discovers colocated YAMLs (recommend the latter — less invasive)", "severity": "MEDIUM" },
+    { "id": "CU-8", "from": "SKP-MEDIUM-003", "topic": "ajv + ajv-formats already in package.json", "integration": "FR-6 reduces to: add js-yaml ^4; ajv ^8.20.0 and ajv-formats ^3.0.1 already present. Add content:validate script.", "severity": "MEDIUM", "verified": "jq '.dependencies' package.json shows ajv: ^8.20.0, ajv-formats: ^3.0.1" },
+    { "id": "CU-9", "from": "SKP-MEDIUM-005", "topic": "memory anchors not activated per OperatorOS doctrine protocol", "integration": "Downgrade [[purupuru-world-org-shape]] and [[purupuru-daemon-deferral]] to background-only labels in PRD §10. They orient thinking but cannot drive requirements without activation receipts.", "severity": "MEDIUM" },
+    { "id": "CU-10", "from": "SKP-MEDIUM-001", "topic": "rAF <2ms drift rationale is too strong", "integration": "D6 + AC-8 use ±16ms (single-frame-at-60Hz) tolerance; test with injectable clock not wall-clock rAF in Vitest", "severity": "MEDIUM" },
+    { "id": "CU-11", "from": "SKP-MEDIUM-004", "topic": "design-lint not gated", "integration": "Add narrow S1/S2 lint check: Wood card has Wood verbs · localized weather is target-zone-only · input lock ends in unlock/fallback · no undefined zone tags · no locked resolver ops in non-core packs", "severity": "MEDIUM" }
+  ],
+
+  "operator_decisions_pending": [
+    {
+      "id": "OD-1",
+      "from": "SKP-BLOCKER-003 + Opus scope check",
+      "question": "How to resolve the 5-zone-map requirement vs 1 vendored zone YAML",
+      "options": [
+        "A: Add 4 placeholder zone YAMLs (water_harbor + fire_station + metal_mountain + earth_teahouse) authored from element naming conventions, marked affectsGameplay: false equivalent",
+        "B: Rewrite AC-10/FR-20 to '1 schema-backed wood_grove + 4 decorative locked tiles' rendering as zone placeholders without YAML backing",
+        "C: Reduce vertical slice to 1 zone visible (cuts the '5-zone world map' framing)"
+      ],
+      "recommendation": "B — preserves the 5-zone visual framing without inventing content. Cycle 2 will land 4 real zone YAMLs when fire/earth/metal/water elements ship.",
+      "blocker": true
+    },
+    {
+      "id": "OD-2",
+      "from": "SKP-BLOCKER-004",
+      "question": "CardStack adapter for harness cardType ('activation') ≠ honeycomb cardType (jani/caretaker_a/caretaker_b/transcendence)",
+      "options": [
+        "A: Build a harnessCardToLayerInput(card) adapter in S4 (extends S4 scope by ~50 LOC; preserves visual continuity with prior layer work)",
+        "B: Render a harness-native placeholder card face in S4 (no CardStack dependency; defers art_anchor work cleanly to cycle 2; visual continuity lost)",
+        "C: Bind CardStack via a manual mapping where activation → 'caretaker_a' (visual lie that hides the type-mismatch; cycle 2 must clean up)"
+      ],
+      "recommendation": "A — small adapter is worth ~50 LOC to preserve CardStack visual continuity. Adapter contract becomes the bridge that cycle 2 evolves into full art_anchor integration.",
+      "blocker": true
+    },
+    {
+      "id": "OD-3",
+      "from": "Codex SCOPE-3 + Opus HIGH-5 + D11",
+      "question": "Telemetry destination: resolve Q-SDD-5 now at PRD altitude, or cut FR-26/AC-13 from S5 until SDD resolves it",
+      "options": [
+        "A: Resolve Q-SDD-5 now: JSONL trail at grimoires/loa/a2a/trajectory/telemetry-cycle-1-*.jsonl (matches predecessor-cycle observability pattern)",
+        "B: Cut FR-26 + AC-13 from S5; reintroduce after SDD resolves Q-SDD-5 (clean PRD; defers telemetry observability)",
+        "C: Resolve Q-SDD-5 now: route through Hivemind sink directly (richer integration; depends on hivemind setup)"
+      ],
+      "recommendation": "A — JSONL aligns with the predecessor cycle and is operator-readable. Cycle 2 can route to Hivemind once that integration is settled.",
+      "blocker": false
+    },
+    {
+      "id": "OD-4",
+      "from": "Codex SCOPE-1",
+      "question": "Add S0 calibration spike (predecessor cycle did this post-flatline per D9 in card-game PRD)",
+      "options": [
+        "A: Add S0 = spike of one complex artifact (recommend: the AJV loader + 1 schema + 1 YAML end-to-end). Outcome calibrates Sprint 1's LOC + complexity estimates. ~1-day spike. Pre-S1 gate.",
+        "B: No S0 spike — the harness is well-specified; 5 sprints with current dependency-order is sufficient.",
+        "C: Lightweight S0: vendor schemas + run AJV against ONE YAML in a script (validate harness-codebase compatibility) WITHOUT building the full loader. Bounds the integration-risk surface."
+      ],
+      "recommendation": "C — lightweight S0 surfaces the harness/AJV integration cost before committing to S1. Half-day max. Adds 0 LOC to net cycle budget. Closes the SCOPE-1 calibration concern at minimum overhead.",
+      "blocker": false
+    }
+  ],
+
+  "metrics": {
+    "total_blockers": 9,
+    "blockers_auto_integrate": 6,
+    "blockers_operator_decision": 3,
+    "total_high": 10,
+    "total_medium": 10,
+    "scope_challenges": 8,
+    "model_overlap_count": 3,
+    "estimated_r1_delta_lines": "+120 to +180 (depending on operator decisions)"
+  }
+}
