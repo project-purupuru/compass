@@ -27,6 +27,12 @@ export default function Home() {
           <h1 className="font-puru-display text-3xl font-semibold leading-puru-tight tracking-tight text-puru-ink-rich">
             observatory
           </h1>
+          <a
+            href="/battle-v2"
+            className="inline-block self-start rounded border border-puru-wood-vivid px-4 py-2 font-puru-mono text-xs uppercase tracking-[0.2em] text-puru-wood-vivid hover:bg-puru-wood-vivid hover:text-puru-cloud-bright transition-colors"
+          >
+            → /battle-v2 · cycle-1 wood vertical slice
+          </a>
           <p className="max-w-xl text-base leading-puru-normal text-puru-ink-soft">
             A live awareness layer fusing on-chain, IRL weather, and wuxing state. This page renders
             the design tokens, brand fonts, and puruhani art that ground the kit. The simulation
