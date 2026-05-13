@@ -1,0 +1,383 @@
+/**
+ * /battle-v2 styles — OKLCH wuxing palette per app/globals.css tokens.
+ *
+ * Per PRD r2 FR-24 + SDD r1 §5 + harness element.wood.yaml colorTokens.
+ */
+
+.battle-v2-shell {
+  min-height: 100vh;
+  background: oklch(0.18 0.02 260); /* cosmic-indigo void */
+  color: oklch(0.94 0.015 90);
+  font-family: var(--font-puru-body, system-ui), sans-serif;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * UiScreen — slot-driven layout
+ * ─────────────────────────────────────────────────────────────── */
+.ui-screen {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  padding: 3% 3%;
+}
+
+.ui-screen__top-strip {
+  display: grid;
+  grid-template-columns: 18% 1fr 16%;
+  gap: 2%;
+  align-items: start;
+  padding-bottom: 1%;
+}
+
+.ui-screen__center-world {
+  position: relative;
+  width: 60%;
+  margin: 0 auto;
+  aspect-ratio: 60 / 58;
+}
+
+.ui-screen__bottom-strip {
+  display: grid;
+  grid-template-columns: 8% 1fr 14%;
+  gap: 2%;
+  align-items: end;
+  padding-top: 1%;
+}
+
+.ui-screen__slot {
+  background: oklch(0.20 0.02 60 / 0.6);
+  border: 1px solid oklch(0.94 0.015 90 / 0.15);
+  border-radius: 4px;
+  padding: 0.75rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * WorldMap
+ * ─────────────────────────────────────────────────────────────── */
+.world-map {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.world-map__island {
+  position: absolute;
+  inset: 0;
+  background: oklch(0.94 0.015 90); /* cream map */
+  border-radius: 50%;
+  /* Subtle paper grain via SVG noise filter */
+  background-image:
+    radial-gradient(circle at center, transparent 60%, oklch(0.88 0.02 90) 100%);
+}
+
+.zone-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * ZoneToken — gameplay state × UI state compose
+ * ─────────────────────────────────────────────────────────────── */
+.zone-token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 80px;
+  height: 80px;
+  border: 1px solid oklch(0.18 0.02 260);
+  border-radius: 8px;
+  background: oklch(0.94 0.015 90);
+  color: oklch(0.18 0.02 260);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.zone-token__kanji {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.zone-token__name {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.zone-token__activation {
+  font-size: 0.75rem;
+  color: oklch(0.66 0.114 112.7);
+}
+
+/* Per-element tints */
+.zone-token--wood {
+  border-color: oklch(0.81 0.144 112.7);
+}
+
+.zone-token--fire {
+  border-color: oklch(0.65 0.18 25);
+}
+
+.zone-token--water {
+  border-color: oklch(0.55 0.15 240);
+}
+
+.zone-token--metal {
+  border-color: oklch(0.75 0.05 280);
+}
+
+.zone-token--earth {
+  border-color: oklch(0.68 0.10 70);
+}
+
+/* Gameplay-state visuals */
+.zone-token--locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+}
+
+.zone-token--validtarget {
+  box-shadow: 0 0 12px 4px oklch(0.81 0.144 112.7 / 0.4);
+  animation: zone-pulse 1.2s ease-in-out infinite;
+}
+
+.zone-token--active {
+  box-shadow: 0 0 18px 6px oklch(0.81 0.144 112.7 / 0.6);
+  border-width: 2px;
+}
+
+@keyframes zone-pulse {
+  0%, 100% { box-shadow: 0 0 12px 4px oklch(0.81 0.144 112.7 / 0.3); }
+  50% { box-shadow: 0 0 18px 6px oklch(0.81 0.144 112.7 / 0.6); }
+}
+
+/* UI-state visuals */
+.zone-token--ui-hovered:not(.zone-token--locked) {
+  transform: translateY(-2px);
+}
+
+.zone-token--ui-disabled {
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * CardFace — harness-native cycle-1 placeholder
+ * ─────────────────────────────────────────────────────────────── */
+.card-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 90px;
+  height: 130px;
+  padding: 0.5rem;
+  border: 1px solid oklch(0.18 0.02 260);
+  border-radius: 6px;
+  background: oklch(0.94 0.015 90);
+  color: oklch(0.18 0.02 260);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-face__kanji {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.card-face__name {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.card-face__type {
+  font-size: 0.5rem;
+  color: oklch(0.4 0.02 260);
+  text-transform: uppercase;
+}
+
+.card-face__verbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  justify-content: center;
+}
+
+.card-face__verb {
+  font-size: 0.5rem;
+  background: oklch(0.95 0.020 145);
+  border: 1px solid oklch(0.81 0.144 112.7);
+  border-radius: 2px;
+  padding: 0 0.125rem;
+}
+
+.card-face--wood {
+  background: oklch(0.95 0.020 145);
+}
+
+.card-face--hovered {
+  transform: translateY(-12px);
+  box-shadow: 0 4px 16px oklch(0.82 0.14 85 / 0.4); /* amber-honey halation */
+}
+
+.card-face--armed {
+  transform: translateY(-12px) scale(1.05);
+  box-shadow: 0 6px 24px oklch(0.82 0.14 85 / 0.6);
+  border-color: oklch(0.82 0.14 85);
+  border-width: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * CardHandFan
+ * ─────────────────────────────────────────────────────────────── */
+.card-hand-fan {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.card-hand-fan__slot {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Sora Tower
+ * ─────────────────────────────────────────────────────────────── */
+.sora-tower {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 96px;
+  background: oklch(0.18 0.02 260);
+  color: oklch(0.94 0.015 90);
+  border-radius: 4px 4px 8px 8px;
+  pointer-events: none;
+}
+
+.sora-tower__glyph {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Chibi Kaori
+ * ─────────────────────────────────────────────────────────────── */
+.kaori-chibi {
+  position: absolute;
+  transform: translate(-50%, calc(-50% + 48px));
+  font-size: 1.5rem;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px oklch(0.18 0.02 260 / 0.4));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Top-strip components
+ * ─────────────────────────────────────────────────────────────── */
+.title-cartouche {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.focus-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.focus-banner__label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: oklch(0.7 0.02 90);
+}
+
+.focus-banner__value {
+  font-size: 1rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.tide-indicator {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tide-indicator__stone {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  padding: 0.125rem 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+}
+
+.tide-indicator__stone--active {
+  background: oklch(0.81 0.144 112.7 / 0.2);
+  color: oklch(0.81 0.144 112.7);
+}
+
+.selected-card-preview {
+  font-size: 0.75rem;
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * End-turn button + deck counter
+ * ─────────────────────────────────────────────────────────────── */
+.end-turn-button {
+  width: 100%;
+  padding: 0.5rem;
+  background: oklch(0.20 0.02 60);
+  color: oklch(0.94 0.015 90);
+  border: 1px solid oklch(0.94 0.015 90 / 0.3);
+  border-radius: 4px;
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0.4;
+}
+
+.deck-counter {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Event log (debug)
+ * ─────────────────────────────────────────────────────────────── */
+.event-log {
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: oklch(0.20 0.02 60 / 0.9);
+  color: oklch(0.94 0.015 90);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+  font-size: 0.625rem;
+  max-width: 300px;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.event-log summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sequence-consumer {
+  display: none;
+}
