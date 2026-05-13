@@ -13,12 +13,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
-  CardDefinition,
   ContentDatabase,
   GameState,
-  PresentationSequence,
   SemanticEvent,
-  UiScreenDefinition,
 } from "@/lib/purupuru/contracts/types";
 import { createCommandQueue } from "@/lib/purupuru/runtime/command-queue";
 import { createEventBus } from "@/lib/purupuru/runtime/event-bus";
@@ -26,20 +23,36 @@ import { createInitialState } from "@/lib/purupuru/runtime/game-state";
 import { createInputLockRegistry } from "@/lib/purupuru/runtime/input-lock";
 import { resolve as resolverResolve } from "@/lib/purupuru/runtime/resolver";
 
+import type { PackPayload } from "../page";
+
 import { CardHandFan } from "./CardHandFan";
 import { SequenceConsumer } from "./SequenceConsumer";
 import { UiScreen } from "./UiScreen";
 import { WorldMap } from "./WorldMap";
 
 interface BattleV2Props {
-  readonly content: ContentDatabase;
-  readonly uiScreen: UiScreenDefinition;
-  readonly initialCardDefinitions: readonly CardDefinition[];
-  readonly initialSequenceMap: Record<string, PresentationSequence>;
+  readonly pack: PackPayload;
 }
 
-export function BattleV2({ content, uiScreen, initialCardDefinitions, initialSequenceMap }: BattleV2Props) {
-  void initialSequenceMap; // ContentDatabase already exposes via getPresentationSequence
+export function BattleV2({ pack }: BattleV2Props) {
+  // Build ContentDatabase client-side from plain data (functions can't cross
+  // server→client boundary in Next.js).
+  const content = useMemo<ContentDatabase>(() => {
+    const cards = new Map(pack.cards.map((c) => [c.id, c]));
+    const zones = new Map(pack.zones.map((z) => [z.id, z]));
+    const events = new Map(pack.events.map((e) => [e.id, e]));
+    const sequences = new Map(pack.sequences.map((s) => [s.id, s]));
+    const elements = new Map(pack.elements.map((e) => [e.id, e]));
+    return {
+      getCardDefinition: (id) => cards.get(id),
+      getZoneDefinition: (id) => zones.get(id),
+      getEventDefinition: (id) => events.get(id),
+      getPresentationSequence: (id) => sequences.get(id),
+      getElementDefinition: (id) => elements.get(id),
+    };
+  }, [pack]);
+
+  const uiScreen = pack.uiScreens[0];
 
   const bus = useMemo(() => createEventBus(), []);
   const lock = useMemo(() => createInputLockRegistry(bus), [bus]);
@@ -52,7 +65,7 @@ export function BattleV2({ content, uiScreen, initialCardDefinitions, initialSeq
     createInitialState({
       runId: "battle-v2-session",
       dayElementId: "wood",
-      hand: initialCardDefinitions.map((c) => ({
+      hand: pack.cards.map((c) => ({
         instanceId: c.id,
         definitionId: c.id,
       })),
@@ -106,13 +119,19 @@ export function BattleV2({ content, uiScreen, initialCardDefinitions, initialSeq
         return;
       }
 
-      // Drain + resolve
+      // Drain + resolve.
+      // Skip resolver-side CardCommitted re-emission — command-queue already
+      // emitted it on the bus during enqueue (otherwise sequencer would fire
+      // the wood_activation_sequence TWICE, triggering double-lock + 2× beats).
+      // Resolver still includes CardCommitted in its semanticEvents output so
+      // that resolver-only callers (golden replay tests) see the full sequence.
       const drained = queue.drain();
       let next = state;
       for (const cmd of drained) {
         const r = resolverResolve(next, cmd, content);
         next = r.nextState;
         for (const event of r.semanticEvents) {
+          if (event.type === "CardCommitted") continue;
           bus.emit(event);
         }
       }
