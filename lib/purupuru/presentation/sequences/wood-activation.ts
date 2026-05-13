@@ -1,0 +1,184 @@
+/**
+ * Wood activation sequence — 11 beats.
+ *
+ * Per PRD r2 FR-17 + SDD r1 §6 + the harness `sequence.wood_activation.yaml`.
+ *
+ * This file is a TypeScript MIRROR of the canonical YAML at
+ * `lib/purupuru/content/wood/sequence.wood_activation.yaml`. It exists for
+ * type-safe access without runtime YAML loading + as a fixture for the
+ * sequencer.beat-order test.
+ *
+ * Counts verified live this session: 11 beats. Earlier PRD r0 said "12 beats"
+ * — that was a counting error; orchestrator-flatline SKP-001 caught it.
+ *
+ * If the YAML changes, run `pnpm content:validate` first then update this
+ * mirror manually or generate via `lib/purupuru/content/loader.ts:loadYaml`
+ * (cycle-2 may add a TS codegen step).
+ */
+
+import type { PresentationSequence } from "../../contracts/types";
+
+export const WOOD_ACTIVATION_SEQUENCE: PresentationSequence = {
+  schemaVersion: "0.1",
+  id: "wood_activation_sequence",
+  packId: "core_wood_demo",
+  category: "card_activation",
+  triggerEvents: ["CardCommitted", "ZoneActivated"],
+  inputPolicy: {
+    lockMode: "soft",
+    maxLockMs: 2400,
+    lockOwnerId: "sequence.wood_activation",
+  },
+  interruptPolicy: {
+    skippable: true,
+    cancelable: false,
+    fastForwardable: true,
+    onInterrupt: "finish_to_end_state",
+  },
+  saliencyBudget: {
+    primaryTier: 5,
+    secondaryTier: 4,
+    maxSimultaneousTier5: 1,
+    maxAmbientTier: 2,
+  },
+  requiredAnchors: [
+    "anchor.hand.card.center",
+    "anchor.wood_grove.seedling_center",
+    "anchor.wood_grove.petal_column",
+    "anchor.wood_grove.focus_ring",
+    "anchor.wood_grove.daemon.primary",
+  ],
+  mutatesGameState: false,
+  beats: [
+    {
+      id: "lock_input",
+      atMs: 0,
+      durationMs: 0,
+      action: "lock_input",
+      target: "ui.input",
+      params: { mode: "soft" },
+      saliencyTier: 0,
+    },
+    {
+      id: "card_anticipation",
+      atMs: 0,
+      durationMs: 180,
+      action: "set_ui_state",
+      target: "card.source",
+      params: {
+        state: "resolving",
+        motion: "dip_then_lift",
+        easing: "ease_out_back",
+      },
+      saliencyTier: 4,
+    },
+    {
+      id: "launch_petal_arc",
+      atMs: 120,
+      durationMs: 620,
+      action: "move_along_spline",
+      target: "vfx.sakura_arc",
+      requiresAnchors: ["anchor.hand.card.center", "anchor.wood_grove.seedling_center"],
+      params: {
+        from: "anchor.hand.card.center",
+        to: "anchor.wood_grove.seedling_center",
+        particleCueId: "vfx.particles.sakura_petal_dots",
+        trailCueId: "vfx.trail.growth_ring_faint",
+        curve: "high_soft_arc",
+      },
+      saliencyTier: 4,
+    },
+    {
+      id: "play_launch_audio",
+      atMs: 140,
+      durationMs: 0,
+      action: "play_audio",
+      target: "audio.bus.sfx",
+      params: { cueId: "audio.wood.card_launch_petal_whoosh" },
+      saliencyTier: 2,
+    },
+    {
+      id: "impact_seedling",
+      atMs: 720,
+      durationMs: 260,
+      action: "play_vfx",
+      target: "anchor.wood_grove.seedling_center",
+      requiresAnchors: ["anchor.wood_grove.seedling_center"],
+      params: {
+        cueId: "vfx.wood.seedling_growth_ring_impact",
+        hitStopMs: 80,
+      },
+      saliencyTier: 5,
+    },
+    {
+      id: "start_local_sakura_weather",
+      atMs: 820,
+      durationMs: 1200,
+      action: "start_vfx_loop",
+      target: "anchor.wood_grove.petal_column",
+      params: {
+        cueId: "vfx.weather.sakura_column_local",
+        scope: "target_zone_only",
+      },
+      saliencyTier: 3,
+    },
+    {
+      id: "activate_focus_ring",
+      atMs: 820,
+      durationMs: 900,
+      action: "set_zone_visual_state",
+      target: "zone.wood_grove",
+      params: {
+        visualState: "active_focus",
+        cueId: "vfx.focus_ring.pink_amber_soft",
+      },
+      saliencyTier: 4,
+    },
+    {
+      id: "kaori_gesture",
+      atMs: 940,
+      durationMs: 700,
+      action: "animate_actor",
+      target: "actor.kaori_chibi",
+      params: {
+        animationId: "anim.kaori_chibi.nurture_gesture",
+        anchorId: "anchor.wood_grove.seedling_center",
+      },
+      saliencyTier: 3,
+    },
+    {
+      id: "daemon_reaction",
+      atMs: 1040,
+      durationMs: 560,
+      action: "animate_actor",
+      target: "daemon.wood_puruhani_primary",
+      requiresAnchors: ["anchor.wood_grove.daemon.primary"],
+      params: {
+        animationId: "anim.wood_puruhani.reverent_hop",
+        returnToRoutine: "routine.wood_puruhani.tend_seedling",
+      },
+      saliencyTier: 3,
+    },
+    {
+      id: "reward_preview",
+      atMs: 1680,
+      durationMs: 520,
+      action: "show_reward_preview",
+      target: "ui.reward_preview",
+      params: {
+        cueId: "cue.reward_reveal.spring_pollen",
+        textPolicy: "localization_key_only",
+      },
+      saliencyTier: 4,
+    },
+    {
+      id: "unlock_input",
+      atMs: 2280,
+      durationMs: 0,
+      action: "unlock_input",
+      target: "ui.input",
+      params: { nextState: "WorldMapIdle" },
+      saliencyTier: 0,
+    },
+  ],
+};
