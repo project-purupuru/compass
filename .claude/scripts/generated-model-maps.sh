@@ -218,6 +218,9 @@ declare -A COST_INPUT=(
     ["claude-opus-4.0"]="0.005"
     ["claude-opus-4-0"]="0.005"
     ["gemini-3.1-pro-preview"]="0.00125"
+    ["codex-headless"]="0"
+    ["claude-headless"]="0"
+    ["gemini-headless"]="0"
 )
 
 declare -A COST_OUTPUT=(
@@ -267,6 +270,9 @@ declare -A COST_OUTPUT=(
     ["claude-opus-4.0"]="0.025"
     ["claude-opus-4-0"]="0.025"
     ["gemini-3.1-pro-preview"]="0.01"
+    ["codex-headless"]="0"
+    ["claude-headless"]="0"
+    ["gemini-headless"]="0"
 )
 
 # VALID_FLATLINE_MODELS — Sprint-4 T4.2 (closes SDD §1.4 C4 SSOT coverage gap).

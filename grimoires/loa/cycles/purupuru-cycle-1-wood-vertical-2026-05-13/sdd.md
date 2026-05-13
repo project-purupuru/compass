@@ -1,21 +1,23 @@
 ---
-status: ready-for-sprint-plan
+status: ready-for-run-bridge-r1
 type: sdd
 cycle: purupuru-cycle-1-wood-vertical-2026-05-13
 mode: ARCH (Ostrom) + SHIP (Barth) + craft lens (Alexander)
-prd: grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/prd.md (r1 · flatline-integrated · 441 lines)
-prd_review: grimoires/loa/a2a/flatline/cycle-1-prd-consensus-2026-05-13.json (manual fallback · 9 BLK + 10 HIGH integrated)
-sdd_review: pending (`/flatline-review sdd` after authoring · loa#877 may still block · operator-ratified gate stands)
-branch: feat/hb-s7-devpanel-audit (may rebase to feat/purupuru-cycle-1 at /sprint-plan)
+prd: grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/prd.md (r2 · post-orchestrator-flatline)
+prd_review_r1: grimoires/loa/a2a/flatline/cycle-1-prd-consensus-2026-05-13.json (manual two-voice fallback · 9 BLK + 10 HIGH integrated AM)
+sprint_review_r2: grimoires/loa/a2a/flatline/cycle-1-sprint-codex-orchestrator-2026-05-13.json (orchestrator 3-voice codex-headless · 10 BLK + 9 HIGH · 83% agreement · the 4 top themes folded into PRD r2 + this SDD r1)
+branch: feat/purupuru-cycle-1 (worktree at /Users/zksoju/Documents/GitHub/compass-cycle-1 from origin/main · loa-upstream merged through cycle-108)
 created: 2026-05-13
-revision: r0
+revision: r1 · post-orchestrator-flatline · added §2.5 harness vendoring preflight (orchestrator SKP-002 severity-760) · added §6.5 input-lock lifecycle spec (orchestrator SKP-003/006 severity-735/720)
 operator: zksoju
 authored_by: manual / cycle directory (architect skill misfired on global PRD; cycle SDD authored directly per predecessor card-game-in-compass-2026-05-12 pattern)
 ---
 
 # SDD · Purupuru Cycle 1 · Wood Vertical Slice
 
-> **r0** (2026-05-13). The PRD owns **what** and **why**; this SDD owns code paths, type sketches, sequencing, and acceptance-verification mechanics. All 4 deferred SDD questions (Q-SDD-1 through Q-SDD-4) resolved in this discovery via single operator gate.
+> **r1 · post-orchestrator-flatline** (2026-05-13 PM). Cheval routing live on cycle-1 worktree · cost-map gap patched inline · 3-voice codex-headless orchestrator run on sprint.md returned 10 BLOCKERS at 83% agreement in 75 seconds at $0 cost. 4 top themes folded into PRD r2 + this SDD r1: AC-7 contradiction resolved (PRD) · AC-13/FR-26 bifurcated (PRD) · §2.5 harness vendoring preflight added (this doc) · §6.5 input-lock lifecycle spec added (this doc).
+
+> **r0** (2026-05-13 AM). The PRD owns **what** and **why**; this SDD owns code paths, type sketches, sequencing, and acceptance-verification mechanics. All 4 deferred SDD questions (Q-SDD-1 through Q-SDD-4) resolved in this discovery via single operator gate.
 
 ## 1 · Abstract
 
@@ -143,6 +145,39 @@ No new devDependencies. No new lint rules beyond AC-3a's 5 design-lint checks ru
 │                                                                     │
 └────────────────────────────────────────────────────────────────────┘
 ```
+
+## 2.5 · Harness vendoring preflight (r1: NEW per orchestrator SKP-002 severity-760)
+
+The S0 spike + S1-T1/T2a/T3 all depend on `~/Downloads/purupuru_architecture_harness/` existing on the local machine. The orchestrator flagged this as severity-760 because: (a) the path is user-local and won't exist on CI, other operators' machines, or fresh clones; (b) no version pin or checksum guarantees that what gets vendored matches the canonical source; (c) `/run-bridge` autonomous mode would crash at S0 without a clear failure mode.
+
+### 2.5.1 · The preflight contract
+
+S0-T0 (NEW pre-spike task) runs `scripts/s0-preflight-harness.ts` which:
+
+1. **Resolves the harness path** in this order:
+   - `LOA_PURUPURU_HARNESS_PATH` env var (operator/CI override · highest precedence)
+   - `.loa.config.yaml :: purupuru.harness_path` (project pin · second precedence)
+   - `~/Downloads/purupuru_architecture_harness/` (default · machine-local convention)
+2. **Asserts file inventory**: 8 schemas + 8 YAMLs + `contracts/purupuru.contracts.ts` + `contracts/validation_rules.md` + `README.md`. Missing any → exit 78 (EX_CONFIG · operator must intervene · not retryable).
+3. **Computes SHA-256 per file** and writes `lib/purupuru/schemas/PROVENANCE.md` recording: source path, per-file hash, vendoring timestamp, harness README version string extracted from `README.md` line 3 (`**Version:** 0.1 draft`).
+4. **Compares hashes on subsequent runs**: if `PROVENANCE.md` exists, recompute hashes from the resolved harness path and assert they match. Hash mismatch → exit 1 with diff (operator must reconcile · likely an upstream harness revision).
+5. **Captures the harness README** to `grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/harness-readme-snapshot.md` (preserves the canonical spec for offline review).
+
+### 2.5.2 · The fallback contract
+
+If the harness path can't be resolved (all 3 lookup options fail):
+
+- S0 fails fast with a specific error: `[s0-preflight] harness source not found. Set LOA_PURUPURU_HARNESS_PATH env var OR add purupuru.harness_path to .loa.config.yaml OR place harness at ~/Downloads/purupuru_architecture_harness/. See grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/sdd.md §2.5 for resolution.`
+- Exit code 78 (EX_CONFIG) per cycle-098 audit-keys-bootstrap convention — `/run-bridge` recognizes 78 as operator-pending and HALTs gracefully with the message above in the [INCOMPLETE] PR.
+- Cycle-1 does NOT ship a harness bundle in-repo (release-tarball pin · sha256-locked archive). That's a cycle-2 hardening item if the path-fragility becomes operationally painful.
+
+### 2.5.3 · Acceptance criterion (AC-2b, NEW)
+
+| ID | Metric | Verification |
+|---|---|---|
+| AC-2b (r1: NEW) | `scripts/s0-preflight-harness.ts` runs to completion AND produces `lib/purupuru/schemas/PROVENANCE.md` with 17 hash entries (8 schemas + 8 YAMLs + validation_rules.md + harness README) | `pnpm s0:preflight && test -f lib/purupuru/schemas/PROVENANCE.md && jq '.entries \| length' < PROVENANCE.md (or grep -c '^- sha256:' if markdown) == 17` |
+
+Add `s0:preflight` to `package.json` scripts: `"s0:preflight": "tsx scripts/s0-preflight-harness.ts"`. This is the FIRST script the operator (or `/run-bridge`) runs in cycle-1 work; no S1 task fires until preflight passes.
 
 ## 3 · Contract types (TypeScript sketch)
 
@@ -430,6 +465,105 @@ interface Clock {
 // production: real performance.now() + requestAnimationFrame
 // tests: vi.useFakeTimers() + manual advance
 ```
+
+## 6.5 · Input-lock lifecycle (r1: NEW per orchestrator SKP-003/006 severity-735/720)
+
+`validation_rules.md:30` declares: *"An input lock owner must be registered and must release or transfer ownership."* My r0 FR-11a added a lock-owner registry but the orchestrator surfaced that the **lifecycle across layers** was underspecified. Four layers participate in the lock (resolver, sequencer, command-queue, UI) but the timing and ownership semantics weren't pinned. This section pins them.
+
+### 6.5.1 · Single source of truth
+
+`lib/purupuru/runtime/input-lock.ts` is THE registry. All other layers READ from it via a single function `getLockState(): LockState | null` and WRITE via `acquireLock(owner, mode) → boolean` / `releaseLock(owner) → boolean` / `transferLock(from, to) → boolean`. Each write fires the corresponding `InputLocked` / `InputUnlocked` semantic event for downstream consumers.
+
+```typescript
+// lib/purupuru/runtime/input-lock.ts
+export type LockMode = "soft" | "hard";
+export interface LockState {
+  ownerId: ContentId;        // e.g., "sequence.wood_activation"
+  mode: LockMode;
+  acquiredAt: number;        // performance.now() at acquireLock
+  maxDurationMs: number;     // from sequence YAML inputPolicy.maxLockMs
+}
+
+let _state: LockState | null = null;
+
+export function acquireLock(ownerId: ContentId, mode: LockMode, maxDurationMs: number): boolean {
+  if (_state !== null && _state.ownerId !== ownerId) return false; // someone else holds it
+  _state = { ownerId, mode, acquiredAt: performance.now(), maxDurationMs };
+  eventBus.emit({ type: "InputLocked", ownerId, mode });
+  return true;
+}
+
+export function releaseLock(ownerId: ContentId): boolean {
+  if (_state === null || _state.ownerId !== ownerId) return false;
+  _state = null;
+  eventBus.emit({ type: "InputUnlocked", ownerId });
+  return true;
+}
+
+export function transferLock(fromOwner: ContentId, toOwner: ContentId): boolean {
+  if (_state === null || _state.ownerId !== fromOwner) return false;
+  _state.ownerId = toOwner;
+  eventBus.emit({ type: "InputUnlocked", ownerId: fromOwner });
+  eventBus.emit({ type: "InputLocked", ownerId: toOwner, mode: _state.mode });
+  return true;
+}
+
+export function getLockState(): LockState | null { return _state; }
+export function isLockedBy(ownerId: ContentId): boolean { return _state?.ownerId === ownerId; }
+export function isLockedByOther(ownerId: ContentId): boolean { return _state !== null && _state.ownerId !== ownerId; }
+```
+
+### 6.5.2 · The 5-state lifecycle for a single PlayCard → sequence
+
+```text
+T0     PRE-COMMIT            getLockState() === null
+       (UI · resolver-idle · sequencer-idle)
+        ↓ player click commit button
+T1     COMMAND ENQUEUED      command-queue checks isLockedByOther("player") · false · enqueues PlayCard
+        ↓ resolver drains the command
+T2     RESOLVER FIRES        resolver returns ResolveResult with CardCommitted event + state mutation
+        ↓ event-bus emits CardCommitted
+T3     SEQUENCER STARTS      sequencer subscribes to CardCommitted · resolves sequenceId from card def
+        ↓ sequencer schedules beat-0 (lock_input at 0ms)
+T4     LOCK ACQUIRED         beat-0 calls acquireLock("sequence.wood_activation", "soft", 2400)
+                             InputLocked event emitted · UI receives it · UI applies disabled state to hand-fan
+                             command-queue NEW rule: rejects any subsequent PlayCard while
+                             isLockedByOther("player") returns true (caller is player; lock is sequence.wood_activation)
+        ↓ 11 beats fire over 2280ms (player can hover but cannot commit)
+        ↓ beat-10 (unlock_input at 2280ms) fires
+T5     LOCK RELEASED         releaseLock("sequence.wood_activation")
+                             InputUnlocked event emitted · UI removes disabled state · command-queue accepts again
+       (return to T0 PRE-COMMIT)
+```
+
+### 6.5.3 · Cross-layer invariants
+
+| Layer | Read responsibility | Write responsibility |
+|---|---|---|
+| `command-queue` | `isLockedByOther("player")` before each `enqueue(PlayCardCommand)` · rejects with `CardPlayRejected.reason = "input_locked"` if true | none (never writes lock) |
+| `resolver` | `isLockedByOther("system")` before any resolver-internal `queue_followup_command` | none |
+| `sequencer` | `getLockState()` to detect stale locks during fast-forward / skip | acquireLock at lock_input beat · releaseLock at unlock_input beat · transferLock when chaining to a follow-up sequence |
+| `ui` (React) | subscribes to InputLocked/InputUnlocked events via SequenceConsumer · applies disabled state to hand-fan + zone tokens | none (never writes lock; only reads via event-bus subscription) |
+
+### 6.5.4 · Failsafes
+
+- **Max-duration fallback**: every `acquireLock` records `maxDurationMs`. A failsafe timer at the runtime layer fires `releaseLock` automatically if the sequence is still holding the lock after `acquiredAt + maxDurationMs`. Prevents permanent lock from a crashed sequencer.
+- **Hard-lock vs soft-lock**: cycle-1 only uses soft (player CAN hover/move cursor; cannot commit). Hard mode reserved for cycle-2+ (e.g., DayTransition sequence; full input freeze). UI's interpretation of soft vs hard is a presentation concern; runtime doesn't distinguish.
+- **Lock transfer for chained sequences**: when cycle-2 adds "card chains" (one card spawns another card's sequence), `transferLock(from=current_seq, to=next_seq)` is the API. Atomic — no window where lock-state is null between sequences.
+
+### 6.5.5 · Test surface (AC-15 expanded)
+
+`lib/purupuru/__tests__/input-lock.test.ts` (cycle-1 r1 add):
+
+1. `acquireLock` succeeds when state is null
+2. `acquireLock` fails when state is held by a different owner
+3. `acquireLock` succeeds (no-op) when state is held by the same owner (idempotent)
+4. `releaseLock` succeeds for the owner
+5. `releaseLock` fails for a non-owner (returns false; doesn't throw; doesn't change state)
+6. `transferLock` atomically swaps ownership · two events emitted in order (InputUnlocked, InputLocked)
+7. Max-duration failsafe fires `releaseLock` after `maxDurationMs` elapses (advance fake timers)
+8. `command-queue` rejects PlayCardCommand with `CardPlayRejected.reason = "input_locked"` while lock is held by sequence
+9. Replay determinism: same command sequence → same lock-event sequence (no Math.random / wall-clock in lock code)
 
 ## 7 · Resolver implementation sketch (FR-13)
 

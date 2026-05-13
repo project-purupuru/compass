@@ -1,0 +1,270 @@
+{
+  "consensus_summary": {
+    "high_consensus_count": 9,
+    "disputed_count": 2,
+    "low_value_count": 0,
+    "blocker_count": 10,
+    "model_agreement_percent": 83,
+    "models": 3,
+    "tertiary_items": 2,
+    "confidence": "full"
+  },
+  "high_consensus": [
+    {
+      "id": "IMP-001",
+      "description": "High ROI and low implementation cost. A source-path discovery task prevents early sprint failure in non-local environments and makes the plan reproducible across checkouts and CI. The fallback behavior is essential because several downstream tasks depend on the same local harness path.",
+      "gpt_score": 890,
+      "opus_score": 910,
+      "tertiary_score": 910,
+      "delta": 20,
+      "average_score": 900,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-002",
+      "description": "Critical architectural gap. Browser code cannot append JSONL with fs, so AC-13 is not actually satisfiable without a server endpoint, route handler, or dev-only Node path. This directly affects acceptance criteria and telemetry validity during real playthroughs.",
+      "gpt_score": 960,
+      "opus_score": 940,
+      "tertiary_score": 940,
+      "delta": 20,
+      "average_score": 950,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-003",
+      "description": "Strong validation gate. YAML loading under Next.js bundling/runtime is a known risk and should be proven before the sprint is considered complete. The cost is modest compared with the risk of discovering content-loading failure late.",
+      "gpt_score": 870,
+      "opus_score": 870,
+      "tertiary_score": 875,
+      "delta": 0,
+      "average_score": 870,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-004",
+      "description": "Valuable reproducibility fix. Test command ambiguity creates avoidable friction and weakens gates, especially if scripts differ from the plan. It is less critical than runtime architecture issues but should be integrated because the cost is low and it improves execution clarity.",
+      "gpt_score": 760,
+      "opus_score": 820,
+      "tertiary_score": 805,
+      "delta": 60,
+      "average_score": 790,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-005",
+      "description": "Critical contract clarification. Event taxonomy drift can break TypeScript narrowing, replay behavior, and presentation/telemetry boundaries. Reconciling union members versus markers or envelopes is necessary before implementation spreads these names across layers.",
+      "gpt_score": 910,
+      "opus_score": 760,
+      "tertiary_score": 900,
+      "delta": 150,
+      "average_score": 835,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-006",
+      "description": "Valuable and nearly high-criticality. Deterministic replay should depend on a structured fixture, not prose lines in documentation. The implementation cost is low, and the benefit to test stability and reviewability is substantial.",
+      "gpt_score": 790,
+      "opus_score": 800,
+      "tertiary_score": 780,
+      "delta": 10,
+      "average_score": 795,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-007",
+      "description": "Valuable user-facing quality gap. Keyboard activation, disabled semantics, and focus restoration are directly relevant to the interaction model, especially with input locking. It is not as structurally blocking as telemetry or event taxonomy, but it should be integrated before calling the surface complete.",
+      "gpt_score": 740,
+      "opus_score": 735,
+      "tertiary_score": 760,
+      "delta": 5,
+      "average_score": 737.5,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-011",
+      "description": "Valuable. LOC caps only work when the counting method is reproducible. This prevents avoidable gate disputes and clarifies how vendored or generated artifacts affect the budget.",
+      "gpt_score": 760,
+      "opus_score": 720,
+      "tertiary_score": null,
+      "delta": 40,
+      "average_score": 740,
+      "source": "tertiary_authored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-012",
+      "description": "Strong planning improvement. Moving de-scope decisions before S4 uses real S1-S3 evidence while there is still time to preserve the core goals. The implementation cost is low and the schedule/LOC risk reduction is meaningful.",
+      "gpt_score": 830,
+      "opus_score": 800,
+      "tertiary_score": null,
+      "delta": 30,
+      "average_score": 815,
+      "source": "tertiary_authored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    }
+  ],
+  "disputed": [
+    {
+      "id": "IMP-009",
+      "description": "Useful scope-control improvement. An earlier de-scope checkpoint can prevent overbuilding, though the finding is less critical because it depends on whether LOC pressure actually materializes. I would integrate a lightweight checkpoint rather than a heavy formal gate.",
+      "gpt_score": 0,
+      "opus_score": 620,
+      "tertiary_score": 610,
+      "delta": 620,
+      "average_score": 620,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-010",
+      "description": "Valuable for repeatability of visual review. Screenshots, viewport sizes, and a minimal rubric would reduce subjective ambiguity at S4 close. The cost is low, though the impact is lower than contract, runtime, or telemetry fixes.",
+      "gpt_score": 0,
+      "opus_score": 660,
+      "tertiary_score": 650,
+      "delta": 660,
+      "average_score": 660,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    }
+  ],
+  "low_value": [],
+  "blockers": [
+    {
+      "id": "SKP-003",
+      "concern": "Input-lock ownership is split across runtime and presentation, but the plan does not define a single authoritative lock lifecycle or how sequencer locks interact with resolver command rejection.",
+      "severity": "HIGH",
+      "severity_score": 735,
+      "why_matters": "The 11-beat sequence depends on soft input lock behavior while hover remains allowed and commit is rejected. If presentation owns lock timing while resolver owns command validity, race conditions can allow duplicate commits, stuck locks, or rejected unlocks.",
+      "location": "Sprint 2 input-lock · Sprint 3 AC-15 · Sprint 4 E2E flow",
+      "recommendation": "Specify lock authority and state transitions in one contract: who acquires `ui.input`, when it is released, how lock owner IDs are generated, and how command-queue/resolver reads lock state. Add tests for duplicate click during sequence, unmount mid-sequence, and failed sequence target resolution.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Telemetry is specified as writing JSONL from a browser-driven sequence, but the plan has no concrete server-side endpoint or route handler to receive client telemetry. The proposed `typeof window === \"undefined\"` branch cannot append files during normal `/battle-v2` client interactions.",
+      "severity": "CRITICAL",
+      "severity_score": 870,
+      "why_matters": "AC-13 may be impossible to satisfy in the actual user flow: browser code cannot write to `grimoires/loa/a2a/trajectory`, and a console fallback does not meet the JSONL acceptance criterion.",
+      "location": "Sprint 5 · S5-T3 · AC-13 · Risk Register JSONL trail write",
+      "recommendation": "Define an explicit server-side telemetry route/action or Node-only test harness before implementation. Update AC-13 to validate the real path: client sequence completion sends telemetry to server, server appends exactly one JSONL line, and failures surface visibly.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Telemetry plan requires browser-triggered gameplay to append directly to a repository JSONL file, but the implementation path is not architecturally viable in a client-rendered Next.js route without a server action or route handler.",
+      "severity": "CRITICAL",
+      "severity_score": 870,
+      "why_matters": "If telemetry is emitted from the browser, filesystem writes are unavailable. If it is forced server-side without a defined relay, sequence-end events from the client will not reliably reach the JSONL trail, causing AC-13 and G-8 to fail late in S5.",
+      "location": "Sprint 5 · S5-T3 · AC-13 · Risk: JSONL trail write fails silently in browser",
+      "recommendation": "Define a concrete telemetry transport before implementation: either a Next.js route handler/server action that accepts the CardActivationClarity payload and appends JSONL server-side, or explicitly downgrade telemetry to test-only/dev-only and adjust AC-13 accordingly.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "The golden replay event sequence conflicts with the stated resolver operations and reward behavior, especially around `RewardGranted may fire 1+ times` while asserting an exact 5-event sequence.",
+      "severity": "HIGH",
+      "severity_score": 705,
+      "why_matters": "Ambiguous replay expectations will cause implementation churn or fragile tests. If reward count varies, the replay cannot both assert an exact 5-event sequence and allow multiple RewardGranted events.",
+      "location": "Sprint 2 · AC-7 · Success Metrics · Task 5.E2E G-5",
+      "recommendation": "Make the golden fixture contract exact: define the expected event array including counts, payload shape, and ordering. If multiple rewards are valid, assert a stable prefix plus deterministic reward list rather than an exact 5-event sequence.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-006",
+      "concern": "The input-lock model crosses runtime, sequencer, command queue, and UI behavior, but ownership semantics are not fully specified for overlapping sequences, rejected commits, route unmounts, or failed/unresolved beats.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Input may remain locked after sequence failure or route transition, or multiple owners may create inconsistent behavior between hover propagation and commit rejection. This directly affects the done bar and AC-15.",
+      "location": "Sprint 2 input-lock · Sprint 3 sequencer-side AC-15 · SequenceConsumer teardown",
+      "recommendation": "Define lock lifecycle invariants: single vs multiple owners, owner IDs, timeout/fallback release, unmount cleanup, failed beat behavior, and repeated CardCommitted handling. Add tests for interrupted sequence, unresolved target, duplicate lock owner, and unmount during lock.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "The plan asserts strict sequential sprint gates but also requires S0 spike deletion after audit approval while simultaneously requiring S0 completion evidence and validation of S0 outcomes. The exact commit/gate ordering is underspecified.",
+      "severity": "HIGH",
+      "severity_score": 705,
+      "why_matters": "A reviewer may be unable to reproduce AC-0 after the script is deleted, and the audit trail may rely on a file that no longer exists. This can create false green gates or non-reproducible audit evidence.",
+      "location": "Sprint 0 · Deliverables · AC-0 · S0-T3",
+      "recommendation": "Specify whether S0 audit validates the script before deletion, whether deletion occurs in a separate close commit, and what immutable evidence is retained. Include command output, checksum, or archived diff in `sprint-0-COMPLETED.md`.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "The plan assumes vendored YAML files can be directory-walked at runtime, but this may fail under Next.js bundling, server/client boundaries, and deployment environments.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "A loader that depends on filesystem directory traversal can pass local Vitest tests but fail in bundled app routes or Vercel previews, breaking the YAML to UI flow at `/battle-v2`. The mitigation defers this to cycle 2 despite being required for cycle 1 acceptance.",
+      "location": "Sprint 1 · S1-T4 · SDD-R3 · Sprint 4 dependencies on loader",
+      "recommendation": "Decide now whether content loading is build-time/server-only or bundled static imports. Add a Sprint 1 or Sprint 4 acceptance check for `pnpm build` and route-level content resolution, not only Vitest and local CLI validation.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "The plan depends on vendoring files from `~/Downloads/purupuru_architecture_harness/...`, but does not lock the source version, checksum, commit, archive path, or fallback if that local directory is absent.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "Implementation becomes machine-local and non-reproducible. Another agent, CI runner, or future session may not have the harness, may have a different version, or may vendor drifted schemas without detection.",
+      "location": "S0-T1 · S1-T1 · S1-T2a · S1-T3 · Dependencies",
+      "recommendation": "Add a preflight requirement that records harness source identity, file inventory, and checksums. Prefer committing or referencing a versioned archive inside the repo, or add a hard S0 blocker if the expected harness files are unavailable or checksum-mismatched.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "The plan requires vendoring schemas and YAML files from `~/Downloads/purupuru_architecture_harness`, but does not guarantee that this external local path exists, is version-pinned, or matches the PRD/SDD revisions.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Implementation can fail immediately or vendor inconsistent source material. Since schemas become the contract foundation for later runtime and UI layers, an unpinned harness source risks invalidating all downstream tests and replay fixtures.",
+      "location": "S0-T1, S1-T1, S1-T2a, S1-T3; Dependencies and S0 calibration",
+      "recommendation": "Add a preflight requirement that records the harness source path, commit/hash or archive checksum, expected file list, and fallback if the path is absent. Treat missing or mismatched harness assets as an S0 blocker before S1 starts.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The telemetry plan requires appending JSONL from sequence completion, but the interactive `/battle-v2` flow is client-side and the proposed mitigation only falls back to `console.log` in the browser, which does not satisfy AC-13.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "The cycle can appear green in UI tests while silently failing the required persistent telemetry trail. Browser code cannot write to `grimoires/loa/a2a/trajectory`, so AC-13 is not implementable as stated without a server-side endpoint, server action, route handler, or test-only Node emitter boundary.",
+      "location": "Sprint 5 · S5-T3, AC-13, Risk table JSONL write mitigation",
+      "recommendation": "Define an explicit telemetry write boundary before implementation: either add a Next.js route handler/server action for appending JSONL, or scope AC-13 to Node-side tests only and defer browser playthrough persistence to cycle 2. Update S5-T3, tests, and acceptance criteria accordingly.",
+      "source": "tertiary_skeptic"
+    }
+  ],
+  "degraded": false,
+  "degraded_model": null,
+  "confidence": "full",
+  "phase": "sprint",
+  "document": "grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/sprint.md",
+  "domain": "status ready for implementation created",
+  "tertiary_model_used": "codex-headless",
+  "tertiary_status": "active",
+  "execution": {
+    "mode": "interactive",
+    "mode_reason": "Default (no explicit mode specified)",
+    "run_id": null
+  },
+  "timestamp": "2026-05-13T21:18:02Z",
+  "metrics": {
+    "total_latency_ms": 75000,
+    "cost_cents": 0,
+    "cost_usd": 0
+  }
+}
