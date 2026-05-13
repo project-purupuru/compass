@@ -23,7 +23,9 @@
     "assets:list": "tsx scripts/assets-list.ts",
     "cards:audit": "tsx scripts/cards-audit.ts",
     "hounfour:drift": "tsx scripts/hounfour-drift.ts",
-    "test:types": "pnpm typecheck"
+    "test:types": "pnpm typecheck",
+    "s0:preflight": "tsx scripts/s0-preflight-harness.ts",
+    "s0:spike": "tsx scripts/s0-spike-ajv-element-wood.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
@@ -47,6 +49,7 @@
     "bs58": "^6.0.0",
     "clsx": "^2.1.1",
     "effect": "^3.10.0",
+    "js-yaml": "^4.1.1",
     "lucide-react": "^1.14.0",
     "motion": "^12.38.0",
     "next": "16.2.6",
