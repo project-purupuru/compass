@@ -1,0 +1,49 @@
+schemaVersion: "0.1"
+packId: core_wood_demo
+packNameKey: pack.core_wood_demo.name
+version: "0.1.0"
+author:
+  name: Purupuru Core Team
+  contact: internal
+tier: core
+compatibility:
+  gameVersionMin: "0.1.0"
+  gameVersionMax: "0.1.x"
+  schemaVersion: "0.1"
+dependencies: []
+permissions:
+  mayAddCards: true
+  mayAddEvents: true
+  mayAddDaemons: true
+  mayAddUiSkins: true
+  mayAddResolverOps: false
+  mayChangeSaveSchema: false
+  mayOverrideCoreContent: false
+files:
+  - kind: element
+    path: examples/element.wood.yaml
+    schema: schemas/element.schema.json
+  - kind: card
+    path: examples/card.wood_awakening.yaml
+    schema: schemas/card.schema.json
+  - kind: zone
+    path: examples/zone.wood_grove.yaml
+    schema: schemas/zone.schema.json
+  - kind: event
+    path: examples/event.wood_spring_seedling.yaml
+    schema: schemas/event.schema.json
+  - kind: presentation_sequence
+    path: examples/sequence.wood_activation.yaml
+    schema: schemas/presentation_sequence.schema.json
+  - kind: ui_screen
+    path: examples/ui.world_map_screen.yaml
+    schema: schemas/ui_screen.schema.json
+  - kind: telemetry_event
+    path: examples/telemetry.card_activation_clarity.yaml
+    schema: schemas/telemetry_event.schema.json
+constraints:
+  requiresSchemaValidation: true
+  requiresDesignLint: true
+  bakedReadableTextAllowed: false
+  notes:
+    - Core Wood Demo Pack is the first vertical-slice content pack.

@@ -1,0 +1,82 @@
+schemaVersion: "0.1"
+id: wood_grove
+packId: core_wood_demo
+nameKey: zone.wood_grove.name
+elementId: wood
+zoneType: grove
+tags:
+  - grove
+  - seedling_anchor
+  - spring
+  - targetable
+graph:
+  nodeId: node.wood_grove
+  neighbors:
+    - sora_tower
+    - water_harbor
+anchors:
+  uiTarget: anchor.wood_grove.ui_target
+  activationImpact: anchor.wood_grove.seedling_center
+  weatherEmitter: anchor.wood_grove.petal_column
+  focusRing: anchor.wood_grove.focus_ring
+  daemonSlots:
+    - anchor.wood_grove.daemon.primary
+    - anchor.wood_grove.daemon.bird_arrival
+  structureSlots:
+    - anchor.wood_grove.sakura_tree
+    - anchor.wood_grove.wood_shrine_stone
+    - anchor.wood_grove.torii
+structures:
+  - id: sakura_tree_main
+    kind: sakura_tree
+    artId: art.prop.sakura_tree.spring_small
+    motifs:
+      - sakura
+      - spring_bloom
+    anchorId: anchor.wood_grove.sakura_tree
+  - id: wood_shrine_growth_stone
+    kind: shrine_stone
+    artId: art.prop.shrine_stone.wood_growth_rings
+    motifs:
+      - growth_rings
+      - sky_eye_leaf
+    anchorId: anchor.wood_grove.wood_shrine_stone
+  - id: small_wood_torii
+    kind: torii
+    artId: art.prop.torii.wood_small
+    motifs:
+      - wood_gate
+      - ritual_threshold
+    anchorId: anchor.wood_grove.torii
+residentDaemons:
+  - daemonId: wood_puruhani_primary
+    elementId: wood
+    defaultRoutineId: routine.wood_puruhani.tend_seedling
+    reactionSetId: reactions.wood_puruhani.activation_reverence
+    affectsGameplay: false
+  - daemonId: bird_puruhani_visitor
+    elementId: wood
+    defaultRoutineId: routine.bird_puruhani.drift_idle
+    reactionSetId: reactions.bird_puruhani.drawn_to_growth
+    affectsGameplay: false
+activationRules:
+  validCardElements:
+    - wood
+  maxConcurrentEvents: 1
+  defaultEventTableId: wood_grove_spring_events
+  weatherBehavior: localized_only
+  requiresCurrentWeatherMatch: false
+presentation:
+  idleCueId: cue.zone_idle.wood_grove
+  validTargetCueId: cue.zone_valid.wood_soft_ring
+  invalidTargetCueId: cue.zone_invalid.dim
+  activeCueId: cue.zone_active.wood_sakura
+  focusRingId: vfx.focus_ring.pink_amber_soft
+constraints:
+  exclusiveFocusByDefault: true
+  localizedWeatherOnly: true
+  bakedReadableTextAllowed: false
+  maxIdleSaliency: 2
+  notes:
+    - Sakura weather remains over this zone only.
+    - Idle grove may breathe subtly but cannot imply activation.

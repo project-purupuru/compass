@@ -1,0 +1,79 @@
+schemaVersion: "0.1"
+id: wood
+nameKey: element.wood.name
+summaryKey: element.wood.summary
+verbs:
+  - grow
+  - awaken
+  - bind
+  - heal
+  - branch
+  - nurture
+colorTokens:
+  primary: "oklch(0.81 0.144 112.7)"
+  muted: "oklch(0.70 0.05 112.7)"
+  glow: "oklch(0.82 0.14 85)"
+  weather: "oklch(0.94 0.02 350)"
+  ink: "oklch(0.18 0.02 260)"
+motifs:
+  shape:
+    - soft_spiral
+    - leaf_arc
+    - branching_curve
+    - growth_ring
+  worldProps:
+    - seedling
+    - sakura_tree
+    - wooden_torii
+    - carved_wood_shrine_stone
+  shrineRelief:
+    - growth_rings
+    - sky_eye_leaf
+    - branch_lines
+  daemonSilhouette:
+    - chibi_round_body
+    - sage_leaf_hat
+    - tiny_reverent_pose
+vfxGrammar:
+  travel:
+    - sakura_petal_dots
+    - faint_growth_ring_marks
+    - soft_upward_arc
+  impact:
+    - seedling_pulse
+    - growth_ring_ripple
+    - petal_bloom
+  localizedWeather:
+    - sakura_column
+    - gentle_petals
+    - spiral_drift
+  afterglow:
+    - pink_amber_focus_ring
+    - low_jade_seedling_glow
+  prohibited:
+    - explosive_fire_burst
+    - hard_metal_geometric_cut
+    - global_petal_storm_for_local_activation
+audioGrammar:
+  material:
+    - paper_leaf
+    - soft_wood
+  motion:
+    - petal_whoosh
+    - cloth_lift
+  impact:
+    - seedling_chime
+    - warm_wood_resonance
+  ambient:
+    - quiet_spring_air
+    - distant_grove_bell
+constraints:
+  localizedWeatherOnlyByDefault: true
+  maxAmbientSaliency: 2
+  requiresNamedAnchors: true
+  shouldNotFeelLike:
+    - fire
+    - metal
+  notes:
+    - Wood effects should feel nurturing, not explosive.
+    - Use spiral growth language before generic green magic.

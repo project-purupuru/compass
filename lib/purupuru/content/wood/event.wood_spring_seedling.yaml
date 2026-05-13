@@ -1,0 +1,52 @@
+schemaVersion: "0.1"
+id: wood_spring_seedling
+packId: core_wood_demo
+nameKey: event.wood_spring_seedling.name
+descriptionKey: event.wood_spring_seedling.description
+trigger:
+  type: on_zone_activated
+  source: wood_grove
+  elementId: wood
+preconditions:
+  - path: weather.activeElement
+    op: eq
+    value: wood
+  - path: zones.wood_grove.state
+    op: eq
+    value: active
+resolver:
+  steps:
+    - id: set_seedling_flag
+      op: set_flag
+      args:
+        flag: wood_grove.seedling_awakened
+        value: true
+      emits:
+        - ZoneEventResolved
+    - id: add_spring_pollen
+      op: add_resource
+      args:
+        resourceId: spring_pollen
+        quantity: 2
+      emits:
+        - RewardGranted
+rewards:
+  - rewardType: resource
+    id: spring_pollen
+    quantity: 2
+  - rewardType: daemon_affinity
+    id: wood_puruhani_affinity
+    quantity: 1
+presentation:
+  sequenceId: wood_activation_sequence
+  summaryCueId: cue.event_summary.seedling_awakened
+  rewardRevealCueId: cue.reward_reveal.spring_pollen
+repeatability:
+  mode: once_per_day
+  cooldownTurns: 0
+constraints:
+  approvalTier: core
+  communitySafe: true
+  globalStateMutationAllowed: false
+  notes:
+    - Tutorial-safe event that proves weather, card, zone, and daemon loop.

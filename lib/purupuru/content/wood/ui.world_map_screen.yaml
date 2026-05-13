@@ -1,0 +1,145 @@
+schemaVersion: "0.1"
+id: world_map_main
+packId: core_wood_demo
+screenType: world_map
+textPolicy:
+  bakedReadableTextAllowed: false
+  localizationRequired: true
+  hankoMarkersAllowed: true
+  blankArtSurfaces:
+    - title_cartouche
+    - focus_banner
+    - selected_card_preview
+    - end_turn_button
+safeArea:
+  topPct: 3
+  bottomPct: 4
+  leftPct: 3
+  rightPct: 3
+layoutSlots:
+  - id: slot.top.title_cartouche
+    region: top_strip
+    anchor: top_left
+    sizePct:
+      w: 18
+      h: 10
+  - id: slot.top.focus_banner
+    region: top_strip
+    anchor: top_center
+    sizePct:
+      w: 34
+      h: 12
+  - id: slot.top.action_panel
+    region: top_strip
+    anchor: top_right
+    sizePct:
+      w: 16
+      h: 14
+  - id: slot.center.world_map
+    region: center_world
+    anchor: center
+    sizePct:
+      w: 60
+      h: 58
+  - id: slot.bottom.card_hand
+    region: bottom_strip
+    anchor: bottom_center
+    sizePct:
+      w: 58
+      h: 22
+  - id: slot.bottom.deck_counter
+    region: bottom_strip
+    anchor: bottom_left
+    sizePct:
+      w: 8
+      h: 12
+  - id: slot.bottom.end_turn
+    region: bottom_strip
+    anchor: bottom_right
+    sizePct:
+      w: 14
+      h: 10
+components:
+  - id: title_cartouche
+    componentType: blank_cartouche
+    slotId: slot.top.title_cartouche
+    interactive: false
+    states:
+      - idle
+    artId: ui.panel.wood_title_cartouche_blank
+    hankoMarker: true
+  - id: focus_banner
+    componentType: focus_banner
+    slotId: slot.top.focus_banner
+    interactive: false
+    states:
+      - idle
+      - attention
+      - resolving
+    artId: ui.panel.focus_banner_charcoal_blank
+    bindsTo: game.activeZoneId
+    hankoMarker: true
+  - id: tide_indicator
+    componentType: tide_indicator
+    slotId: slot.top.focus_banner
+    interactive: false
+    states:
+      - idle
+      - attention
+    artId: ui.tide_indicator.five_stones
+    bindsTo: weather.activeElement
+    hankoMarker: false
+  - id: selected_card_preview
+    componentType: action_panel
+    slotId: slot.top.action_panel
+    interactive: false
+    states:
+      - idle
+      - selected
+      - resolving
+    artId: ui.panel.selected_card_preview_blank
+    bindsTo: ui.selectedCardId
+    hankoMarker: true
+  - id: card_hand
+    componentType: card_hand
+    slotId: slot.bottom.card_hand
+    interactive: true
+    states:
+      - idle
+      - hovered
+      - selected
+      - resolving
+      - disabled
+    artId: ui.card_hand.fan_5_slots
+    bindsTo: player.hand
+    hankoMarker: false
+  - id: deck_counter
+    componentType: deck_counter
+    slotId: slot.bottom.deck_counter
+    interactive: false
+    states:
+      - idle
+    artId: ui.deck_counter.three_stones
+    bindsTo: player.deckCount
+    hankoMarker: false
+  - id: end_turn_button
+    componentType: stone_button
+    slotId: slot.bottom.end_turn
+    interactive: true
+    states:
+      - idle
+      - hovered
+      - pressed
+      - selected
+      - disabled
+      - resolving
+    artId: ui.button.stone_blank_end_turn
+    bindsTo: command.end_turn
+    hankoMarker: true
+constraints:
+  requiresStateMatrix: true
+  requiresWorldToScreenAnchors: true
+  maxPrimaryFocusComponents: 2
+  notes:
+    - In normal card play, primary focus components should be the selected card and target zone.
+    - "Top tide order for core demo: wood, water, fire, metal, earth; wood glows during Wood weather."

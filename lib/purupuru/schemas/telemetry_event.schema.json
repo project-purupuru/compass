@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/telemetry_event.schema.json",
+  "title": "Purupuru Telemetry Event Definition",
+  "description": "Defines opt-in analytics events used to improve clarity, balance, and feel.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "eventName",
+    "purpose",
+    "privacyClass",
+    "properties",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "eventName": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]+$"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "clarity",
+        "balance",
+        "retention",
+        "performance",
+        "debug",
+        "accessibility"
+      ]
+    },
+    "privacyClass": {
+      "type": "string",
+      "enum": [
+        "anonymous_gameplay",
+        "session_only",
+        "personal_data_prohibited"
+      ]
+    },
+    "properties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "required"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "duration_ms"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "allowedValues": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "containsPersonalData",
+        "sampleRatePct"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "containsPersonalData": {
+          "type": "boolean",
+          "const": false
+        },
+        "sampleRatePct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

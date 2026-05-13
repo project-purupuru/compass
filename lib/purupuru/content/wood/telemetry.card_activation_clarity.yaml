@@ -1,0 +1,38 @@
+schemaVersion: "0.1"
+id: telemetry.card_activation_clarity
+eventName: CardActivationClarity
+purpose: clarity
+privacyClass: anonymous_gameplay
+properties:
+  - name: cardId
+    type: string
+    required: true
+  - name: elementId
+    type: string
+    required: true
+    allowedValues:
+      - wood
+      - fire
+      - water
+      - metal
+      - earth
+  - name: targetZoneId
+    type: string
+    required: true
+  - name: timeFromCardArmedToCommitMs
+    type: duration_ms
+    required: true
+  - name: invalidTargetHoverCount
+    type: integer
+    required: true
+  - name: sequenceSkipped
+    type: boolean
+    required: true
+  - name: inputLockDurationMs
+    type: duration_ms
+    required: true
+constraints:
+  containsPersonalData: false
+  sampleRatePct: 100
+  notes:
+    - Measures whether card-to-zone targeting is legible and whether presentation sequences feel too slow.

@@ -25,7 +25,8 @@
     "hounfour:drift": "tsx scripts/hounfour-drift.ts",
     "test:types": "pnpm typecheck",
     "s0:preflight": "tsx scripts/s0-preflight-harness.ts",
-    "s0:spike": "tsx scripts/s0-spike-ajv-element-wood.ts"
+    "s0:spike": "tsx scripts/s0-spike-ajv-element-wood.ts",
+    "content:validate": "tsx scripts/validate-content.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

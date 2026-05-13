@@ -1,0 +1,325 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/zone.schema.json",
+  "title": "Purupuru Zone Definition",
+  "description": "Defines a world-map zone, anchors, resident daemons, graph connections, and activation policy.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "packId",
+    "nameKey",
+    "elementId",
+    "zoneType",
+    "tags",
+    "graph",
+    "anchors",
+    "structures",
+    "residentDaemons",
+    "activationRules",
+    "presentation",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "packId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "nameKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "elementId": {
+      "$ref": "#/$defs/elementId"
+    },
+    "zoneType": {
+      "type": "string",
+      "enum": [
+        "grove",
+        "harbor",
+        "station",
+        "mountain",
+        "teahouse",
+        "tower",
+        "custom"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_.-]+$"
+      }
+    },
+    "graph": {
+      "type": "object",
+      "required": [
+        "nodeId",
+        "neighbors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nodeId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "neighbors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stableId"
+          }
+        }
+      }
+    },
+    "anchors": {
+      "type": "object",
+      "required": [
+        "uiTarget",
+        "activationImpact",
+        "weatherEmitter",
+        "daemonSlots",
+        "structureSlots"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "uiTarget": {
+          "$ref": "#/$defs/stableId"
+        },
+        "activationImpact": {
+          "$ref": "#/$defs/stableId"
+        },
+        "weatherEmitter": {
+          "$ref": "#/$defs/stableId"
+        },
+        "focusRing": {
+          "$ref": "#/$defs/stableId"
+        },
+        "daemonSlots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/stableId"
+          }
+        },
+        "structureSlots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/stableId"
+          }
+        }
+      }
+    },
+    "structures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "artId",
+          "motifs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/stableId"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "artId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "motifs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "anchorId": {
+            "$ref": "#/$defs/stableId"
+          }
+        }
+      }
+    },
+    "residentDaemons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "daemonId",
+          "elementId",
+          "defaultRoutineId",
+          "reactionSetId",
+          "affectsGameplay"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "daemonId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "elementId": {
+            "$ref": "#/$defs/elementId"
+          },
+          "defaultRoutineId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "reactionSetId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "affectsGameplay": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "activationRules": {
+      "type": "object",
+      "required": [
+        "validCardElements",
+        "maxConcurrentEvents",
+        "defaultEventTableId",
+        "weatherBehavior"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "validCardElements": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/elementId"
+          }
+        },
+        "maxConcurrentEvents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "defaultEventTableId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "weatherBehavior": {
+          "type": "string",
+          "enum": [
+            "localized_only",
+            "global_allowed",
+            "none"
+          ]
+        },
+        "requiresCurrentWeatherMatch": {
+          "type": "boolean"
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "required": [
+        "idleCueId",
+        "validTargetCueId",
+        "activeCueId",
+        "focusRingId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "idleCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "validTargetCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "invalidTargetCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "activeCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "focusRingId": {
+          "$ref": "#/$defs/stableId"
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "exclusiveFocusByDefault",
+        "localizedWeatherOnly",
+        "bakedReadableTextAllowed",
+        "maxIdleSaliency"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "exclusiveFocusByDefault": {
+          "type": "boolean",
+          "const": true
+        },
+        "localizedWeatherOnly": {
+          "type": "boolean"
+        },
+        "bakedReadableTextAllowed": {
+          "type": "boolean",
+          "const": false
+        },
+        "maxIdleSaliency": {
+          "$ref": "#/$defs/saliencyTier"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

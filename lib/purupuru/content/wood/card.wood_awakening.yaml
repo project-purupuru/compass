@@ -1,0 +1,76 @@
+schemaVersion: "0.1"
+id: wood_awakening
+packId: core_wood_demo
+nameKey: card.wood_awakening.name
+descriptionKey: card.wood_awakening.description
+elementId: wood
+cardType: activation
+verbs:
+  - awaken
+  - grow
+cost:
+  energy: 1
+  resources: {}
+targeting:
+  mode: zone
+  maxTargets: 1
+  validZoneElements:
+    - wood
+  validZoneTags:
+    - grove
+    - seedling_anchor
+  invalidTargetFeedbackCueId: cue.invalid_target.soft_wood
+  previewCueId: cue.preview.wood_zone_focus
+  requiresCurrentWeatherElement: true
+  allowGlobalTarget: false
+resolver:
+  steps:
+    - id: validate_and_activate_wood_zone
+      op: activate_zone
+      scope: target_zone
+      args:
+        requiredElement: wood
+        setActiveZone: true
+        activationLevelDelta: 1
+      emits:
+        - ZoneActivated
+    - id: spawn_seedling_event
+      op: spawn_event
+      scope: target_zone
+      args:
+        eventId: wood_spring_seedling
+        eventTableId: wood_grove_spring_events
+      emits:
+        - ZoneEventStarted
+    - id: grant_minor_affinity
+      op: grant_reward
+      scope: self
+      args:
+        rewardType: daemon_affinity
+        id: wood_puruhani_affinity
+        quantity: 1
+      emits:
+        - RewardGranted
+presentation:
+  cardArtId: art.card.wood_awakening.kaori_silhouette
+  cardFrameSkinId: ui.card_frame.wood_jade
+  sequenceId: wood_activation_sequence
+  launchCueId: cue.card_launch.sakura_arc
+  hoverCueId: cue.card_hover.wood_amber
+balance:
+  rarity: starter
+  powerBand: tutorial
+  maxCopies: 3
+  minDay: 1
+  tags:
+    - tutorial_safe
+    - zone_activation
+    - weather_match
+constraints:
+  approvalTier: core
+  presentationMayMutateGameState: false
+  globalWeatherAllowed: false
+  multiFocusAllowed: false
+  notes:
+    - This is the canonical first Wood ritual card.
+    - Must remain readable enough for tutorial use.

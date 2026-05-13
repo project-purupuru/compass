@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/content_pack_manifest.schema.json",
+  "title": "Purupuru Content Pack Manifest",
+  "description": "Declares content-pack identity, compatibility, permissions, dependencies, and files.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "packId",
+    "packNameKey",
+    "version",
+    "author",
+    "tier",
+    "compatibility",
+    "permissions",
+    "files",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "packId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "packNameKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "author": {
+      "type": "object",
+      "required": [
+        "name",
+        "contact"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contact": {
+          "type": "string"
+        }
+      }
+    },
+    "tier": {
+      "$ref": "#/$defs/approvalTier"
+    },
+    "compatibility": {
+      "type": "object",
+      "required": [
+        "gameVersionMin",
+        "gameVersionMax",
+        "schemaVersion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "gameVersionMin": {
+          "type": "string"
+        },
+        "gameVersionMax": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.1"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stableId"
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "required": [
+        "mayAddCards",
+        "mayAddEvents",
+        "mayAddDaemons",
+        "mayAddUiSkins",
+        "mayAddResolverOps",
+        "mayChangeSaveSchema",
+        "mayOverrideCoreContent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mayAddCards": {
+          "type": "boolean"
+        },
+        "mayAddEvents": {
+          "type": "boolean"
+        },
+        "mayAddDaemons": {
+          "type": "boolean"
+        },
+        "mayAddUiSkins": {
+          "type": "boolean"
+        },
+        "mayAddResolverOps": {
+          "type": "boolean"
+        },
+        "mayChangeSaveSchema": {
+          "type": "boolean"
+        },
+        "mayOverrideCoreContent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "path",
+          "schema"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "element",
+              "card",
+              "zone",
+              "event",
+              "presentation_sequence",
+              "ui_screen",
+              "telemetry_event",
+              "localization",
+              "art_manifest",
+              "audio_manifest"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "requiresSchemaValidation",
+        "requiresDesignLint",
+        "bakedReadableTextAllowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "requiresSchemaValidation": {
+          "type": "boolean",
+          "const": true
+        },
+        "requiresDesignLint": {
+          "type": "boolean",
+          "const": true
+        },
+        "bakedReadableTextAllowed": {
+          "type": "boolean",
+          "const": false
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

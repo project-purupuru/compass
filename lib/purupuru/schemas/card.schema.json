@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/card.schema.json",
+  "title": "Purupuru Card Definition",
+  "description": "Data-first definition for a card, including targeting, resolver steps, and presentation hooks.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "packId",
+    "nameKey",
+    "descriptionKey",
+    "elementId",
+    "cardType",
+    "verbs",
+    "cost",
+    "targeting",
+    "resolver",
+    "presentation",
+    "balance",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    },
+    "resolverOp": {
+      "type": "string",
+      "enum": [
+        "activate_zone",
+        "spawn_event",
+        "apply_modifier",
+        "add_resource",
+        "remove_resource",
+        "draw_cards",
+        "discard_cards",
+        "move_daemon",
+        "set_flag",
+        "grant_reward",
+        "advance_clock",
+        "queue_followup_command"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "self",
+        "target_zone",
+        "target_daemon",
+        "adjacent_zones",
+        "all_zones",
+        "global_map"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "packId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "nameKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "descriptionKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "elementId": {
+      "$ref": "#/$defs/elementId"
+    },
+    "cardType": {
+      "type": "string",
+      "enum": [
+        "activation",
+        "modifier",
+        "daemon",
+        "ritual",
+        "tool",
+        "event"
+      ]
+    },
+    "verbs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z_]+$"
+      }
+    },
+    "cost": {
+      "type": "object",
+      "required": [
+        "energy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "targeting": {
+      "type": "object",
+      "required": [
+        "mode",
+        "maxTargets",
+        "validZoneElements",
+        "validZoneTags",
+        "previewCueId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "zone",
+            "daemon",
+            "card",
+            "self"
+          ]
+        },
+        "maxTargets": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "validZoneElements": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/elementId"
+          }
+        },
+        "validZoneTags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+$"
+          }
+        },
+        "invalidTargetFeedbackCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "previewCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "requiresCurrentWeatherElement": {
+          "type": "boolean"
+        },
+        "allowGlobalTarget": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "resolver": {
+      "type": "object",
+      "required": [
+        "steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "op",
+              "scope",
+              "args"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/stableId"
+              },
+              "op": {
+                "$ref": "#/$defs/resolverOp"
+              },
+              "scope": {
+                "$ref": "#/$defs/scope"
+              },
+              "args": {
+                "type": "object"
+              },
+              "requires": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "emits": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Za-z0-9]+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "required": [
+        "cardArtId",
+        "cardFrameSkinId",
+        "sequenceId",
+        "launchCueId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cardArtId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "cardFrameSkinId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "sequenceId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "launchCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "hoverCueId": {
+          "$ref": "#/$defs/stableId"
+        }
+      }
+    },
+    "balance": {
+      "type": "object",
+      "required": [
+        "rarity",
+        "powerBand",
+        "maxCopies",
+        "minDay"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rarity": {
+          "type": "string",
+          "enum": [
+            "starter",
+            "common",
+            "uncommon",
+            "rare",
+            "mythic",
+            "story"
+          ]
+        },
+        "powerBand": {
+          "type": "string",
+          "enum": [
+            "tutorial",
+            "low",
+            "medium",
+            "high",
+            "boss",
+            "experimental"
+          ]
+        },
+        "maxCopies": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "minDay": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "approvalTier",
+        "presentationMayMutateGameState",
+        "globalWeatherAllowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approvalTier": {
+          "$ref": "#/$defs/approvalTier"
+        },
+        "presentationMayMutateGameState": {
+          "type": "boolean",
+          "const": false
+        },
+        "globalWeatherAllowed": {
+          "type": "boolean"
+        },
+        "multiFocusAllowed": {
+          "type": "boolean",
+          "default": false
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

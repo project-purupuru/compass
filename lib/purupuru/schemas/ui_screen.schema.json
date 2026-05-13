@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/ui_screen.schema.json",
+  "title": "Purupuru UI Screen Definition",
+  "description": "Defines screen-space and world-space UI contracts, text policy, layout slots, and interaction states.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "packId",
+    "screenType",
+    "textPolicy",
+    "safeArea",
+    "layoutSlots",
+    "components",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    },
+    "uiState": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "hovered",
+        "pressed",
+        "selected",
+        "disabled",
+        "resolving",
+        "valid_target",
+        "invalid_target",
+        "armed",
+        "attention",
+        "cooldown"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "packId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "screenType": {
+      "type": "string",
+      "enum": [
+        "world_map",
+        "deck_builder",
+        "event_modal",
+        "settings",
+        "debug"
+      ]
+    },
+    "textPolicy": {
+      "type": "object",
+      "required": [
+        "bakedReadableTextAllowed",
+        "localizationRequired",
+        "hankoMarkersAllowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bakedReadableTextAllowed": {
+          "type": "boolean",
+          "const": false
+        },
+        "localizationRequired": {
+          "type": "boolean",
+          "const": true
+        },
+        "hankoMarkersAllowed": {
+          "type": "boolean"
+        },
+        "blankArtSurfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "safeArea": {
+      "type": "object",
+      "required": [
+        "topPct",
+        "bottomPct",
+        "leftPct",
+        "rightPct"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "topPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "bottomPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 30
+        },
+        "leftPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "rightPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        }
+      }
+    },
+    "layoutSlots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "region",
+          "anchor",
+          "sizePct"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/stableId"
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "top_strip",
+              "bottom_strip",
+              "left_strip",
+              "right_strip",
+              "center_world",
+              "modal",
+              "debug"
+            ]
+          },
+          "anchor": {
+            "type": "string",
+            "enum": [
+              "top_left",
+              "top_center",
+              "top_right",
+              "middle_left",
+              "center",
+              "middle_right",
+              "bottom_left",
+              "bottom_center",
+              "bottom_right"
+            ]
+          },
+          "sizePct": {
+            "type": "object",
+            "required": [
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "componentType",
+          "slotId",
+          "interactive",
+          "states",
+          "artId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/stableId"
+          },
+          "componentType": {
+            "type": "string",
+            "enum": [
+              "blank_cartouche",
+              "focus_banner",
+              "tide_indicator",
+              "action_panel",
+              "card_hand",
+              "card",
+              "stone_button",
+              "deck_counter",
+              "world_anchor",
+              "tooltip",
+              "debug_panel"
+            ]
+          },
+          "slotId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "interactive": {
+            "type": "boolean"
+          },
+          "states": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/uiState"
+            }
+          },
+          "artId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "bindsTo": {
+            "type": "string"
+          },
+          "hankoMarker": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "requiresStateMatrix",
+        "requiresWorldToScreenAnchors",
+        "maxPrimaryFocusComponents"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "requiresStateMatrix": {
+          "type": "boolean",
+          "const": true
+        },
+        "requiresWorldToScreenAnchors": {
+          "type": "boolean"
+        },
+        "maxPrimaryFocusComponents": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

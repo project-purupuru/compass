@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://purupuru.dev/schemas/event.schema.json",
+  "title": "Purupuru Zone Event Definition",
+  "description": "Defines a zone event: trigger, preconditions, resolver effects, rewards, and presentation hooks.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "packId",
+    "nameKey",
+    "descriptionKey",
+    "trigger",
+    "preconditions",
+    "resolver",
+    "rewards",
+    "presentation",
+    "repeatability",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 96
+    },
+    "locKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "elementId": {
+      "type": "string",
+      "enum": [
+        "wood",
+        "fire",
+        "water",
+        "metal",
+        "earth"
+      ]
+    },
+    "oklch": {
+      "type": "string",
+      "pattern": "^oklch\\([0-9.]+\\s+[0-9.]+\\s+[0-9.]+(?:\\s*/\\s*[0-9.]+)?\\)$"
+    },
+    "saliencyTier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "approvalTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "official",
+        "community_safe",
+        "experimental",
+        "locked"
+      ]
+    },
+    "comparison": {
+      "type": "string",
+      "enum": [
+        "eq",
+        "neq",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "contains",
+        "not_contains",
+        "exists",
+        "not_exists"
+      ]
+    },
+    "resolverOp": {
+      "type": "string",
+      "enum": [
+        "activate_zone",
+        "spawn_event",
+        "apply_modifier",
+        "add_resource",
+        "remove_resource",
+        "draw_cards",
+        "discard_cards",
+        "move_daemon",
+        "set_flag",
+        "grant_reward",
+        "advance_clock",
+        "queue_followup_command"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "packId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "nameKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "descriptionKey": {
+      "$ref": "#/$defs/locKey"
+    },
+    "trigger": {
+      "type": "object",
+      "required": [
+        "type",
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "on_card_resolved",
+            "on_zone_activated",
+            "on_weather_changed",
+            "on_turn_started",
+            "on_daemon_assist",
+            "manual"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/stableId"
+        },
+        "elementId": {
+          "$ref": "#/$defs/elementId"
+        }
+      }
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "op",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "op": {
+            "$ref": "#/$defs/comparison"
+          },
+          "value": {}
+        }
+      }
+    },
+    "resolver": {
+      "type": "object",
+      "required": [
+        "steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "op",
+              "args"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/stableId"
+              },
+              "op": {
+                "$ref": "#/$defs/resolverOp"
+              },
+              "args": {
+                "type": "object"
+              },
+              "emits": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Za-z0-9]+$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "rewards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rewardType",
+          "id",
+          "quantity"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "rewardType": {
+            "type": "string",
+            "enum": [
+              "resource",
+              "card",
+              "daemon_affinity",
+              "story_flag",
+              "cosmetic",
+              "none"
+            ]
+          },
+          "id": {
+            "$ref": "#/$defs/stableId"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          }
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "required": [
+        "sequenceId",
+        "summaryCueId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sequenceId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "summaryCueId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "rewardRevealCueId": {
+          "$ref": "#/$defs/stableId"
+        }
+      }
+    },
+    "repeatability": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "once_per_run",
+            "once_per_day",
+            "repeatable",
+            "story_once"
+          ]
+        },
+        "cooldownTurns": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "approvalTier",
+        "communitySafe",
+        "globalStateMutationAllowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approvalTier": {
+          "$ref": "#/$defs/approvalTier"
+        },
+        "communitySafe": {
+          "type": "boolean"
+        },
+        "globalStateMutationAllowed": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
