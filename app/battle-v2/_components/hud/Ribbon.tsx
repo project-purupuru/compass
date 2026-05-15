@@ -1,41 +1,41 @@
 /**
- * Ribbon — the player + stats strip (operator fence F2).
+ * Ribbon — operator strip (operator fence F2).
  *
- * A stubby, content-width banner anchored top-left (operator FEEL note
- * 2026-05-14): the operator name + a couple of compact stat chips. Day/night
- * was removed — it'll read off the map/world later, not a HUD chip.
+ * A stubby, content-width banner anchored top-left: the operator's handle +
+ * tagline, with a single breathing stone for the active tide. Persistent
+ * counters were removed (operator note 2026-05-14): turn was redundant with
+ * the round herald; the 5-stone column collapsed to just the active stone
+ * here. Match progression is announced ambiently by RoundAnnounce, not
+ * counted on the strip.
  */
 
 "use client";
 
-import type { ElementId, GameState } from "@/lib/purupuru/contracts/types";
-
-const ELEMENT_KANJI: Record<ElementId, string> = {
-  wood: "木",
-  fire: "火",
-  earth: "土",
-  metal: "金",
-  water: "水",
-};
+import type { GameState } from "@/lib/purupuru/contracts/types";
 
 interface RibbonProps {
   readonly state: GameState;
 }
 
+// Mock username — placeholder until a real player identity lands. The handle
+// is the only mutable thing on the strip; the rest of the identity is fixed.
+const USERNAME = "@soju";
+
 export function Ribbon({ state }: RibbonProps) {
   const tide = state.weather.activeElement;
   return (
-    <header className="hud-ribbon" aria-label="Player and match status">
+    <header className="hud-ribbon" aria-label="Player and active tide">
       <div className="hud-ribbon__id">
-        <strong>Operator</strong>
+        <strong>{USERNAME}</strong>
         <small>caretaker of the grove</small>
       </div>
-      <div className="hud-ribbon__chips">
-        <span className="hud-ribbon__chip hud-ribbon__chip--tide" data-element={tide}>
-          {ELEMENT_KANJI[tide]} {tide} tide
-        </span>
-        <span className="hud-ribbon__chip">turn {state.turn}</span>
-      </div>
+      <img
+        className="hud-ribbon__stone"
+        data-element={tide}
+        src={`/art/stones/transparent/${tide}.png`}
+        alt={`${tide} tide`}
+      />
+      <span className="hud-ribbon__element" data-element={tide}>{tide} tide</span>
     </header>
   );
 }

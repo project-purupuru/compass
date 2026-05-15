@@ -17,23 +17,18 @@
 
 "use client";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 
 import type { BattleCard } from "@/lib/cards/battle";
 import { CardStack } from "@/lib/cards/layers";
-import { detectCombos, type Combo, type Element } from "@/lib/cards/synergy";
+import { detectCombos, type Combo } from "@/lib/cards/synergy";
 import { matchEngine, useMatch } from "@/lib/runtime/react";
 
 import "./clash-arena.css";
 
-const ELEMENT_KANJI: Record<Element, string> = {
-  wood: "木",
-  fire: "火",
-  earth: "土",
-  metal: "金",
-  water: "水",
-};
+/** How long a round-start announcement lingers before fading out. */
+const ROUND_ANNOUNCE_MS = 2500;
 
 // ── synergy chips ───────────────────────────────────────────────────────────
 
@@ -117,6 +112,33 @@ function OpponentCard({
   );
 }
 
+// ── round herald — transient announcement at each round-start ─────────────
+
+function RoundAnnounce({ round }: { readonly round: number }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    setVisible(true);
+    const t = setTimeout(() => setVisible(false), ROUND_ANNOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [round]);
+  return (
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          key={round}
+          className="round-announce"
+          initial={{ opacity: 0, x: "-50%", y: -10, scale: 0.94 }}
+          animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+          exit={{ opacity: 0, x: "-50%", y: -10, scale: 1.04 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          Round {round}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 // ── ClashArena ──────────────────────────────────────────────────────────────
 
 export function ClashArena() {
@@ -181,34 +203,27 @@ export function ClashArena() {
 
   return (
     <div className="clash-arena">
-      {/* ── top cluster: opponent hand + the phasing helper band ── */}
-      <div className="clash-arena__top">
-        <section className="clash-side clash-side--opponent">
-          <span className="clash-label">Opponent</span>
-          <div className="clash-hand">
-            {state.opponentLineup.map((card, i) => (
-              <OpponentCard
-                key={card.uid}
-                card={card}
-                revealed={revealed}
-                stamped={opponentStamped.has(card.uid)}
-                index={i}
-              />
-            ))}
-          </div>
-          {revealed ? <SynergyChips combos={opponentCombos} /> : null}
-        </section>
-
-        {/* the round/tide marker — compact, top cluster. The match's voice
-            (arrange hint · clash narration · result) is spoken by the
-            CaretakerCorner's bubble, not floated here. */}
-        <div className="clash-band">
-          <span className="clash-band__round">Round {state.round}</span>
-          <span className="clash-band__tide" data-element={state.weather}>
-            {ELEMENT_KANJI[state.weather]} {state.weather} tide · {state.condition.name}
-          </span>
+      {/* ── opponent — pinned top ── */}
+      <section className="clash-side clash-side--opponent">
+        <span className="clash-label">Opponent</span>
+        <div className="clash-hand">
+          {state.opponentLineup.map((card, i) => (
+            <OpponentCard
+              key={card.uid}
+              card={card}
+              revealed={revealed}
+              stamped={opponentStamped.has(card.uid)}
+              index={i}
+            />
+          ))}
         </div>
-      </div>
+        {revealed ? <SynergyChips combos={opponentCombos} /> : null}
+      </section>
+
+      {/* ── the round herald — appears at each round-start, then fades.
+            The match's voice (arrange hint · clash narration · result) is
+            spoken by the CaretakerCorner's bubble, not floated here. ── */}
+      <RoundAnnounce round={state.round} />
 
       {/* ── the centre stays empty — the world breathes here ── */}
 

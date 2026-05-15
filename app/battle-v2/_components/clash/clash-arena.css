@@ -26,12 +26,23 @@
   color: var(--puru-ink-base);
 }
 
-/* ── top cluster: opponent hand + the phasing helper band ── */
-.clash-arena__top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.7rem;
+/* ── the round herald — a transient announcement at each round-start.
+   Position-absolute over the world's upper-third (the arena root is fixed,
+   so absolute children anchor to it). Display font, no chrome — the
+   announcement appears, lingers, and fades. Centering uses motion's `x`
+   prop (set to "-50%") so left: 50% reserves the anchor. ── */
+.round-announce {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  font-family: var(--font-puru-display), serif;
+  font-size: 2.4rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--puru-ink-rich);
+  text-shadow: 0 2px 14px oklch(0.04 0.006 80 / 0.92);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 /* ── sides (opponent top / player bottom) ── */
@@ -49,36 +60,6 @@
   letter-spacing: 0.22em;
   color: var(--puru-ink-soft);
   text-shadow: 0 1px 4px oklch(0.04 0.006 80 / 0.7);
-}
-
-/* ── the round/tide marker — compact, top cluster. The match's VOICE (arrange
-   hint · clash narration · result) is spoken by the CaretakerCorner bubble,
-   not floated here — keeps the centre of the world clear. ── */
-.clash-band {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  text-align: center;
-  padding: 0.4rem 0.9rem;
-  border-radius: var(--radius-md);
-  background: color-mix(in oklch, var(--puru-cloud-deep) 52%, transparent);
-  backdrop-filter: blur(3px);
-}
-.clash-band__round {
-  font-family: var(--font-puru-mono), ui-monospace, monospace;
-  font-size: 0.5625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--puru-ink-rich);
-}
-.clash-band__tide {
-  font-family: var(--font-puru-mono), ui-monospace, monospace;
-  font-size: 0.5625rem;
-  text-transform: capitalize;
-  letter-spacing: 0.04em;
-  color: var(--puru-honey-base);
 }
 
 /* ── the card row ── */
