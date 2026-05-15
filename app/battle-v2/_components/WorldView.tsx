@@ -42,7 +42,6 @@ import { PostFX } from "./world/PostFX";
 import { RenderBudgetProbe } from "./world/RenderBudgetProbe";
 import { ShadowMapScheduler } from "./world/ShadowMapScheduler";
 import { WorldScene } from "./world/WorldScene";
-import { WorldRenderScheduler } from "./world/WorldRenderScheduler";
 import { zoneById } from "./world/zones";
 
 interface WorldViewProps {
@@ -131,7 +130,6 @@ export function WorldView({
   return (
     <div className="world-view" style={containerStyle}>
       <Canvas
-        frameloop="demand"
         shadows="soft"
         camera={{ position: [2, 46, 36], fov: 42 }}
         // NoToneMapping — the PostFX ToneMapping effect owns tone mapping so it
@@ -142,11 +140,8 @@ export function WorldView({
         {/* Far fog — at raptor altitude the whole continent stays crisp;
             fog only melts the void past the map's edge. */}
         <fog attach="fog" args={[PALETTE.fog, 70, 150]} />
-        <WorldRenderScheduler
-          highMotion={!!focusZoneId || hoveredZoneId !== null || activeBeat !== null}
-        />
         <Suspense fallback={null}>
-          <ShadowMapScheduler fps={8} />
+          <ShadowMapScheduler fps={15} />
           <WorldScene
             state={state}
             hoveredZoneId={hoveredZoneId}

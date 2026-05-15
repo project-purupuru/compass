@@ -19,6 +19,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
+import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
@@ -30,7 +31,6 @@ import { buildGroveTrees, groveTreeCount, type GroveTree } from "./groveLayout";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
 import { type Spring, stepSpring } from "../vfx/springs";
-import { useThrottledFrame } from "./useThrottledFrame";
 
 /** A tree pushes up out of the ground and settles with a small green stretch. */
 const SPRING_GROW: Spring = { mass: 0.8, stiffness: 90, damping: 13 };
@@ -117,7 +117,7 @@ export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthP
     }
   }, [activeBeat, targetCount, pool.length]);
 
-  useThrottledFrame(30, (_, delta) => {
+  useFrame((_, delta) => {
     if (!hasActiveGrowth.current) return;
     const dt = Math.min(delta, 1 / 30);
     let stillAnimating = false;

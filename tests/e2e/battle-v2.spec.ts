@@ -14,6 +14,12 @@ type BattleV2Window = Window & {
   readonly __BATTLE_V2_RENDER_STATS__?: BattleV2RenderStats;
 };
 
+test.use({
+  launchOptions: {
+    args: ["--use-angle=gl"],
+  },
+});
+
 test.describe("/battle-v2", () => {
   test("boots the playable clash game and stays inside the 3D render budget", async ({
     page,
@@ -34,6 +40,15 @@ test.describe("/battle-v2", () => {
       undefined,
       { timeout: 20_000 },
     );
+
+    const framesBeforeSample = await page.evaluate(
+      () => (window as BattleV2Window).__BATTLE_V2_RENDER_STATS__?.frames ?? 0,
+    );
+    await page.waitForTimeout(1_000);
+    const framesAfterSample = await page.evaluate(
+      () => (window as BattleV2Window).__BATTLE_V2_RENDER_STATS__?.frames ?? 0,
+    );
+    expect(framesAfterSample - framesBeforeSample).toBeGreaterThanOrEqual(45);
 
     const stats = await page.evaluate(
       () => (window as BattleV2Window).__BATTLE_V2_RENDER_STATS__,

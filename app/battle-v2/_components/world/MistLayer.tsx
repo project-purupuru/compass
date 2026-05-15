@@ -21,9 +21,9 @@
 
 import { useMemo } from "react";
 
+import { useFrame } from "@react-three/fiber";
 import { CanvasTexture, RepeatWrapping, type Texture } from "three";
 
-import { useThrottledFrame } from "./useThrottledFrame";
 import { MAP_SIZE } from "./zones";
 
 const MIST_RES = 256;
@@ -133,7 +133,7 @@ export function MistLayer({ height = 0.55 }: MistLayerProps = {}) {
   // ONE shared radial-fade alphaMap — both layers feather out at the edges.
   const fadeTex = useMemo(() => buildRadialFadeTexture(0.3, 0.5), []);
 
-  useThrottledFrame(12, (_, dt) => {
+  useFrame((_, dt) => {
     if (tex1) {
       tex1.offset.x += dt * 0.006;
       tex1.offset.y += dt * 0.004;

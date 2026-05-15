@@ -17,13 +17,13 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
+import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { Vec2 } from "./agents/steering";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
 import { type Spring, stepSpring } from "../vfx/springs";
-import { useThrottledFrame } from "./useThrottledFrame";
 
 const LOGS_PER_ROW = 4;
 const MAX_LOGS = 24; // 6 rows — the pile ceiling
@@ -85,7 +85,7 @@ export function WoodStockpile({ delivered, hub }: WoodStockpileProps) {
     hasActiveDrop.current = true;
   }, [count]);
 
-  useThrottledFrame(30, (_, delta) => {
+  useFrame((_, delta) => {
     if (!hasActiveDrop.current) return;
     const dt = Math.min(delta, 1 / 30);
     let stillAnimating = false;

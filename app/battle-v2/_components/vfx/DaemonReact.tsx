@@ -20,13 +20,13 @@
 import { useEffect, useRef } from "react";
 
 import { Billboard, Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
 
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import { ANCHOR, type AnchorStore } from "../anchors/anchorStore";
 import { useMeshAnchorBinding } from "../anchors/useAnchorBinding";
-import { useThrottledFrame } from "../world/useThrottledFrame";
 import { SPRING_DAEMON, stepSpring } from "./springs";
 
 const REACTION_HOLD_MS = 360;
@@ -66,7 +66,7 @@ export function DaemonReact({
     };
   }, [activeBeat]);
 
-  useThrottledFrame(30, (frame, dt) => {
+  useFrame((frame, dt) => {
     const drift = driftRef.current;
     if (drift) {
       const t = frame.clock.getElapsedTime();

@@ -22,6 +22,7 @@ import {
 } from "react";
 
 import { Billboard, Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { Object3D, type InstancedMesh } from "three";
 
 import type {
@@ -46,7 +47,6 @@ import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { RaptorCamera } from "./RaptorCamera";
 import { RegionMap } from "./RegionMap";
 import { RegionWeather } from "./RegionWeather";
-import { useThrottledFrame } from "./useThrottledFrame";
 import { WoodStockpile } from "./WoodStockpile";
 import {
   MUSUBI_HUB,
@@ -179,7 +179,7 @@ function VillagerBatch({
     syncInstances(0);
   }, [syncInstances]);
 
-  useThrottledFrame(24, (frame) => {
+  useFrame((frame) => {
     syncInstances(frame.clock.getElapsedTime());
   });
 

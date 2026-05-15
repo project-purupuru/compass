@@ -23,6 +23,7 @@
 import { useEffect, useRef } from "react";
 
 import { Billboard, Instance, Instances, Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { ElementId, ZoneRuntimeState } from "@/lib/purupuru/contracts/types";
@@ -39,7 +40,6 @@ import {
   PLOT_RADIUS,
   buildFencePostTransforms,
 } from "./renderBudget";
-import { useThrottledFrame } from "./useThrottledFrame";
 import type { ZonePlacement } from "./zones";
 
 interface ZoneStructureProps {
@@ -166,7 +166,7 @@ export function ZoneStructure({
     bloomActive.current = true;
   }, [activeBeat, isRitualTarget]);
 
-  useThrottledFrame(30, (frame, dt) => {
+  useFrame((frame, dt) => {
     const t = frame.clock.getElapsedTime();
 
     // Hut: hover-lift + Active breathe + ValidTarget pulse.
