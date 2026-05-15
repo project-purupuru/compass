@@ -127,23 +127,21 @@
   background: color-mix(in oklch, var(--puru-wood-vivid) 12%, var(--puru-cloud-base));
 }
 
-/* ── The active stone, in-Ribbon ──
-   The 5-stone column collapsed to just the active stone (operator note
-   2026-05-14): only the current tide is the signal. Reuses the breathing
-   keyframe so the stone pulses in its element hue, sized to sit inside the
-   ribbon's bounding height. */
-.hud-ribbon__stone {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
+/* ── The active-tide kanji, in-Ribbon ──
+   Replaces the stone art (which didn't sit well against the operator strip —
+   operator note 2026-05-14). The kanji carries the same element signal in
+   the typographic register, vivid in its own hue alongside the element label. */
+.hud-ribbon__kanji {
+  font-family: var(--font-puru-cn), var(--font-puru-display), serif;
+  font-size: 1.5rem;
+  line-height: 1;
   flex-shrink: 0;
-  animation: hud-stone-breathe var(--stone-breath, 6s) var(--ease-puru-breathe, ease-in-out) infinite;
 }
-.hud-ribbon__stone[data-element="wood"]  { --stone-glow: var(--puru-wood-vivid);  --stone-breath: var(--breath-wood, 6s); }
-.hud-ribbon__stone[data-element="fire"]  { --stone-glow: var(--puru-fire-vivid);  --stone-breath: var(--breath-fire, 4s); }
-.hud-ribbon__stone[data-element="earth"] { --stone-glow: var(--puru-earth-vivid); --stone-breath: var(--breath-earth, 5.5s); }
-.hud-ribbon__stone[data-element="metal"] { --stone-glow: var(--puru-metal-vivid); --stone-breath: var(--breath-metal, 4.5s); }
-.hud-ribbon__stone[data-element="water"] { --stone-glow: var(--puru-water-vivid); --stone-breath: var(--breath-water, 5s); }
+.hud-ribbon__kanji[data-element="wood"]  { color: var(--puru-wood-vivid); }
+.hud-ribbon__kanji[data-element="fire"]  { color: var(--puru-fire-vivid); }
+.hud-ribbon__kanji[data-element="earth"] { color: var(--puru-earth-vivid); }
+.hud-ribbon__kanji[data-element="metal"] { color: var(--puru-metal-vivid); }
+.hud-ribbon__kanji[data-element="water"] { color: var(--puru-water-vivid); }
 
 /* ── EnemyCorner (F14) · top-right · unboxed, the mirror of CaretakerCorner ──
    Full-body caretaker render + puruhani, no chrome, no labels — just the

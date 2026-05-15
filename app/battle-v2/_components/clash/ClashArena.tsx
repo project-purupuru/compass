@@ -18,6 +18,17 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import {
+  Crosshair,
+  Leaf,
+  Link,
+  Link2,
+  RefreshCw,
+  Sun,
+  Waves,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { BattleCard } from "@/lib/cards/battle";
@@ -30,23 +41,45 @@ import "./clash-arena.css";
 /** How long a round-start announcement lingers before fading out. */
 const ROUND_ANNOUNCE_MS = 2500;
 
+/** Combo name → lucide icon. The synergy substrate ships emoji icons for the
+ *  vocab; the chip surface upgrades them to line-art icons matching the rest
+ *  of the HUD register. {Element} Surge matched by suffix below. */
+const COMBO_ICON: Record<string, LucideIcon> = {
+  "Shēng Link": Link2,
+  "Shēng Chain": Link,
+  "Shēng Flow": Waves,
+  "Full Cycle": RefreshCw,
+  "Setup Strike": Crosshair,
+  "Weather Blessing": Sun,
+  "Garden Grace": Leaf,
+};
+
+function comboIcon(name: string): LucideIcon | null {
+  if (COMBO_ICON[name]) return COMBO_ICON[name];
+  if (name.endsWith(" Surge")) return Zap;
+  return null;
+}
+
 // ── synergy chips ───────────────────────────────────────────────────────────
 
 function SynergyChips({ combos }: { readonly combos: readonly Combo[] }) {
   if (combos.length === 0) {
-    return <span className="clash-chips__empty">no synergies</span>;
+    return <span className="clash-chips__empty" aria-label="no synergies" />;
   }
   return (
     <div className="clash-chips" aria-live="polite">
-      {combos.map((c) => (
-        <span key={c.id} className="clash-chip" title={c.tooltip}>
-          <span className="clash-chip__icon" aria-hidden="true">
-            {c.icon}
+      {combos.map((c) => {
+        const Icon = comboIcon(c.name);
+        return (
+          <span key={c.id} className="clash-chip" title={c.tooltip}>
+            <span className="clash-chip__icon" aria-hidden="true">
+              {Icon ? <Icon size={13} strokeWidth={2.2} /> : c.icon}
+            </span>
+            <span className="clash-chip__name">{c.name}</span>
+            <span className="clash-chip__bonus">+{Math.round((c.bonus - 1) * 100)}%</span>
           </span>
-          <span className="clash-chip__name">{c.name}</span>
-          <span className="clash-chip__bonus">+{Math.round((c.bonus - 1) * 100)}%</span>
-        </span>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -121,21 +154,47 @@ function RoundAnnounce({ round }: { readonly round: number }) {
     const t = setTimeout(() => setVisible(false), ROUND_ANNOUNCE_MS);
     return () => clearTimeout(t);
   }, [round]);
+  // Anchor handles centering (flex over the full arena); motion handles the
+  // animation transform on the inner element — no transform contention.
   return (
-    <AnimatePresence>
-      {visible ? (
-        <motion.div
-          key={round}
-          className="round-announce"
-          initial={{ opacity: 0, x: "-50%", y: -10, scale: 0.94 }}
-          animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
-          exit={{ opacity: 0, x: "-50%", y: -10, scale: 1.04 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          Round {round}
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+    <div className="round-announce-anchor">
+      <AnimatePresence>
+        {visible ? (
+          <motion.div
+            key={round}
+            className="round-announce"
+            initial={{ opacity: 0, y: -10, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 1.04 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            Round {round}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── match verdict — the big "you won / you lost" at result phase ──────────
+
+function MatchResult({
+  winner,
+}: {
+  readonly winner: "player" | "opponent" | "draw";
+}) {
+  const text = winner === "player" ? "You Won" : winner === "opponent" ? "You Lost" : "Draw";
+  return (
+    <div className="round-announce-anchor">
+      <motion.div
+        className={`match-result match-result--${winner}`}
+        initial={{ opacity: 0, scale: 0.92, y: -12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+      >
+        {text}
+      </motion.div>
+    </div>
   );
 }
 
@@ -224,6 +283,11 @@ export function ClashArena() {
             The match's voice (arrange hint · clash narration · result) is
             spoken by the CaretakerCorner's bubble, not floated here. ── */}
       <RoundAnnounce round={state.round} />
+
+      {/* ── the verdict — big "you won / you lost" at result phase ── */}
+      {state.phase === "result" && state.winner ? (
+        <MatchResult winner={state.winner} />
+      ) : null}
 
       {/* ── the centre stays empty — the world breathes here ── */}
 

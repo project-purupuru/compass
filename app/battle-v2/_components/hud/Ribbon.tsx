@@ -2,24 +2,36 @@
  * Ribbon — operator strip (operator fence F2).
  *
  * A stubby, content-width banner anchored top-left: the operator's handle +
- * tagline, with a single breathing stone for the active tide. Persistent
- * counters were removed (operator note 2026-05-14): turn was redundant with
- * the round herald; the 5-stone column collapsed to just the active stone
- * here. Match progression is announced ambiently by RoundAnnounce, not
- * counted on the strip.
+ * tagline, with the active-tide kanji + element label in the element's vivid
+ * hue. Persistent counters were removed (operator note 2026-05-14): turn was
+ * redundant with the round herald; the 5-stone column collapsed to a single
+ * symbol (the stone art didn't sit well against the operator strip — kanji
+ * fits the typographic register, operator note 2026-05-14).
+ *
+ * The username — `henlo` — is the foundational greeting of the Purupuru
+ * universe (HENLO: Hopeful · Empty · Naughty · Loyal · Overstimulated). Lives
+ * in the construct-purupuru-codex/core-lore/henlo.md canon.
  */
 
 "use client";
 
-import type { GameState } from "@/lib/purupuru/contracts/types";
+import type { ElementId, GameState } from "@/lib/purupuru/contracts/types";
+
+const ELEMENT_KANJI: Record<ElementId, string> = {
+  wood: "木",
+  fire: "火",
+  earth: "土",
+  metal: "金",
+  water: "水",
+};
 
 interface RibbonProps {
   readonly state: GameState;
 }
 
-// Mock username — placeholder until a real player identity lands. The handle
-// is the only mutable thing on the strip; the rest of the identity is fixed.
-const USERNAME = "@soju";
+// Mock username — placeholder until a real player identity lands. Sourced from
+// construct-purupuru-codex (HENLO: the world's foundational greeting).
+const USERNAME = "henlo";
 
 export function Ribbon({ state }: RibbonProps) {
   const tide = state.weather.activeElement;
@@ -29,12 +41,9 @@ export function Ribbon({ state }: RibbonProps) {
         <strong>{USERNAME}</strong>
         <small>caretaker of the grove</small>
       </div>
-      <img
-        className="hud-ribbon__stone"
-        data-element={tide}
-        src={`/art/stones/transparent/${tide}.png`}
-        alt={`${tide} tide`}
-      />
+      <span className="hud-ribbon__kanji" data-element={tide} aria-hidden="true">
+        {ELEMENT_KANJI[tide]}
+      </span>
       <span className="hud-ribbon__element" data-element={tide}>{tide} tide</span>
     </header>
   );
