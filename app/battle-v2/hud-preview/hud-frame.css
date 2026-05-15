@@ -1,0 +1,383 @@
+/*
+ * hud-frame.css — styling for the HUD zone-map preview.
+ *
+ * Tokens are copied from battle-v2.css and scoped to `.hp-root` (this route
+ * does not import battle-v2.css, and we don't want to pollute :root). The
+ * "warm chrome" panel pattern — translucent strip-bg, element-tinted border,
+ * inset highlight — is battle-v2's established HUD material; every zone here
+ * inherits it so the layout reads as native.
+ */
+
+.hp-root {
+  /* ── battle-v2 tokens, scoped ── */
+  --wood-vivid: oklch(0.81 0.144 112.7);
+  --wood-glow: oklch(0.82 0.14 85);
+  --void-bg: oklch(0.18 0.02 260);
+  --island-bg: oklch(0.94 0.015 90);
+  --ink-dark: oklch(0.18 0.02 260);
+  --strip-bg: oklch(0.2 0.02 60);
+  --fire: oklch(0.65 0.18 25);
+  --water: oklch(0.55 0.15 240);
+  --metal: oklch(0.75 0.05 280);
+  --earth: oklch(0.68 0.1 70);
+  --breath-wood: 5.2s;
+
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, oklch(0.24 0.03 260) 0%, var(--void-bg) 62%);
+  color: var(--island-bg);
+  font-family: var(--font-puru-body, system-ui), sans-serif;
+  overflow: hidden;
+}
+
+/* The shared "warm chrome" zone material. */
+.hp-zone {
+  position: absolute;
+  background: oklch(0.2 0.02 60 / 0.86);
+  border: 1px solid oklch(0.81 0.144 112.7 / 0.4);
+  border-radius: 10px;
+  box-shadow:
+    0 8px 32px oklch(0.18 0.02 260 / 0.5),
+    inset 0 1px 0 oklch(0.94 0.015 90 / 0.1);
+  backdrop-filter: blur(7px);
+  padding: 0.7rem 0.85rem;
+}
+
+.hp-zone__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: oklch(0.72 0.03 95);
+  margin-bottom: 0.5rem;
+}
+.hp-zone__fence {
+  font-style: normal;
+  padding: 0.05rem 0.3rem;
+  background: oklch(0.81 0.144 112.7 / 0.16);
+  border: 1px solid oklch(0.81 0.144 112.7 / 0.45);
+  border-radius: 3px;
+  color: var(--wood-vivid);
+  letter-spacing: 0.06em;
+}
+
+.hp-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -340%);
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: oklch(0.6 0.02 95 / 0.7);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ── center: the world ───────────────────────────────────────── */
+.hp-world {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+.hp-world__note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: oklch(0.5 0.02 95 / 0.7);
+}
+.hp-world__glyph {
+  font-size: 2.5rem;
+  opacity: 0.35;
+}
+.hp-world__note small {
+  font-size: 0.5625rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  opacity: 0.7;
+}
+
+/* ── F2 · Ribbon ─────────────────────────────────────────────── */
+.hp-ribbon {
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+}
+.hp-ribbon__row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.hp-crest {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: oklch(0.81 0.144 112.7 / 0.18);
+  border: 1.5px solid var(--wood-vivid);
+  flex-shrink: 0;
+}
+.hp-crest__glyph {
+  font-size: 1.1rem;
+}
+.hp-ribbon__id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.hp-ribbon__id strong {
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+}
+.hp-ribbon__id small {
+  font-size: 0.5625rem;
+  color: oklch(0.7 0.02 95);
+  letter-spacing: 0.04em;
+}
+.hp-ribbon__chips {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.hp-chip {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: oklch(0.16 0.02 260 / 0.7);
+  border: 1px solid oklch(0.94 0.015 90 / 0.18);
+}
+.hp-chip--wood {
+  color: var(--wood-vivid);
+  border-color: oklch(0.81 0.144 112.7 / 0.5);
+  background: oklch(0.81 0.144 112.7 / 0.12);
+}
+
+/* ── F6 · Stones column ──────────────────────────────────────── */
+.hp-stones {
+  top: 15%;
+  left: 10px;
+  width: 78px;
+  z-index: 2;
+  padding: 0.55rem 0.4rem;
+}
+.hp-stones .hp-zone__label {
+  writing-mode: horizontal-tb;
+  font-size: 0.4375rem;
+  justify-content: center;
+  margin-bottom: 0.45rem;
+}
+.hp-stones__column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.hp-stone {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--island-bg);
+  color: var(--ink-dark);
+  border: 2px solid var(--ink-dark);
+  opacity: 0.34;
+  filter: saturate(0.4);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.hp-stone__kanji {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.hp-stone--wood { border-color: var(--wood-vivid); }
+.hp-stone--fire { border-color: var(--fire); }
+.hp-stone--earth { border-color: var(--earth); }
+.hp-stone--metal { border-color: var(--metal); }
+.hp-stone--water { border-color: var(--water); }
+.hp-stone.is-active {
+  opacity: 1;
+  filter: none;
+  border-width: 3px;
+  transform: scale(1.04);
+  box-shadow: 0 0 18px 4px oklch(0.81 0.144 112.7 / 0.5);
+  animation: hp-breathe var(--breath-wood) ease-in-out infinite;
+}
+@keyframes hp-breathe {
+  0%, 100% { box-shadow: 0 0 10px 2px oklch(0.81 0.144 112.7 / 0.3); }
+  50%      { box-shadow: 0 0 22px 6px oklch(0.81 0.144 112.7 / 0.6); }
+}
+
+/* ── F4 · Hovercard rail ─────────────────────────────────────── */
+.hp-rail {
+  top: 19%;
+  right: 10px;
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 2;
+}
+.hp-rail__intent {
+  font-size: 0.5625rem;
+  line-height: 1.5;
+  color: oklch(0.72 0.02 95);
+  margin: 0;
+}
+.hp-rail__card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  background: oklch(0.16 0.02 260 / 0.6);
+  border: 1px solid oklch(0.94 0.015 90 / 0.14);
+  border-radius: 7px;
+}
+.hp-rail__card--muted { opacity: 0.5; }
+.hp-rail__card-icon { font-size: 1.1rem; }
+.hp-rail__card strong {
+  display: block;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+.hp-rail__card small {
+  font-size: 0.5625rem;
+  color: oklch(0.7 0.02 95);
+}
+
+/* ── F8 · Bottom bar (back plate) ────────────────────────────── */
+.hp-bottombar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  height: 104px;
+  z-index: 1;
+  background:
+    linear-gradient(to top, oklch(0.16 0.02 260 / 0.95), oklch(0.2 0.02 60 / 0.7));
+}
+.hp-bottombar__ornament {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: oklch(0.55 0.04 95 / 0.45);
+}
+
+/* ── F12 · Caretaker ─────────────────────────────────────────── */
+.hp-caretaker {
+  left: 10px;
+  bottom: 10px;
+  width: 280px;
+  z-index: 2;
+}
+.hp-caretaker__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.hp-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.1rem;
+  height: 92px;
+  border-radius: 8px;
+  border: 1.5px dashed oklch(0.94 0.015 90 / 0.3);
+  background: oklch(0.16 0.02 260 / 0.5);
+  padding-bottom: 0.4rem;
+}
+.hp-portrait span {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.hp-portrait small {
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: oklch(0.65 0.02 95);
+}
+.hp-portrait--trainer { border-color: oklch(0.81 0.144 112.7 / 0.55); }
+.hp-portrait--companion { border-color: var(--wood-glow); }
+.hp-caretaker__bubble {
+  margin-top: 0.5rem;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: oklch(0.85 0.02 90);
+  padding: 0.45rem 0.6rem;
+  background: oklch(0.16 0.02 260 / 0.7);
+  border-left: 2px solid var(--wood-vivid);
+  border-radius: 0 6px 6px 0;
+}
+
+/* ── F10 · Cards zone ────────────────────────────────────────── */
+.hp-cards {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  z-index: 2;
+  background: oklch(0.2 0.02 60 / 0.6);
+}
+.hp-cards__row {
+  display: flex;
+  gap: 0.6rem;
+}
+.hp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 86px;
+  height: 122px;
+  padding: 0.55rem 0.4rem;
+  border: 2px solid var(--wood-vivid);
+  border-radius: 8px;
+  background: oklch(0.97 0.018 130);
+  color: var(--ink-dark);
+}
+.hp-card__kanji {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.hp-card__name {
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+.hp-card__type {
+  margin-top: auto;
+  font-size: 0.4375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: oklch(0.42 0.03 145);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-stone.is-active { animation-duration: 0.01ms; animation-iteration-count: 1; }
+}

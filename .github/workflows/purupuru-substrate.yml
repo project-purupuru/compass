@@ -1,0 +1,63 @@
+name: purupuru-substrate
+
+on:
+  pull_request:
+    paths:
+      - "app/battle-v2/**"
+      - "lib/purupuru/**"
+      - "lib/world/**"
+      - "lib/runtime/**"
+      - "scripts/check-purupuru-discipline.sh"
+      - "scripts/check-world-discipline.sh"
+      - "scripts/check-single-runtime.sh"
+      - "scripts/validate-content.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/purupuru-substrate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/battle-v2/**"
+      - "lib/purupuru/**"
+      - "lib/world/**"
+      - "lib/runtime/**"
+      - "scripts/check-purupuru-discipline.sh"
+      - "scripts/check-world-discipline.sh"
+      - "scripts/check-single-runtime.sh"
+      - "scripts/validate-content.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/purupuru-substrate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: purupuru-substrate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  substrate:
+    name: Purupuru substrate guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Substrate check
+        run: pnpm substrate:check
+
+      - name: Typecheck
+        run: pnpm typecheck

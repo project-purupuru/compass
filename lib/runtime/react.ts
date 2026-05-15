@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { INITIAL_WEATHER_STATE, type WeatherState } from "@/lib/domain/weather";
 import { WeatherFeed } from "@/lib/ports/weather.port";
 import { Sonifier, type PlayEventOpts } from "@/lib/ports/sonifier.port";
+import {
+  MatchEngine,
+  type BattleCard,
+  type ClashEvent,
+  type MatchState,
+} from "@/lib/cards/battle";
 import { runtime } from "./runtime";
 
 // Subscribe to the WeatherFeed stream + seed with current. React consumers
@@ -53,6 +59,79 @@ export const sonifier = {
       Effect.gen(function* () {
         const s = yield* Sonifier;
         yield* s.play(opts);
+      }),
+    );
+  },
+};
+
+// ── MatchEngine — the clash game on the substrate ───────────────────────────
+
+// Subscribe to the MatchEngine state stream. `null` only on the first frame
+// (the stream emits the current value immediately on subscribe). React
+// consumers don't see the Effect surface — useState semantics only.
+export function useMatch(): MatchState | null {
+  const [state, setState] = useState<MatchState | null>(null);
+
+  useEffect(() => {
+    const fiber = runtime.runFork(
+      Effect.gen(function* () {
+        const engine = yield* MatchEngine;
+        yield* Stream.runForEach(engine.state, (s) =>
+          Effect.sync(() => setState(s)),
+        );
+      }),
+    );
+    return () => {
+      runtime.runFork(Fiber.interrupt(fiber));
+    };
+  }, []);
+
+  return state;
+}
+
+// Run a callback for every clash event the engine publishes — the clash
+// trace. `onEvent` should be stable (useCallback) so the subscription isn't
+// torn down on every render.
+export function useClashEvents(onEvent: (event: ClashEvent) => void): void {
+  useEffect(() => {
+    const fiber = runtime.runFork(
+      Effect.gen(function* () {
+        const engine = yield* MatchEngine;
+        yield* Stream.runForEach(engine.events, (e) =>
+          Effect.sync(() => onEvent(e)),
+        );
+      }),
+    );
+    return () => {
+      runtime.runFork(Fiber.interrupt(fiber));
+    };
+  }, [onEvent]);
+}
+
+// Imperative MatchEngine handle — module-level + stable, callable from event
+// handlers without dep-array churn. Mirrors the `sonifier` handle shape.
+export const matchEngine = {
+  setLineup: (lineup: readonly BattleCard[]): void => {
+    runtime.runFork(
+      Effect.gen(function* () {
+        const e = yield* MatchEngine;
+        yield* e.setLineup(lineup);
+      }),
+    );
+  },
+  lockIn: (): void => {
+    runtime.runFork(
+      Effect.gen(function* () {
+        const e = yield* MatchEngine;
+        yield* e.lockIn;
+      }),
+    );
+  },
+  restart: (): void => {
+    runtime.runFork(
+      Effect.gen(function* () {
+        const e = yield* MatchEngine;
+        yield* e.restart;
       }),
     );
   },

@@ -1,0 +1,277 @@
+/*
+ * clash-arena.css — the clash surface, layered over the living 3D world.
+ *
+ * Observatory token vocabulary (--puru-*; inherits data-theme="old-horai"
+ * from app/battle-v2/layout.tsx). An OVERLAY: transparent root, the world
+ * shows through. Opponent hand + the helper band sit in a top cluster; the
+ * player lineup pins to the bottom; the CENTRE STAYS EMPTY so the map
+ * breathes. The helper band is vertically stacked and its line phases per
+ * stage (AnimatePresence in ClashArena) — never a permanent centre block.
+ *
+ * pointer-events: the root is `none` so the world stays interactive in the
+ * gaps; the cards and the button opt back in.
+ */
+
+.clash-arena {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem 1.6rem;
+  pointer-events: none;
+  font-family: var(--font-puru-body), system-ui, sans-serif;
+  color: var(--puru-ink-base);
+}
+
+/* ── top cluster: opponent hand + the phasing helper band ── */
+.clash-arena__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+/* ── sides (opponent top / player bottom) ── */
+.clash-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+.clash-label {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--puru-ink-soft);
+  text-shadow: 0 1px 4px oklch(0.04 0.006 80 / 0.7);
+}
+
+/* ── the round/tide marker — compact, top cluster. The match's VOICE (arrange
+   hint · clash narration · result) is spoken by the CaretakerCorner bubble,
+   not floated here — keeps the centre of the world clear. ── */
+.clash-band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--puru-cloud-deep) 52%, transparent);
+  backdrop-filter: blur(3px);
+}
+.clash-band__round {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--puru-ink-rich);
+}
+.clash-band__tide {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+  color: var(--puru-honey-base);
+}
+
+/* ── the card row ── */
+.clash-hand {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-end;
+}
+
+/* ── card ── */
+.clash-card {
+  pointer-events: auto;
+}
+.clash-card--btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: grab;
+}
+.clash-card--btn:active {
+  cursor: grabbing;
+}
+.clash-card--btn.is-locked {
+  cursor: default;
+}
+.clash-card__art {
+  position: relative;
+  display: block;
+  width: 100px;
+  aspect-ratio: 733 / 1024;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  filter: drop-shadow(0 10px 22px oklch(0.04 0.006 80 / 0.7));
+  transition: box-shadow 200ms var(--ease-puru-out, ease);
+}
+.clash-card--btn.is-selected .clash-card__art {
+  box-shadow: 0 0 0 2px var(--puru-honey-base);
+}
+.clash-card--wood  { --card-glow: var(--puru-wood-vivid); }
+.clash-card--fire  { --card-glow: var(--puru-fire-vivid); }
+.clash-card--earth { --card-glow: var(--puru-earth-vivid); }
+.clash-card--metal { --card-glow: var(--puru-metal-vivid); }
+.clash-card--water { --card-glow: var(--puru-water-vivid); }
+.clash-card__name {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--puru-ink-soft);
+  max-width: 100px;
+  text-align: center;
+  text-shadow: 0 1px 4px oklch(0.04 0.006 80 / 0.85);
+}
+
+/* ── the 敗 stamp — red-ink seal on the loser ── */
+.bai-stamp {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-puru-card), var(--font-puru-display), serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: oklch(0.52 0.21 25);
+  text-shadow:
+    0 0 1px oklch(0.32 0.16 25),
+    0 2px 6px oklch(0.04 0.02 25 / 0.6);
+  pointer-events: none;
+}
+
+/* ── opponent flip-card ── */
+.flip-card {
+  width: 100px;
+  aspect-ratio: 733 / 1024;
+  perspective: 900px;
+}
+.flip-card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+.flip-card__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.flip-card__face--back {
+  transform: rotateY(0deg);
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 42%, oklch(0.30 0.02 260), var(--puru-cloud-bright));
+  border: 1px solid var(--puru-surface-border);
+  filter: drop-shadow(0 10px 22px oklch(0.04 0.006 80 / 0.7));
+}
+.flip-card__face--front {
+  transform: rotateY(180deg);
+}
+.flip-card__face--front .clash-card__art {
+  width: 100%;
+}
+.flip-card__mark {
+  width: 64%;
+  height: auto;
+  opacity: 0.45;
+}
+
+/* ── synergy chips ── */
+.clash-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 1.7rem;
+  max-width: 40rem;
+}
+.clash-chips__empty {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-style: italic;
+  color: var(--puru-ink-dim);
+  text-shadow: 0 1px 4px oklch(0.04 0.006 80 / 0.7);
+}
+.clash-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: color-mix(in oklch, var(--puru-cloud-bright) 90%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in oklch, var(--puru-honey-base) 38%, var(--puru-surface-border));
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-tile);
+  cursor: help;
+  pointer-events: auto;
+}
+.clash-chip__icon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.clash-chip__name {
+  font-family: var(--font-puru-display), sans-serif;
+  font-size: 0.625rem;
+  color: var(--puru-ink-rich);
+}
+.clash-chip__bonus {
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--puru-honey-base);
+}
+
+/* ── action ── */
+.clash-action {
+  margin-top: 0.35rem;
+  min-height: 2.6rem;
+  display: flex;
+  align-items: center;
+}
+.clash-btn {
+  font-family: var(--font-puru-display), sans-serif;
+  font-size: 0.9375rem;
+  letter-spacing: 0.06em;
+  color: oklch(0.16 0.03 95);
+  padding: 0.6rem 2.4rem;
+  border: 1px solid var(--puru-honey-base);
+  border-radius: var(--radius-full);
+  background: var(--puru-honey-base);
+  box-shadow: var(--shadow-tile);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 120ms var(--ease-puru-bounce, ease),
+    filter 160ms var(--ease-puru-out, ease);
+}
+.clash-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.clash-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.clash-btn--ghost {
+  background: color-mix(in oklch, var(--puru-cloud-bright) 90%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--puru-ink-soft);
+  border-color: var(--puru-surface-border);
+  cursor: default;
+}

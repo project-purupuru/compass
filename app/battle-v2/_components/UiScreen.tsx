@@ -33,20 +33,11 @@ export function UiScreen({ screen, slots }: UiScreenProps) {
   void screen; // Cycle-1: schema validates the YAML; layout uses CSS regions.
   return (
     <div className="ui-screen ui-screen--world-map">
-      <header className="ui-screen__top-strip">
-        {slots.titleCartouche ? (
-          <div className="ui-screen__slot ui-screen__slot--title-cartouche">{slots.titleCartouche}</div>
-        ) : null}
-        {slots.focusBanner ? (
-          <div className="ui-screen__slot ui-screen__slot--focus-banner">
-            {slots.focusBanner}
-            {slots.tideIndicator ? <div className="ui-screen__inline-tide">{slots.tideIndicator}</div> : null}
-          </div>
-        ) : null}
-        {slots.selectedCardPreview ? (
-          <div className="ui-screen__slot ui-screen__slot--action-panel">{slots.selectedCardPreview}</div>
-        ) : null}
-      </header>
+      {/* Top strip removed (operator fence F2, 2026-05-14) — replaced by the
+          Ribbon zone in _components/hud/HudOverlay.tsx. The titleCartouche /
+          focusBanner / tideIndicator / selectedCardPreview slots are still
+          accepted by the props type but no longer rendered here; BattleV2 may
+          stop passing them in a coordinated cleanup. */}
       <main className="ui-screen__center-world">
         {slots.worldMap ? <div className="ui-screen__slot ui-screen__slot--world-map">{slots.worldMap}</div> : null}
       </main>

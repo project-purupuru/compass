@@ -1,0 +1,284 @@
+/*
+ * fences.css — dev-overlay styling for the FenceLayer tool.
+ *
+ * Deliberately NOT in the game's washi/parchment vocabulary. This is an
+ * instrument: dark, monospace, high-contrast, sits above everything. Looking
+ * like dev tooling is the point — there is never confusion about whether a
+ * fence box is part of the game.
+ *
+ * All classes are `fnc-` prefixed (collision-checked against battle-v2).
+ */
+
+.fnc-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147480000;
+  pointer-events: none;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-size: 12px;
+  color: oklch(0.95 0.01 230);
+  --fnc-accent: oklch(0.82 0.16 195);
+  --fnc-warn: oklch(0.72 0.18 25);
+  --fnc-panel: oklch(0.22 0.02 250 / 0.95);
+  --fnc-panel-edge: oklch(0.42 0.03 250);
+}
+
+/* ── launcher (inactive state) ───────────────────────────────── */
+.fnc-launcher {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  pointer-events: auto;
+  padding: 6px 10px;
+  background: var(--fnc-panel);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 6px;
+  color: var(--fnc-accent);
+  font: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.fnc-launcher:hover {
+  border-color: var(--fnc-accent);
+}
+
+/* ── toolbar ─────────────────────────────────────────────────── */
+.fnc-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--fnc-panel);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.4);
+}
+.fnc-toolbar__title {
+  color: var(--fnc-accent);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+.fnc-toolbar__count {
+  opacity: 0.6;
+  padding: 0 2px;
+}
+
+.fnc-seg {
+  display: flex;
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.fnc-seg__btn {
+  padding: 3px 9px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.fnc-seg__btn.is-on {
+  background: var(--fnc-accent);
+  color: oklch(0.18 0.02 250);
+  opacity: 1;
+}
+
+.fnc-btn {
+  padding: 3px 9px;
+  background: oklch(0.3 0.02 250);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 5px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.fnc-btn:hover {
+  border-color: var(--fnc-accent);
+}
+.fnc-btn--warn:hover {
+  border-color: var(--fnc-warn);
+  color: var(--fnc-warn);
+}
+.fnc-btn--close {
+  padding: 3px 7px;
+  font-weight: 700;
+}
+
+/* ── draw surface ────────────────────────────────────────────── */
+.fnc-draw-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+  background: oklch(0.15 0.02 250 / 0.12);
+}
+.fnc-drag-preview {
+  position: absolute;
+  border: 1.5px dashed var(--fnc-accent);
+  background: oklch(0.82 0.16 195 / 0.1);
+  border-radius: 3px;
+}
+.fnc-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 14px;
+  background: var(--fnc-panel);
+  border: 1px dashed var(--fnc-panel-edge);
+  border-radius: 6px;
+  opacity: 0.7;
+  letter-spacing: 0.03em;
+}
+
+/* ── fence boxes ─────────────────────────────────────────────── */
+.fnc-box {
+  position: absolute;
+  pointer-events: none;
+  border: 1.5px solid oklch(0.75 0.15 var(--fnc-hue, 195));
+  background: oklch(0.75 0.15 var(--fnc-hue, 195) / 0.07);
+  border-radius: 3px;
+}
+.fnc-box.is-selected {
+  border-width: 2px;
+  background: oklch(0.75 0.15 var(--fnc-hue, 195) / 0.16);
+  box-shadow: 0 0 0 1px oklch(0.95 0.01 230 / 0.4);
+}
+.fnc-box__tag {
+  position: absolute;
+  top: -1.5px;
+  left: -1.5px;
+  pointer-events: auto;
+  max-width: 80vw;
+  padding: 2px 7px;
+  background: oklch(0.75 0.15 var(--fnc-hue, 195));
+  color: oklch(0.16 0.03 var(--fnc-hue, 195));
+  border: 0;
+  border-radius: 3px 0 3px 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.fnc-box__hint {
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* ── editor popover ──────────────────────────────────────────── */
+.fnc-editor {
+  position: absolute;
+  pointer-events: auto;
+  width: 280px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--fnc-panel);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px oklch(0 0 0 / 0.5);
+}
+.fnc-editor__head {
+  display: flex;
+  gap: 6px;
+}
+.fnc-editor__label {
+  flex: 1;
+  padding: 4px 7px;
+  background: oklch(0.16 0.02 250);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 5px;
+  color: inherit;
+  font: inherit;
+}
+.fnc-editor__label:focus {
+  outline: none;
+  border-color: var(--fnc-accent);
+}
+.fnc-editor__note {
+  padding: 5px 7px;
+  background: oklch(0.16 0.02 250);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 5px;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+.fnc-editor__note:focus {
+  outline: none;
+  border-color: var(--fnc-accent);
+}
+.fnc-editor__dom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: oklch(0.16 0.02 250 / 0.7);
+  border-radius: 5px;
+  font-size: 11px;
+}
+.fnc-editor__dom code {
+  color: var(--fnc-accent);
+  word-break: break-all;
+}
+.fnc-editor__cmp {
+  padding: 1px 6px;
+  background: oklch(0.82 0.16 195 / 0.18);
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+/* ── media awareness ─────────────────────────────────────────── */
+.fnc-editor__media {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  background: oklch(0.16 0.02 250 / 0.7);
+  border: 1px solid var(--fnc-panel-edge);
+  border-radius: 6px;
+}
+.fnc-editor__media-head {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fnc-accent);
+  opacity: 0.85;
+}
+.fnc-media-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fnc-media-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: oklch(0.3 0.02 250 / 0.6);
+  border: 1px solid var(--fnc-panel-edge);
+}
+.fnc-media-more {
+  font-size: 10px;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.fnc-editor__delete {
+  align-self: flex-start;
+}

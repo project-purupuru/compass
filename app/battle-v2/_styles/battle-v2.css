@@ -4,76 +4,189 @@
  * Per PRD r2 FR-24 + SDD r1 §5 + harness element.wood.yaml colorTokens.
  */
 
+:root {
+  --wood-vivid: oklch(0.81 0.144 112.7);
+  --wood-glow: oklch(0.82 0.14 85);
+  --void-bg: oklch(0.18 0.02 260);
+  --island-bg: oklch(0.94 0.015 90);
+  --ink-dark: oklch(0.18 0.02 260);
+  --strip-bg: oklch(0.20 0.02 60);
+
+  /* ───────────────────────────────────────────────────────────────
+   * Motion vocabulary — Session 7 (the playable truth).
+   *
+   * Springs, not eases. Every beat-driven motion has a mass·stiffness·
+   * damping triple. CSS is the human-readable token registry; the
+   * machine-readable mirror is `_components/vfx/springs.ts` (motion +
+   * useFrame read from there). The two MUST stay in sync.
+   *
+   *   --spring-petal   mass 0.6  stiffness 220  damping 18  — a thrown object
+   *   --spring-bloom   mass 1.2  stiffness 180  damping 14  — heavy; the world is big
+   *   --spring-camera  mass 2.0  stiffness 120  damping 26  — glides, never snaps
+   *   --spring-daemon  mass 0.4  stiffness 300  damping 20  — a creature notices quickly
+   * ─────────────────────────────────────────────────────────────── */
+
+  /* Derived timing tokens — the ritual's tempo, named. */
+  --arc-travel: 480ms;        /* PetalArc — card → grove */
+  --bloom-hitstop: 80ms;      /* ZoneBloom — the world catches the petals */
+  --bloom-void: 400ms;        /* ZoneBloom — the stillness after; Ma is load-bearing */
+  --reward-rise: 520ms;       /* RewardRead — the result settling in */
+
+  /* Per-element breathing rhythm — wood breathes slow. Falls back if
+   * app/globals.css per-element rhythm tokens aren't loaded. */
+  --breath-wood: var(--breath-wood-rhythm, 5.2s);
+}
+
 .battle-v2-shell {
   min-height: 100vh;
-  background: oklch(0.18 0.02 260); /* cosmic-indigo void */
-  color: oklch(0.94 0.015 90);
+  background: var(--void-bg);
+  color: var(--island-bg);
   font-family: var(--font-puru-body, system-ui), sans-serif;
-  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * UiScreen — slot-driven layout
+ * UiScreen — flex column with explicit center bounds
  * ─────────────────────────────────────────────────────────────── */
+/* Full-bleed populated-diorama layout — operator pivot 2026-05-13.
+ * The world canvas is the backdrop (z=0, viewport-filling). Top/bottom HUD
+ * strips float as overlays (z=10) with pointer-events disabled by default;
+ * individual slots re-enable interaction. This mirrors stylized-3D-action
+ * layout convention (TemTem · Eternal Return · Fae Farm). */
 .ui-screen {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  position: relative;
   min-height: 100vh;
-  padding: 3% 3%;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .ui-screen__top-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: grid;
-  grid-template-columns: 18% 1fr 16%;
-  gap: 2%;
-  align-items: start;
-  padding-bottom: 1%;
+  grid-template-columns: minmax(140px, 1fr) 2fr minmax(140px, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  align-items: stretch;
+  pointer-events: none;
+  /* Subtle gradient so HUD reads against varying backdrops without
+   * dropping a hard panel. Anchors the chrome without enclosing it. */
+  background: linear-gradient(
+    to bottom,
+    oklch(0.18 0.02 260 / 0.45) 0%,
+    oklch(0.18 0.02 260 / 0.0) 100%
+  );
 }
 
 .ui-screen__center-world {
-  position: relative;
-  width: 60%;
-  margin: 0 auto;
-  aspect-ratio: 60 / 58;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  /* Center-world is now the WORLD itself, not a frame around it. */
 }
 
 .ui-screen__bottom-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: grid;
-  grid-template-columns: 8% 1fr 14%;
-  gap: 2%;
+  grid-template-columns: minmax(60px, auto) 1fr minmax(120px, auto);
+  gap: 1rem;
+  padding: 1rem 1.5rem 1.25rem;
   align-items: end;
-  padding-top: 1%;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    oklch(0.18 0.02 260 / 0.6) 0%,
+    oklch(0.18 0.02 260 / 0.0) 100%
+  );
 }
 
 .ui-screen__slot {
   background: oklch(0.20 0.02 60 / 0.6);
   border: 1px solid oklch(0.94 0.015 90 / 0.15);
-  border-radius: 4px;
-  padding: 0.75rem;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Re-enable pointer-events for actual interactive HUD elements within
+   * the pointer-events:none fixed strips above. */
+  pointer-events: auto;
+}
+
+.ui-screen__slot--world-map {
+  /* The world map slot fills the entire viewport — it IS the backdrop. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  pointer-events: auto;
+}
+
+.ui-screen__inline-tide {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * WorldMap
+ * WorldMap (2D fallback) — keeps the explicit-size constrained look
+ * for ?3d=0 mode. Only the 3D map goes full-bleed.
  * ─────────────────────────────────────────────────────────────── */
 .world-map {
+  width: min(720px, 90vw);
+  aspect-ratio: 1.1 / 1;
+  position: relative;
+  margin: 0 auto;
+}
+
+/* WorldMap3D — full-bleed populated diorama (operator pivot 2026-05-13). */
+.world-map-3d {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  position: relative;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.world-map-3d canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .world-map__island {
   position: absolute;
   inset: 0;
-  background: oklch(0.94 0.015 90); /* cream map */
+  background:
+    radial-gradient(circle at 50% 50%, var(--island-bg) 0%, var(--island-bg) 55%, transparent 80%);
   border-radius: 50%;
-  /* Subtle paper grain via SVG noise filter */
-  background-image:
-    radial-gradient(circle at center, transparent 60%, oklch(0.88 0.02 90) 100%);
+  box-shadow:
+    inset 0 0 80px oklch(0.85 0.02 90 / 0.5),
+    0 8px 40px oklch(0.18 0.02 260 / 0.6);
 }
 
 .zone-slot {
   position: absolute;
   transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.zone-slot--decorative {
+  z-index: 1;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -85,79 +198,70 @@
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  width: 80px;
-  height: 80px;
-  border: 1px solid oklch(0.18 0.02 260);
-  border-radius: 8px;
-  background: oklch(0.94 0.015 90);
-  color: oklch(0.18 0.02 260);
+  width: 96px;
+  height: 96px;
+  border: 2px solid var(--ink-dark);
+  border-radius: 12px;
+  background: var(--island-bg);
+  color: var(--ink-dark);
   font-family: inherit;
   cursor: pointer;
-  transition: all 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0.5rem;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 200ms ease;
 }
 
 .zone-token__kanji {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .zone-token__name {
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1.1;
 }
 
 .zone-token__activation {
-  font-size: 0.75rem;
-  color: oklch(0.66 0.114 112.7);
+  font-size: 0.625rem;
+  color: var(--wood-vivid);
+  font-weight: 700;
 }
 
-/* Per-element tints */
-.zone-token--wood {
-  border-color: oklch(0.81 0.144 112.7);
-}
-
-.zone-token--fire {
-  border-color: oklch(0.65 0.18 25);
-}
-
-.zone-token--water {
-  border-color: oklch(0.55 0.15 240);
-}
-
-.zone-token--metal {
-  border-color: oklch(0.75 0.05 280);
-}
-
-.zone-token--earth {
-  border-color: oklch(0.68 0.10 70);
-}
+/* Per-element border tints */
+.zone-token--wood    { border-color: oklch(0.81 0.144 112.7); }
+.zone-token--fire    { border-color: oklch(0.65 0.18 25); }
+.zone-token--water   { border-color: oklch(0.55 0.15 240); }
+.zone-token--metal   { border-color: oklch(0.75 0.05 280); }
+.zone-token--earth   { border-color: oklch(0.68 0.10 70); }
 
 /* Gameplay-state visuals */
 .zone-token--locked {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
   filter: saturate(0.4);
 }
 
 .zone-token--validtarget {
-  box-shadow: 0 0 12px 4px oklch(0.81 0.144 112.7 / 0.4);
+  box-shadow: 0 0 16px 4px oklch(0.81 0.144 112.7 / 0.5);
   animation: zone-pulse 1.2s ease-in-out infinite;
 }
 
 .zone-token--active {
-  box-shadow: 0 0 18px 6px oklch(0.81 0.144 112.7 / 0.6);
-  border-width: 2px;
+  box-shadow: 0 0 24px 8px oklch(0.81 0.144 112.7 / 0.7);
+  border-width: 3px;
 }
 
 @keyframes zone-pulse {
   0%, 100% { box-shadow: 0 0 12px 4px oklch(0.81 0.144 112.7 / 0.3); }
-  50% { box-shadow: 0 0 18px 6px oklch(0.81 0.144 112.7 / 0.6); }
+  50%      { box-shadow: 0 0 22px 8px oklch(0.81 0.144 112.7 / 0.6); }
 }
 
-/* UI-state visuals */
-.zone-token--ui-hovered:not(.zone-token--locked) {
-  transform: translateY(-2px);
+.zone-token--ui-hovered:not(.zone-token--locked):not(:disabled) {
+  transform: translateY(-3px);
 }
 
 .zone-token--ui-disabled {
@@ -165,91 +269,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * CardFace — harness-native cycle-1 placeholder
- * ─────────────────────────────────────────────────────────────── */
-.card-face {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  width: 90px;
-  height: 130px;
-  padding: 0.5rem;
-  border: 1px solid oklch(0.18 0.02 260);
-  border-radius: 6px;
-  background: oklch(0.94 0.015 90);
-  color: oklch(0.18 0.02 260);
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.card-face__kanji {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.card-face__name {
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  text-align: center;
-}
-
-.card-face__type {
-  font-size: 0.5rem;
-  color: oklch(0.4 0.02 260);
-  text-transform: uppercase;
-}
-
-.card-face__verbs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.125rem;
-  justify-content: center;
-}
-
-.card-face__verb {
-  font-size: 0.5rem;
-  background: oklch(0.95 0.020 145);
-  border: 1px solid oklch(0.81 0.144 112.7);
-  border-radius: 2px;
-  padding: 0 0.125rem;
-}
-
-.card-face--wood {
-  background: oklch(0.95 0.020 145);
-}
-
-.card-face--hovered {
-  transform: translateY(-12px);
-  box-shadow: 0 4px 16px oklch(0.82 0.14 85 / 0.4); /* amber-honey halation */
-}
-
-.card-face--armed {
-  transform: translateY(-12px) scale(1.05);
-  box-shadow: 0 6px 24px oklch(0.82 0.14 85 / 0.6);
-  border-color: oklch(0.82 0.14 85);
-  border-width: 2px;
-}
-
-/* ─────────────────────────────────────────────────────────────────
- * CardHandFan
- * ─────────────────────────────────────────────────────────────── */
-.card-hand-fan {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-.card-hand-fan__slot {
-  display: flex;
-  align-items: flex-end;
-}
-
-/* ─────────────────────────────────────────────────────────────────
- * Sora Tower
+ * Sora Tower — at the heart of the world
  * ─────────────────────────────────────────────────────────────── */
 .sora-tower {
   position: absolute;
@@ -259,10 +279,12 @@
   justify-content: center;
   width: 64px;
   height: 96px;
-  background: oklch(0.18 0.02 260);
-  color: oklch(0.94 0.015 90);
+  background: var(--ink-dark);
+  color: var(--island-bg);
   border-radius: 4px 4px 8px 8px;
   pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 4px 12px oklch(0.18 0.02 260 / 0.6);
 }
 
 .sora-tower__glyph {
@@ -271,24 +293,121 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * Chibi Kaori
+ * Chibi Kaori — adjacent to the wood grove
  * ─────────────────────────────────────────────────────────────── */
 .kaori-chibi {
   position: absolute;
-  transform: translate(-50%, calc(-50% + 48px));
-  font-size: 1.5rem;
+  transform: translate(-50%, calc(-50% + 64px));
+  font-size: 1.75rem;
   pointer-events: none;
-  filter: drop-shadow(0 1px 2px oklch(0.18 0.02 260 / 0.4));
+  z-index: 3;
+  filter: drop-shadow(0 2px 4px oklch(0.18 0.02 260 / 0.5));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * CardFace — harness-native cycle-1 placeholder
+ * ─────────────────────────────────────────────────────────────── */
+.card-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  width: 110px;
+  height: 160px;
+  padding: 0.75rem;
+  border: 2px solid var(--ink-dark);
+  border-radius: 8px;
+  background: var(--island-bg);
+  color: var(--ink-dark);
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.card-face__kanji {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-face__name {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  font-weight: 600;
+}
+
+.card-face__type {
+  font-size: 0.5625rem;
+  color: oklch(0.4 0.02 260);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-face__verbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.card-face__verb {
+  font-size: 0.5625rem;
+  background: oklch(0.95 0.020 145);
+  border: 1px solid var(--wood-vivid);
+  border-radius: 3px;
+  padding: 0.0625rem 0.25rem;
+  color: oklch(0.32 0.05 145);
+  font-weight: 600;
+}
+
+.card-face--wood {
+  background: oklch(0.97 0.018 130);
+}
+
+.card-face--hovered {
+  transform: translateY(-12px);
+  box-shadow: 0 6px 18px oklch(0.82 0.14 85 / 0.5);
+}
+
+.card-face--armed {
+  transform: translateY(-16px) scale(1.06);
+  box-shadow: 0 8px 28px oklch(0.82 0.14 85 / 0.7);
+  border-color: var(--wood-glow);
+  border-width: 3px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * CardHandFan — bottom-edge slot
+ * ─────────────────────────────────────────────────────────────── */
+.card-hand-fan {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  min-height: 180px;
+  padding: 1rem;
+}
+
+.card-hand-fan__slot {
+  display: flex;
+  align-items: flex-end;
 }
 
 /* ─────────────────────────────────────────────────────────────────
  * Top-strip components
  * ─────────────────────────────────────────────────────────────── */
 .title-cartouche {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .focus-banner {
@@ -301,37 +420,54 @@
 .focus-banner__label {
   font-size: 0.625rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   color: oklch(0.7 0.02 90);
 }
 
 .focus-banner__value {
-  font-size: 1rem;
+  font-size: 1.125rem;
   text-transform: uppercase;
-  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--wood-vivid);
 }
 
 .tide-indicator {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.375rem;
+  justify-content: center;
 }
 
 .tide-indicator__stone {
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  padding: 0.125rem 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.3rem 0.7rem;
   border: 1px solid currentColor;
-  border-radius: 3px;
+  border-radius: 999px;
+}
+
+.tide-indicator__stone-label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 .tide-indicator__stone--active {
-  background: oklch(0.81 0.144 112.7 / 0.2);
-  color: oklch(0.81 0.144 112.7);
+  background: oklch(0.81 0.144 112.7 / 0.18);
+  color: var(--wood-vivid);
+  border-color: var(--wood-vivid);
 }
 
 .selected-card-preview {
   font-size: 0.75rem;
   font-family: var(--font-puru-mono, ui-monospace), monospace;
+  text-align: center;
+  color: oklch(0.85 0.02 90);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -339,45 +475,365 @@
  * ─────────────────────────────────────────────────────────────── */
 .end-turn-button {
   width: 100%;
-  padding: 0.5rem;
-  background: oklch(0.20 0.02 60);
-  color: oklch(0.94 0.015 90);
+  padding: 0.75rem 1rem;
+  background: var(--strip-bg);
+  color: var(--island-bg);
   border: 1px solid oklch(0.94 0.015 90 / 0.3);
   border-radius: 4px;
   font-family: inherit;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .deck-counter {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * Event log (debug)
+ * Event log (debug · live trace of substrate truth)
  * ─────────────────────────────────────────────────────────────── */
 .event-log {
   position: fixed;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  background: oklch(0.20 0.02 60 / 0.9);
-  color: oklch(0.94 0.015 90);
-  padding: 0.5rem;
-  border-radius: 4px;
+  bottom: 1rem;
+  right: 1rem;
+  background: oklch(0.20 0.02 60 / 0.95);
+  color: var(--island-bg);
+  padding: 0.75rem 1rem;
+  border: 1px solid oklch(0.94 0.015 90 / 0.2);
+  border-radius: 6px;
   font-family: var(--font-puru-mono, ui-monospace), monospace;
-  font-size: 0.625rem;
-  max-width: 300px;
+  font-size: 0.6875rem;
+  max-width: 320px;
   max-height: 50vh;
   overflow: auto;
+  z-index: 10;
 }
 
 .event-log summary {
   cursor: pointer;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.event-log ul {
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+}
+
+.event-log li {
+  padding: 0.125rem 0;
+  color: var(--wood-glow);
 }
 
 .sequence-consumer {
   display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * VfxLayer — the ritual's answer, drawn in screen space.
+ *
+ * Fixed full-viewport overlay between the world (z:0) and the HUD
+ * chrome (z:10). pointer-events:none — the ritual never eats input;
+ * input is governed by the sequencer's input-lock, not by a div.
+ * ─────────────────────────────────────────────────────────────── */
+.vfx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * PetalArc — the travel. Intent made visible.
+ * ~7 petals on --wood-glow (this glow means "energy in transit" and
+ * appears ONLY here). Each petal rides a rise-then-fall offset-path;
+ * the spring (mass 0.6 · stiffness 220 · damping 18) lives in JS.
+ * ─────────────────────────────────────────────────────────────── */
+.petal-arc {
+  position: absolute;
+  inset: 0;
+}
+
+.petal-arc__petal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* width/height set per-petal in JS · corner-translate (JS) handles
+   * centering, so no margin offset here. */
+  border-radius: 62% 62% 62% 0;
+  /* Hot gold-white core so the petal reads against the bright green world;
+   * the wood-glow lives in the halo — energy-in-transit, meaning preserved. */
+  background: oklch(0.97 0.06 98);
+  box-shadow:
+    0 0 16px 5px oklch(0.82 0.14 85 / 0.8),
+    0 0 6px 1px oklch(0.95 0.07 100 / 0.95);
+  will-change: transform, opacity;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * ZoneBloom — the impact. The world answering. THE moment.
+ * A flash ring peaking at --wood-vivid + a local sakura swirl,
+ * radiating from anchor.wood_grove.seedling_center. The 3D seedling
+ * mesh springs in-Canvas; this is the screen-space punch.
+ * ─────────────────────────────────────────────────────────────── */
+.zone-bloom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.zone-bloom__flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    oklch(0.92 0.11 100 / 0.85) 0%,
+    oklch(0.81 0.144 112.7 / 0.6) 26%,
+    oklch(0.82 0.14 85 / 0.3) 52%,
+    transparent 74%
+  );
+  /* hit-stop delay lives in JS; the flash itself is a single settle. */
+  animation: vfx-bloom-flash 640ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes vfx-bloom-flash {
+  0%   { transform: scale(0.18); opacity: 0; }
+  20%  { transform: scale(0.9); opacity: 1; }       /* the catch */
+  44%  { transform: scale(1.16); opacity: 0.95; }   /* overshoot — heavy */
+  100% { transform: scale(1.02); opacity: 0; }      /* settle into the Void */
+}
+
+.zone-bloom__petal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 60% 60% 60% 0;
+  background: var(--wood-vivid);
+  box-shadow: 0 0 5px oklch(0.81 0.144 112.7 / 0.5);
+  animation: vfx-sakura-swirl 1100ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes vfx-sakura-swirl {
+  0% {
+    transform: rotate(0deg) translateX(6px) rotate(0deg) scale(0.4);
+    opacity: 0;
+  }
+  20% { opacity: 1; }
+  100% {
+    transform: rotate(var(--swirl-turn, 200deg))
+      translateX(var(--swirl-radius, 64px))
+      rotate(calc(-1 * var(--swirl-turn, 200deg)))
+      scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * RewardRead — the result, in the ui.reward_preview mount.
+ * Warm wood-frame chrome. tabular-nums on the quantity — it ticks in,
+ * it does not fade. Summoned by the reward_preview beat; it owns its
+ * own exit (auto-dismiss on the Void after unlock).
+ * ─────────────────────────────────────────────────────────────── */
+.reward-read {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 1.4rem;
+  background: oklch(0.22 0.03 95 / 0.92);
+  border: 1px solid var(--wood-vivid);
+  border-radius: 8px;
+  box-shadow:
+    0 0 24px oklch(0.81 0.144 112.7 / 0.35),
+    inset 0 1px 0 oklch(0.94 0.015 90 / 0.12);
+  animation: vfx-reward-rise var(--reward-rise) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.reward-read--leaving {
+  animation: vfx-reward-leave 320ms ease-in both;
+}
+
+@keyframes vfx-reward-rise {
+  0%   { transform: translate(-50%, calc(-50% + 14px)); opacity: 0; }
+  100% { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+@keyframes vfx-reward-leave {
+  0%   { transform: translate(-50%, -50%); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% - 10px)); opacity: 0; }
+}
+
+.reward-read__label {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: oklch(0.72 0.04 95);
+}
+
+.reward-read__value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.reward-read__qty {
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--wood-vivid);
+}
+
+.reward-read__id {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--island-bg);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * TideIndicator — the active element as a FELT presence.
+ * A stone badge that breathes at the element's rhythm — not a label.
+ * ─────────────────────────────────────────────────────────────── */
+.tide-indicator__stone--active {
+  animation: tide-breathe var(--breath-wood) ease-in-out infinite;
+}
+
+@keyframes tide-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 oklch(0.81 0.144 112.7 / 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px 2px oklch(0.81 0.144 112.7 / 0.4);
+    transform: scale(1.045);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * EntityPanel — summoned by selection, right side. NOT always-on:
+ * emptiness is structural. Warm wood-frame chrome; numerals tick.
+ * ─────────────────────────────────────────────────────────────── */
+.entity-panel {
+  position: fixed;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  background: oklch(0.20 0.02 60 / 0.86);
+  border: 1px solid oklch(0.81 0.144 112.7 / 0.45);
+  border-radius: 8px;
+  box-shadow:
+    0 8px 32px oklch(0.18 0.02 260 / 0.5),
+    inset 0 1px 0 oklch(0.94 0.015 90 / 0.1);
+  pointer-events: auto;
+  animation: entity-panel-summon 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.entity-panel--leaving {
+  animation: entity-panel-dismiss 200ms ease-in both;
+}
+
+@keyframes entity-panel-summon {
+  0%   { transform: translate(16px, -50%); opacity: 0; }
+  100% { transform: translate(0, -50%); opacity: 1; }
+}
+
+@keyframes entity-panel-dismiss {
+  0%   { transform: translate(0, -50%); opacity: 1; }
+  100% { transform: translate(16px, -50%); opacity: 0; }
+}
+
+.entity-panel__kind {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: oklch(0.7 0.03 95);
+}
+
+.entity-panel__name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--island-bg);
+}
+
+.entity-panel__flavor {
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: oklch(0.82 0.02 90);
+}
+
+.entity-panel__state {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 0.5rem;
+  border-top: 1px solid oklch(0.94 0.015 90 / 0.12);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: oklch(0.72 0.03 95);
+}
+
+.entity-panel__state-value {
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--wood-vivid);
+}
+
+/* The hand acknowledging the release — card_anticipation beat. The played
+ * card has already left the hand (resolver → Resolving), so the hand itself
+ * gives: a brief settle, the give of a thrown thing. */
+.card-hand-fan--releasing {
+  animation: hand-release 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes hand-release {
+  0%   { transform: translateY(0); }
+  35%  { transform: translateY(5px); }   /* the dip */
+  100% { transform: translateY(0); }     /* the lift back */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petal-arc__petal,
+  .zone-bloom__flash,
+  .zone-bloom__petal,
+  .reward-read,
+  .reward-read--leaving,
+  .tide-indicator__stone--active,
+  .entity-panel,
+  .entity-panel--leaving,
+  .card-hand-fan--releasing {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

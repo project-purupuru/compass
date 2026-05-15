@@ -1,0 +1,58 @@
+schemaVersion: "0.1"
+id: fire_kindling
+packId: core_wood_demo
+nameKey: card.fire_kindling.name
+descriptionKey: card.fire_kindling.description
+elementId: fire
+cardType: ritual
+verbs:
+  - kindle
+  - blaze
+cost:
+  energy: 3
+  resources: {}
+targeting:
+  mode: zone
+  maxTargets: 1
+  validZoneElements:
+    - wood
+  validZoneTags:
+    - grove
+    - seedling_anchor
+  invalidTargetFeedbackCueId: cue.invalid_target.soft_wood
+  previewCueId: cue.preview.wood_zone_focus
+  requiresCurrentWeatherElement: true
+  allowGlobalTarget: false
+resolver:
+  steps:
+    - id: kindle_zone
+      op: activate_zone
+      scope: target_zone
+      args:
+        requiredElement: wood
+        setActiveZone: true
+        activationLevelDelta: 2
+      emits:
+        - ZoneActivated
+presentation:
+  cardArtId: art.card.fire_kindling.akane_silhouette
+  cardFrameSkinId: ui.card_frame.fire_ember
+  sequenceId: wood_activation_sequence
+  launchCueId: cue.card_launch.sakura_arc
+  hoverCueId: cue.card_hover.fire_ember
+balance:
+  rarity: rare
+  powerBand: high
+  maxCopies: 2
+  minDay: 1
+  tags:
+    - zone_activation
+    - cross_element
+constraints:
+  approvalTier: core
+  presentationMayMutateGameState: false
+  globalWeatherAllowed: false
+  multiFocusAllowed: false
+  notes:
+    - Fire ritual card — Akane's blaze. Cross-element play in the wood slice;
+      targets the wood grove (the only unlocked zone) for now.

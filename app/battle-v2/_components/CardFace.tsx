@@ -1,16 +1,25 @@
 /**
- * Harness-native card face — cycle-1 placeholder per OD-2 path B.
+ * CardFace — the player's card in hand, rendered with the real CardStack
+ * composition: DOM-stacked layer art (background · frame · character ·
+ * element effects · rarity treatment · behavioral).
  *
- * Renders from CardDefinition without depending on lib/cards/layers/ (which
- * lives on a different branch in this worktree). Cycle-2 swaps to full
- * art_anchor integration when branches merge.
+ * The layer system was ported into lib/cards/layers from compass — the
+ * cycle-2 promise, pulled forward on operator request 2026-05-14. The harness
+ * `cardType` taxonomy is role-based, so it's mapped to the layer system's
+ * element + rarity inputs at this boundary.
  *
- * Per PRD r2 §5.5 + operator-confirmed pivot 2026-05-13 PM.
+ * CardHandFan still renders <CardFace card={...}> unchanged — the composition
+ * upgrade is contained entirely here.
  */
 
 "use client";
 
-import type { CardDefinition, ElementId } from "@/lib/purupuru/contracts/types";
+import { CardStack, type LayerRarity } from "@/lib/cards/layers";
+import { useCardTilt } from "@/lib/cards/useCardTilt";
+import type { CardDefinition } from "@/lib/purupuru/contracts/types";
+
+import { beginPending, useDragState } from "./drag/dragStore";
+import "./card-face.css";
 
 interface CardFaceProps {
   readonly card: CardDefinition;
@@ -21,20 +30,17 @@ interface CardFaceProps {
   readonly onMouseLeave?: () => void;
 }
 
-const ELEMENT_KANJI: Record<ElementId, string> = {
-  wood: "木",
-  fire: "火",
-  earth: "土",
-  metal: "金",
-  water: "水",
-};
-
-const ELEMENT_LABEL: Record<ElementId, string> = {
-  wood: "Wood",
-  fire: "Fire",
-  earth: "Earth",
-  metal: "Metal",
-  water: "Water",
+/**
+ * cycle-1 harness cardType → layer-system rarity. The harness taxonomy is
+ * role-based; rarity escalates with how decisive the card's role is.
+ */
+const RARITY_BY_CARDTYPE: Record<CardDefinition["cardType"], LayerRarity> = {
+  activation: "common",
+  tool: "common",
+  modifier: "mid",
+  event: "mid",
+  daemon: "rare",
+  ritual: "rarest",
 };
 
 export function CardFace({
@@ -46,8 +52,17 @@ export function CardFace({
   onMouseLeave,
 }: CardFaceProps) {
   const element = card.elementId;
-  const kanji = ELEMENT_KANJI[element];
-  const label = ELEMENT_LABEL[element];
+  const rarity = RARITY_BY_CARDTYPE[card.cardType];
+
+  // pokemon-cards-css 3D tilt — writes CSS vars to the button; card-face.css
+  // applies the rotation to .card-face__art and a pointer glare on top.
+  const tiltRef = useCardTilt<HTMLButtonElement>(element);
+
+  // drag-to-region: pointer-down arms a pending drag (see drag/dragStore). Once
+  // the pointer moves past threshold the DragGhost takes over and this card
+  // dims in place. A sub-threshold release stays a plain click (onClick).
+  const drag = useDragState();
+  const isDragging = drag.phase === "dragging" && drag.cardId === card.id;
 
   const variantClass = armed
     ? "card-face--armed"
@@ -57,27 +72,34 @@ export function CardFace({
 
   return (
     <button
+      ref={tiltRef}
       type="button"
-      className={`card-face card-face--${element} ${variantClass}`}
+      className={`card-face card-face--composed card-face--${element} ${variantClass}${
+        isDragging ? " card-face--dragging" : ""
+      }`}
       onClick={onClick}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        beginPending({
+          cardId: card.id,
+          element,
+          rarity,
+          pointer: { x: e.clientX, y: e.clientY },
+        });
+      }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       data-card-id={card.id}
       data-element={element}
-      aria-label={`${label} card · ${card.id}`}
+      data-rarity={rarity}
+      aria-label={`${card.id.replace(/_/g, " ")} · ${element} ${card.cardType} card`}
     >
-      <div className="card-face__kanji" aria-hidden="true">
-        {kanji}
-      </div>
-      <div className="card-face__name">{card.id.replace(/_/g, " ")}</div>
-      <div className="card-face__type">{card.cardType}</div>
-      <div className="card-face__verbs">
-        {card.verbs.map((v) => (
-          <span key={v} className="card-face__verb">
-            {v}
-          </span>
-        ))}
-      </div>
+      <CardStack
+        className="card-face__art"
+        element={element}
+        rarity={rarity}
+        alt={card.id.replace(/_/g, " ")}
+      />
     </button>
   );
 }

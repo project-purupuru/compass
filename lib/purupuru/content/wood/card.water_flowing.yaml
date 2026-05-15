@@ -1,0 +1,58 @@
+schemaVersion: "0.1"
+id: water_flowing
+packId: core_wood_demo
+nameKey: card.water_flowing.name
+descriptionKey: card.water_flowing.description
+elementId: water
+cardType: daemon
+verbs:
+  - flow
+  - drift
+cost:
+  energy: 2
+  resources: {}
+targeting:
+  mode: zone
+  maxTargets: 1
+  validZoneElements:
+    - wood
+  validZoneTags:
+    - grove
+    - seedling_anchor
+  invalidTargetFeedbackCueId: cue.invalid_target.soft_wood
+  previewCueId: cue.preview.wood_zone_focus
+  requiresCurrentWeatherElement: true
+  allowGlobalTarget: false
+resolver:
+  steps:
+    - id: flow_into_zone
+      op: activate_zone
+      scope: target_zone
+      args:
+        requiredElement: wood
+        setActiveZone: true
+        activationLevelDelta: 1
+      emits:
+        - ZoneActivated
+presentation:
+  cardArtId: art.card.water_flowing.ruan_silhouette
+  cardFrameSkinId: ui.card_frame.water_tide
+  sequenceId: wood_activation_sequence
+  launchCueId: cue.card_launch.sakura_arc
+  hoverCueId: cue.card_hover.water_ripple
+balance:
+  rarity: uncommon
+  powerBand: medium
+  maxCopies: 2
+  minDay: 1
+  tags:
+    - zone_activation
+    - cross_element
+constraints:
+  approvalTier: core
+  presentationMayMutateGameState: false
+  globalWeatherAllowed: false
+  multiFocusAllowed: false
+  notes:
+    - Water daemon card — Ruan's drifting current. Cross-element play in the
+      wood slice; targets the wood grove for now.

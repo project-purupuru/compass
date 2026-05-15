@@ -1,0 +1,58 @@
+schemaVersion: "0.1"
+id: earth_grounding
+packId: core_wood_demo
+nameKey: card.earth_grounding.name
+descriptionKey: card.earth_grounding.description
+elementId: earth
+cardType: tool
+verbs:
+  - ground
+  - settle
+cost:
+  energy: 1
+  resources: {}
+targeting:
+  mode: zone
+  maxTargets: 1
+  validZoneElements:
+    - wood
+  validZoneTags:
+    - grove
+    - seedling_anchor
+  invalidTargetFeedbackCueId: cue.invalid_target.soft_wood
+  previewCueId: cue.preview.wood_zone_focus
+  requiresCurrentWeatherElement: true
+  allowGlobalTarget: false
+resolver:
+  steps:
+    - id: ground_zone
+      op: activate_zone
+      scope: target_zone
+      args:
+        requiredElement: wood
+        setActiveZone: true
+        activationLevelDelta: 1
+      emits:
+        - ZoneActivated
+presentation:
+  cardArtId: art.card.earth_grounding.nemu_silhouette
+  cardFrameSkinId: ui.card_frame.earth_stone
+  sequenceId: wood_activation_sequence
+  launchCueId: cue.card_launch.sakura_arc
+  hoverCueId: cue.card_hover.earth_loam
+balance:
+  rarity: common
+  powerBand: low
+  maxCopies: 3
+  minDay: 1
+  tags:
+    - zone_activation
+    - cross_element
+constraints:
+  approvalTier: core
+  presentationMayMutateGameState: false
+  globalWeatherAllowed: false
+  multiFocusAllowed: false
+  notes:
+    - Earth tool card — Nemu's steadying hand. Cross-element play in the wood
+      slice; targets the wood grove for now.

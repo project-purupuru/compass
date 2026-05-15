@@ -9,7 +9,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, join, resolve as pathResolve } from "node:path";
 
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020";
 import addFormats from "ajv-formats";
@@ -44,7 +44,12 @@ const SCHEMA_FILES = [
   "telemetry_event.schema.json",
 ] as const;
 
-const SCHEMAS_DIR = join(__dirname, "..", "schemas");
+// Resolve schemas dir relative to project root (process.cwd()).
+// Avoids `__dirname` because Next.js bundling rewrites it to a virtual path.
+// Override via LOA_PURUPURU_SCHEMAS_DIR for non-standard layouts (tests, ssg, etc.).
+const SCHEMAS_DIR =
+  process.env.LOA_PURUPURU_SCHEMAS_DIR ??
+  pathResolve(process.cwd(), "lib/purupuru/schemas");
 
 let _ajv: Ajv2020 | null = null;
 let _validators: Map<string, ValidateFunction> | null = null;

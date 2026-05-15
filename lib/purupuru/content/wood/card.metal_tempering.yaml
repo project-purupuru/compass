@@ -1,0 +1,58 @@
+schemaVersion: "0.1"
+id: metal_tempering
+packId: core_wood_demo
+nameKey: card.metal_tempering.name
+descriptionKey: card.metal_tempering.description
+elementId: metal
+cardType: modifier
+verbs:
+  - temper
+  - forge
+cost:
+  energy: 2
+  resources: {}
+targeting:
+  mode: zone
+  maxTargets: 1
+  validZoneElements:
+    - wood
+  validZoneTags:
+    - grove
+    - seedling_anchor
+  invalidTargetFeedbackCueId: cue.invalid_target.soft_wood
+  previewCueId: cue.preview.wood_zone_focus
+  requiresCurrentWeatherElement: true
+  allowGlobalTarget: false
+resolver:
+  steps:
+    - id: temper_zone
+      op: activate_zone
+      scope: target_zone
+      args:
+        requiredElement: wood
+        setActiveZone: true
+        activationLevelDelta: 2
+      emits:
+        - ZoneActivated
+presentation:
+  cardArtId: art.card.metal_tempering.ren_silhouette
+  cardFrameSkinId: ui.card_frame.metal_filigree
+  sequenceId: wood_activation_sequence
+  launchCueId: cue.card_launch.sakura_arc
+  hoverCueId: cue.card_hover.metal_chime
+balance:
+  rarity: uncommon
+  powerBand: medium
+  maxCopies: 2
+  minDay: 1
+  tags:
+    - zone_activation
+    - cross_element
+constraints:
+  approvalTier: core
+  presentationMayMutateGameState: false
+  globalWeatherAllowed: false
+  multiFocusAllowed: false
+  notes:
+    - Metal modifier card — Ren's tempered edge. Cross-element play in the wood
+      slice; targets the wood grove for now.

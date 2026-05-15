@@ -1,0 +1,23 @@
+/*
+ * drag.css — the card drag ghost.
+ *
+ * The ghost is the card you're holding: it floats above the HUD, follows the
+ * cursor, and never catches pointer events (the window-level DragLayer owns
+ * input). `transform` is set inline by DragGhost (it's per-frame dynamic).
+ */
+
+.drag-ghost {
+  position: fixed;
+  z-index: 100;
+  width: 104px;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 22px oklch(0.04 0.006 80 / 0.6));
+  will-change: transform, left, top;
+}
+
+.drag-ghost__card {
+  width: 100%;
+  aspect-ratio: 733 / 1024;
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+}

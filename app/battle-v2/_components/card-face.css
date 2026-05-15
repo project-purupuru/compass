@@ -1,0 +1,66 @@
+/*
+ * card-face.css — composed-card treatment for CardFace.
+ *
+ * The `.card-face` base (battle-v2.css) gives the 110×160 box + the
+ * hover/armed lift transforms. When CardFace renders the real CardStack
+ * composition it adds `card-face--composed`; these higher-specificity rules
+ * strip the placeholder box chrome so the layered card art bleeds edge to
+ * edge. The lift transforms still apply (separate classes).
+ */
+
+.card-face.card-face--composed {
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+  border-radius: 8px;
+  /* depth for the child's 3D tilt (useCardTilt) */
+  perspective: 640px;
+}
+
+/* The CardStack wrapper. Tilt rotation is applied here, not on the button —
+   so the button keeps its hover/armed lift transform (battle-v2.css) and the
+   art rotates inside it. The --rotate-* / --pointer-* vars are written by
+   useCardTilt to the button and inherit down to here. No CSS transition: the
+   hook's own rAF lerp is the smoothing. */
+.card-face__art {
+  width: 100%;
+  height: 100%;
+  transform: rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* The card is "picked up" — the DragGhost is the real one, so the card dims
+   in place in the hand (drag/dragStore). */
+.card-face--dragging {
+  opacity: 0.32;
+}
+
+/* Pointer glare — light catching the card, tracking the cursor. Sits above
+   every card-stack layer (max layer z-index is 90). */
+.card-face__art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  /* Glare tinted by --holo-hue (set per-element by useCardTilt) — each
+     element's card catches light in its own colour. */
+  background: radial-gradient(
+    circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
+    oklch(0.96 0.09 var(--holo-hue, 90) / 0.45),
+    transparent 45%
+  );
+  opacity: var(--card-opacity, 0);
+  mix-blend-mode: soft-light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-face__art {
+    transform: none;
+  }
+  .card-face__art::after {
+    display: none;
+  }
+}
