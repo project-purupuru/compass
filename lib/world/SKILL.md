@@ -40,7 +40,16 @@ cp app/_components/awareness-example.tsx app/_components/<name>-example.tsx
 - All envelopes carry `output_type` ∈ Signal/Verdict/Artifact/Intent/Operator-Model (CI-gated)
 - No system reads or writes Solana directly — `lib/live/solana.live.ts` would be the chain-binding home (D5 · `lib/adapters/` is forbidden)
 - No system imports straylight runtime (D2 · doc-only this cycle)
+- No card/battle/deck files live in `lib/world/`; Honeycomb owns card-battle
+  vocabulary under `lib/honeycomb/`.
 - No system writes to a Ref/PubSub it doesn't declare ownership of in the matrix above (CI-enforced)
+
+## Checks
+
+```bash
+pnpm check:world
+pnpm check:world:selftest
+```
 
 ## Cross-references
 
@@ -48,3 +57,4 @@ cp app/_components/awareness-example.tsx app/_components/<name>-example.tsx
 - Force-chain mapping: `grimoires/loa/context/13-force-chain-mapping.md`
 - Conformance map: `grimoires/loa/context/12-hounfour-conformance-map.md`
 - Verify⊥judge fence: `lib/domain/verify-fence.ts`
+- Honeycomb card-battle substrate: `lib/honeycomb/SKILL.md`

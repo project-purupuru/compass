@@ -5,9 +5,15 @@
 # anywhere in lib/". Honeycomb is now an accepted local substrate under
 # lib/honeycomb/, so this gate is scoped to lib/world/ only.
 
-set -uo pipefail
+set -euo pipefail
 
-WORLD_DIR="lib/world"
+ROOT="${WORLD_DISCIPLINE_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null)}" || {
+  echo "FAIL: scripts/check-world-discipline.sh must run inside a git repository"
+  exit 2
+}
+cd "$ROOT"
+
+WORLD_DIR="${WORLD_DISCIPLINE_WORLD_DIR:-lib/world}"
 
 if [ ! -d "$WORLD_DIR" ]; then
   echo "OK: $WORLD_DIR doesn't exist yet (S4 not started)"
@@ -15,17 +21,20 @@ if [ ! -d "$WORLD_DIR" ]; then
 fi
 
 # D4 · NO solana imports
-SOLANA=$(grep -rl -E "from ['\"]@solana" "$WORLD_DIR" 2>/dev/null | wc -l | tr -d ' ')
-if [ "${SOLANA:-0}" != "0" ]; then
+SOLANA_FILES=$(grep -rl -E "from ['\"]@solana" "$WORLD_DIR" 2>/dev/null || true)
+if [ -n "$SOLANA_FILES" ]; then
+  SOLANA=$(printf '%s\n' "$SOLANA_FILES" | wc -l | tr -d ' ')
   echo "FAIL: $SOLANA files with solana imports in $WORLD_DIR (D4 forbids · use lib/live/solana.live.ts)"
-  grep -rln -E "from ['\"]@solana" "$WORLD_DIR" 2>/dev/null
+  printf '%s\n' "$SOLANA_FILES"
   exit 1
 fi
 
 # D4 · NO KV writes
-KV=$(grep -rl -E "kvSet|kv\.put" "$WORLD_DIR" 2>/dev/null | wc -l | tr -d ' ')
-if [ "${KV:-0}" != "0" ]; then
+KV_FILES=$(grep -rl -E "kvSet|kv\.put" "$WORLD_DIR" 2>/dev/null || true)
+if [ -n "$KV_FILES" ]; then
+  KV=$(printf '%s\n' "$KV_FILES" | wc -l | tr -d ' ')
   echo "FAIL: $KV files with KV writes in $WORLD_DIR (D4 in-memory only this cycle)"
+  printf '%s\n' "$KV_FILES"
   exit 1
 fi
 

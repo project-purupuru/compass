@@ -36,6 +36,9 @@ Prefer `Match` for `/battle-v2` lifecycle work. Treat `Battle` as the older sele
 
 - Keep substrate changes out of scene/style files unless the request is explicitly about presentation.
 - Route UI actions through `matchCommand` / `battleCommand`; do not mutate snapshots from components.
+- `lib/honeycomb/` is the only accepted card-battle substrate inside `lib/`;
+  `scripts/check-world-discipline.sh` intentionally scopes its card/battle/deck
+  ban to `lib/world/` so the world substrate cannot absorb Honeycomb.
 - Add new `MatchPhase` or `MatchCommand` values in `match.port.ts`, `match.reducer.ts` or `match.live.ts`, and the phase tests together.
 - Keep dev-only mutation behind `dev:*` commands and the `__PURU_DEV__.enabled` gate.
 - When adding a new Effect service, create the `port/live/mock` trio and wire the live layer once in `lib/runtime/runtime.ts`.

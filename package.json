@@ -13,6 +13,8 @@
     "fmt:check": "oxfmt --check",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "check:world": "bash scripts/check-world-discipline.sh",
+    "check:world:selftest": "bash scripts/check-world-discipline.selftest.sh",
     "check:honeycomb": "bash scripts/check-honeycomb-discipline.sh",
     "check:honeycomb:selftest": "bash scripts/check-honeycomb-discipline.selftest.sh",
     "test": "vitest run",
