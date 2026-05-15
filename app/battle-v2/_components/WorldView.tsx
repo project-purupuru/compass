@@ -40,7 +40,9 @@ import type { AnchorStore } from "./anchors/anchorStore";
 import { PALETTE } from "./world/palette";
 import { PostFX } from "./world/PostFX";
 import { RenderBudgetProbe } from "./world/RenderBudgetProbe";
+import { ShadowMapScheduler } from "./world/ShadowMapScheduler";
 import { WorldScene } from "./world/WorldScene";
+import { WorldRenderScheduler } from "./world/WorldRenderScheduler";
 import { zoneById } from "./world/zones";
 
 interface WorldViewProps {
@@ -70,10 +72,13 @@ export function WorldView({
   // The Ghibli-warm post-processing pass is on by default. `?fx=0` mounts the
   // scene raw — the escape hatch for comparison + perf-constrained devices.
   const [postFX, setPostFX] = useState<boolean>(true);
+  const [renderProbe, setRenderProbe] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const flag = new URLSearchParams(window.location.search).get("fx");
+    const params = new URLSearchParams(window.location.search);
+    const flag = params.get("fx");
     if (flag === "0" || flag === "false") setPostFX(false);
+    setRenderProbe(params.get("probe") === "1");
   }, []);
 
   // Click a district → the raptor stoops in AND STAYS. Also passes the click
@@ -126,6 +131,7 @@ export function WorldView({
   return (
     <div className="world-view" style={containerStyle}>
       <Canvas
+        frameloop="demand"
         shadows="soft"
         camera={{ position: [2, 46, 36], fov: 42 }}
         // NoToneMapping — the PostFX ToneMapping effect owns tone mapping so it
@@ -136,7 +142,11 @@ export function WorldView({
         {/* Far fog — at raptor altitude the whole continent stays crisp;
             fog only melts the void past the map's edge. */}
         <fog attach="fog" args={[PALETTE.fog, 70, 150]} />
+        <WorldRenderScheduler
+          highMotion={!!focusZoneId || hoveredZoneId !== null || activeBeat !== null}
+        />
         <Suspense fallback={null}>
+          <ShadowMapScheduler fps={8} />
           <WorldScene
             state={state}
             hoveredZoneId={hoveredZoneId}
@@ -150,7 +160,7 @@ export function WorldView({
         {/* The Ghibli-warm grade — tone curve, soft targeted bloom, gouache
             saturation, faint grain. Mounts last so it composites the scene. */}
         {postFX ? <PostFX /> : null}
-        <RenderBudgetProbe postFX={postFX} />
+        {renderProbe ? <RenderBudgetProbe postFX={postFX} /> : null}
       </Canvas>
 
       {/* Ascend — climb back to the soar. Only present while stooped in. */}

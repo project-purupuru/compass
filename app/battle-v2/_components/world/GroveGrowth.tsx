@@ -19,7 +19,6 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
@@ -31,6 +30,7 @@ import { buildGroveTrees, groveTreeCount, type GroveTree } from "./groveLayout";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
 import { type Spring, stepSpring } from "../vfx/springs";
+import { useThrottledFrame } from "./useThrottledFrame";
 
 /** A tree pushes up out of the ground and settles with a small green stretch. */
 const SPRING_GROW: Spring = { mass: 0.8, stiffness: 90, damping: 13 };
@@ -87,6 +87,7 @@ export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthP
   const growTarget = useRef<number[]>([]);
   const pendingDelay = useRef<number[]>([]); // ms until this tree starts growing
   const groupRefs = useRef<(Group | null)[]>([]);
+  const hasActiveGrowth = useRef(false);
 
   // First mount: the trees the current level already earned are simply THERE
   // (the grove exists). Only growth from here on animates.
@@ -110,23 +111,30 @@ export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthP
       if (i < targetCount && growTarget.current[i] === 0) {
         growTarget.current[i] = 1;
         pendingDelay.current[i] = staggerStep * STAGGER_MS;
+        hasActiveGrowth.current = true;
         staggerStep++;
       }
     }
   }, [activeBeat, targetCount, pool.length]);
 
-  useFrame((_, delta) => {
+  useThrottledFrame(30, (_, delta) => {
+    if (!hasActiveGrowth.current) return;
     const dt = Math.min(delta, 1 / 30);
+    let stillAnimating = false;
     for (let i = 0; i < pool.length; i++) {
       // Honour the per-tree stagger before the spring starts pulling.
       if (pendingDelay.current[i] > 0) {
         pendingDelay.current[i] -= dt * 1000;
+        stillAnimating = true;
         continue;
       }
       const s = grow.current[i];
       const target = growTarget.current[i];
       if (target === 0 && s.value === 0) continue; // dormant pool tree — skip
       stepSpring(s, target, SPRING_GROW, dt);
+      if (Math.abs(s.value - target) > 0.001 || Math.abs(s.velocity) > 0.01) {
+        stillAnimating = true;
+      }
       const g = groupRefs.current[i];
       if (g) {
         const v = Math.max(0, s.value);
@@ -134,6 +142,7 @@ export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthP
         g.visible = v > 0.001;
       }
     }
+    hasActiveGrowth.current = stillAnimating;
   });
 
   const groundY = groundHeight();

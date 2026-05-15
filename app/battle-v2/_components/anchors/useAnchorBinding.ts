@@ -18,11 +18,12 @@
 
 import { useEffect, type DependencyList, type RefObject } from "react";
 
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import type * as THREE from "three";
 import { Vector3 } from "three";
 
 import type { AnchorStore } from "./anchorStore";
+import { useThrottledFrame } from "../world/useThrottledFrame";
 
 // ────────────────────────────────────────────────────────────────────────────
 // DOM anchor — getBoundingClientRect center, re-measured on layout shifts
@@ -88,7 +89,7 @@ export function useMeshAnchorBinding(
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
 
-  useFrame(() => {
+  useThrottledFrame(30, () => {
     const obj = ref.current;
     if (!obj) return;
     obj.getWorldPosition(_world);

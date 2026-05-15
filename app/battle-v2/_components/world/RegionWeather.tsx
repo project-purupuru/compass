@@ -21,7 +21,6 @@
 
 import { useMemo, useRef } from "react";
 
-import { useFrame } from "@react-three/fiber";
 import { Color, type InstancedMesh, Matrix4 } from "three";
 
 import type { ElementId } from "@/lib/purupuru/contracts/types";
@@ -29,6 +28,7 @@ import type { ElementId } from "@/lib/purupuru/contracts/types";
 import { mulberry32 } from "./Foliage";
 import { groundHeight } from "./MapGround";
 import { regionAt } from "./regions";
+import { useThrottledFrame } from "./useThrottledFrame";
 import { MAP_SIZE } from "./zones";
 
 interface WeatherSignature {
@@ -98,7 +98,7 @@ export function RegionWeather({ activeElement }: RegionWeatherProps) {
   const scratch = useMemo(() => new Matrix4(), []);
   const moteColor = useMemo(() => new Color(sig.color), [sig.color]);
 
-  useFrame((frame) => {
+  useThrottledFrame(24, (frame) => {
     const mesh = meshRef.current;
     if (!mesh) return;
     const t = frame.clock.getElapsedTime();

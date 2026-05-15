@@ -21,7 +21,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Billboard, useTexture } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import { CanvasTexture, Group, SRGBColorSpace, type Texture } from "three";
 
 import type { Bear, BearCtx } from "./agents/bearBrain";
@@ -31,6 +30,7 @@ import { mulberry32 } from "./Foliage";
 import { isOnLand, sampleOnLand } from "./landmass";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
+import { useThrottledFrame } from "./useThrottledFrame";
 
 const BEAR_TEXTURES = [
   "/brand/characters/bear-01.png",
@@ -150,8 +150,8 @@ export function BearColony({
     [trees, hub, grove, onDeliver],
   );
 
-  useFrame((frame, delta) => {
-    const dt = Math.min(delta, 1 / 30); // a stalled tab must not explode the sim
+  useThrottledFrame(24, (frame, delta) => {
+    const dt = Math.min(delta, 1 / 20); // a stalled tab must not explode the sim
     const t = frame.clock.getElapsedTime();
     const groundY = groundHeight();
     const bears = bearsRef.current;

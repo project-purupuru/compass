@@ -21,11 +21,12 @@ test.describe("/battle-v2", () => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
-    await page.goto("/battle-v2?fx=0");
+    await page.goto("/battle-v2?fx=0&probe=1");
 
     await expect(page.locator(".battle-v2-shell")).toBeVisible();
     await expect(page.locator(".clash-arena")).toBeVisible();
     await expect(page.locator(".world-view canvas")).toHaveCount(1);
+    await expect(page.locator("canvas")).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Lock In" })).toBeVisible();
 
     await page.waitForFunction(

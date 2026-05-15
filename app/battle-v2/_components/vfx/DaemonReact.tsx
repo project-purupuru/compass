@@ -6,8 +6,8 @@
  * Kaori the wood-puruhani already drifts at the grove as a billboard. On the
  * `daemon_reaction` beat she *notices*: a reverent hop, a small lean toward
  * the bloom, a brief swell. Spring is light and quick — mass 0.4 · stiffness
- * 300 · damping 20 — because a creature notices fast. The ambient `Float`
- * keeps idling underneath; the spring is the punch on top.
+ * 300 · damping 20 — because a creature notices fast. Ambient drift runs on
+ * the shared Battle V2 frame budget; the spring is the punch on top.
  *
  * In-Canvas component — replaces the inline KaoriChibi3D in WorldMap3D. Binds
  * `anchor.wood_grove.daemon.primary` so the daemon is a real, landable anchor.
@@ -19,14 +19,14 @@
 
 import { useEffect, useRef } from "react";
 
-import { Billboard, Float, Text } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Billboard, Text } from "@react-three/drei";
 import { Group } from "three";
 
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import { ANCHOR, type AnchorStore } from "../anchors/anchorStore";
 import { useMeshAnchorBinding } from "../anchors/useAnchorBinding";
+import { useThrottledFrame } from "../world/useThrottledFrame";
 import { SPRING_DAEMON, stepSpring } from "./springs";
 
 const REACTION_HOLD_MS = 360;
@@ -43,6 +43,7 @@ export function DaemonReact({
   activeBeat,
   position = [-1.4, 1.5, 0.6],
 }: DaemonReactProps) {
+  const driftRef = useRef<Group>(null);
   const reactRef = useRef<Group>(null);
 
   // The daemon is a real anchor — bind her world position every frame.
@@ -65,7 +66,13 @@ export function DaemonReact({
     };
   }, [activeBeat]);
 
-  useFrame((_, dt) => {
+  useThrottledFrame(30, (frame, dt) => {
+    const drift = driftRef.current;
+    if (drift) {
+      const t = frame.clock.getElapsedTime();
+      drift.position.y = Math.sin(t * 2) * 0.09;
+    }
+
     const g = reactRef.current;
     if (!g) return;
     stepSpring(react.current, targetReact.current, SPRING_DAEMON, dt);
@@ -77,12 +84,12 @@ export function DaemonReact({
   });
 
   return (
-    <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
+    <group ref={driftRef}>
       <Billboard position={position as [number, number, number]}>
         <group ref={reactRef}>
           <Text fontSize={0.6}>🌸</Text>
         </group>
       </Billboard>
-    </Float>
+    </group>
   );
 }

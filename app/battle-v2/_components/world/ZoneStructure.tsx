@@ -23,7 +23,6 @@
 import { useEffect, useRef } from "react";
 
 import { Billboard, Instance, Instances, Text } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { ElementId, ZoneRuntimeState } from "@/lib/purupuru/contracts/types";
@@ -40,6 +39,7 @@ import {
   PLOT_RADIUS,
   buildFencePostTransforms,
 } from "./renderBudget";
+import { useThrottledFrame } from "./useThrottledFrame";
 import type { ZonePlacement } from "./zones";
 
 interface ZoneStructureProps {
@@ -166,7 +166,7 @@ export function ZoneStructure({
     bloomActive.current = true;
   }, [activeBeat, isRitualTarget]);
 
-  useFrame((frame, dt) => {
+  useThrottledFrame(30, (frame, dt) => {
     const t = frame.clock.getElapsedTime();
 
     // Hut: hover-lift + Active breathe + ValidTarget pulse.
@@ -174,14 +174,23 @@ export function ZoneStructure({
     if (hut) {
       let targetLift = 0;
       let scale = 1;
+      let needsHutTick = false;
       if (isValidTarget) {
         scale = 1 + Math.sin(t * 4) * 0.04;
+        needsHutTick = true;
       } else if (isActive) {
         scale = 1 + Math.sin(t * 2) * 0.02;
         targetLift = 0.04;
+        needsHutTick = true;
       } else if (hovered && isInteractive) {
         targetLift = 0.12;
+        needsHutTick = true;
       }
+      needsHutTick =
+        needsHutTick ||
+        Math.abs(hut.position.y - targetLift) > 0.001 ||
+        Math.abs(hut.scale.x - scale) > 0.001;
+      if (!needsHutTick && !bloomActive.current) return;
       hut.position.y += (targetLift - hut.position.y) * 0.18;
       hut.scale.x += (scale - hut.scale.x) * 0.2;
       hut.scale.y = hut.scale.x;

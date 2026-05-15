@@ -25,11 +25,11 @@
 
 import { useMemo, useRef } from "react";
 
-import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import { buildPuffCluster } from "./clusterGeometry";
 import { mulberry32 } from "./Foliage";
+import { useThrottledFrame } from "./useThrottledFrame";
 import { MAP_SIZE } from "./zones";
 
 interface CloudPuff {
@@ -124,7 +124,7 @@ export function CloudLayer() {
     [clouds],
   );
 
-  useFrame((frame) => {
+  useThrottledFrame(12, (frame) => {
     const t = frame.clock.getElapsedTime();
     for (let i = 0; i < clouds.length; i++) {
       const c = clouds[i];

@@ -13,9 +13,16 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import { Billboard, Float, Text } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
+import { Object3D, type InstancedMesh } from "three";
 
 import type {
   ElementId,
@@ -39,6 +46,7 @@ import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { RaptorCamera } from "./RaptorCamera";
 import { RegionMap } from "./RegionMap";
 import { RegionWeather } from "./RegionWeather";
+import { useThrottledFrame } from "./useThrottledFrame";
 import { WoodStockpile } from "./WoodStockpile";
 import {
   MUSUBI_HUB,
@@ -113,24 +121,121 @@ function buildVillagers(): NPCSpec[] {
   return out;
 }
 
-function Villager({ spec, activeElement }: { spec: NPCSpec; activeElement: ElementId }) {
-  const tint = ELEMENT_GLOW[spec.elementId];
-  const isActive = spec.elementId === activeElement;
-  const speed = (1 + (spec.seed % 7) * 0.15) * (isActive ? 2.1 : 1);
-  const floatY = (0.05 + (spec.seed % 5) * 0.02) * (isActive ? 1.8 : 1);
+const ELEMENT_IDS: readonly ElementId[] = [
+  "wood",
+  "fire",
+  "earth",
+  "metal",
+  "water",
+];
+
+function VillagerBatch({
+  specs,
+  elementId,
+  activeElement,
+}: {
+  readonly specs: readonly NPCSpec[];
+  readonly elementId: ElementId;
+  readonly activeElement: ElementId;
+}) {
+  const bodyRef = useRef<InstancedMesh>(null);
+  const headRef = useRef<InstancedMesh>(null);
+  const dummy = useMemo(() => new Object3D(), []);
+  const tint = ELEMENT_GLOW[elementId];
+
+  const syncInstances = useCallback(
+    (t: number) => {
+      const body = bodyRef.current;
+      const head = headRef.current;
+      if (!body || !head) return;
+
+      const groundY = groundHeight();
+      for (let i = 0; i < specs.length; i++) {
+        const spec = specs[i];
+        const isActive = spec.elementId === activeElement;
+        const speed = (1 + (spec.seed % 7) * 0.15) * (isActive ? 2.1 : 1);
+        const floatY = (0.05 + (spec.seed % 5) * 0.02) * (isActive ? 1.8 : 1);
+        const bob = Math.sin(t * speed + spec.seed) * floatY;
+        const sway = Math.sin(t * speed * 1.7 + spec.seed) * (isActive ? 0.16 : 0.05);
+
+        dummy.position.set(spec.x, groundY + (0.43 * spec.scale) + bob, spec.z);
+        dummy.rotation.set(0, 0, sway);
+        dummy.scale.setScalar(spec.scale);
+        dummy.updateMatrix();
+        body.setMatrixAt(i, dummy.matrix);
+
+        dummy.position.set(spec.x, groundY + (0.75 * spec.scale) + bob, spec.z);
+        dummy.updateMatrix();
+        head.setMatrixAt(i, dummy.matrix);
+      }
+
+      body.instanceMatrix.needsUpdate = true;
+      head.instanceMatrix.needsUpdate = true;
+    },
+    [activeElement, dummy, specs],
+  );
+
+  useLayoutEffect(() => {
+    syncInstances(0);
+  }, [syncInstances]);
+
+  useThrottledFrame(24, (frame) => {
+    syncInstances(frame.clock.getElapsedTime());
+  });
+
+  if (specs.length === 0) return null;
+
   return (
-    <Float speed={speed} rotationIntensity={isActive ? 0.32 : 0.1} floatIntensity={floatY}>
-      <group position={[spec.x, groundHeight() + 0.25 * spec.scale, spec.z]} scale={spec.scale}>
-        <mesh castShadow position={[0, 0.18, 0]}>
-          <coneGeometry args={[0.16, 0.4, 8]} />
-          <meshStandardMaterial color={tint} roughness={0.85} />
-        </mesh>
-        <mesh castShadow position={[0, 0.5, 0]}>
-          <sphereGeometry args={[0.13, 16, 16]} />
-          <meshStandardMaterial color="#f4e6cf" roughness={0.7} />
-        </mesh>
-      </group>
-    </Float>
+    <group>
+      <instancedMesh
+        ref={bodyRef}
+        args={[undefined, undefined, specs.length]}
+        castShadow
+        frustumCulled={false}
+      >
+        <coneGeometry args={[0.16, 0.4, 8]} />
+        <meshStandardMaterial color={tint} roughness={0.85} />
+      </instancedMesh>
+      <instancedMesh
+        ref={headRef}
+        args={[undefined, undefined, specs.length]}
+        castShadow
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[0.13, 16, 16]} />
+        <meshStandardMaterial color="#f4e6cf" roughness={0.7} />
+      </instancedMesh>
+    </group>
+  );
+}
+
+function VillagerSwarm({
+  villagers,
+  activeElement,
+}: {
+  readonly villagers: readonly NPCSpec[];
+  readonly activeElement: ElementId;
+}) {
+  const batches = useMemo(
+    () =>
+      ELEMENT_IDS.map((elementId) => ({
+        elementId,
+        specs: villagers.filter((spec) => spec.elementId === elementId),
+      })),
+    [villagers],
+  );
+
+  return (
+    <group>
+      {batches.map((batch) => (
+        <VillagerBatch
+          key={batch.elementId}
+          specs={batch.specs}
+          elementId={batch.elementId}
+          activeElement={activeElement}
+        />
+      ))}
+    </group>
   );
 }
 
@@ -243,9 +348,7 @@ export function WorldScene({
       />
       <WoodStockpile delivered={delivered} hub={hub} />
 
-      {villagers.map((spec) => (
-        <Villager key={spec.seed} spec={spec} activeElement={activeElement} />
-      ))}
+      <VillagerSwarm villagers={villagers} activeElement={activeElement} />
 
       {ZONE_POSITIONS.map((placement) => {
         const zoneState: ZoneRuntimeState = placement.decorative

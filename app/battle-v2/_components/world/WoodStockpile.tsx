@@ -17,13 +17,13 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
 import type { Vec2 } from "./agents/steering";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
 import { type Spring, stepSpring } from "../vfx/springs";
+import { useThrottledFrame } from "./useThrottledFrame";
 
 const LOGS_PER_ROW = 4;
 const MAX_LOGS = 24; // 6 rows — the pile ceiling
@@ -67,6 +67,7 @@ export function WoodStockpile({ delivered, hub }: WoodStockpileProps) {
   const drop = useRef<{ value: number; velocity: number }[]>([]);
   const dropTarget = useRef<number[]>([]);
   const logRefs = useRef<(Group | null)[]>([]);
+  const hasActiveDrop = useRef(false);
 
   // Lazy init the spring pool.
   if (drop.current.length === 0) {
@@ -81,15 +82,21 @@ export function WoodStockpile({ delivered, hub }: WoodStockpileProps) {
     for (let i = 0; i < MAX_LOGS; i++) {
       dropTarget.current[i] = i < count ? 1 : 0;
     }
+    hasActiveDrop.current = true;
   }, [count]);
 
-  useFrame((_, delta) => {
+  useThrottledFrame(30, (_, delta) => {
+    if (!hasActiveDrop.current) return;
     const dt = Math.min(delta, 1 / 30);
+    let stillAnimating = false;
     for (let i = 0; i < MAX_LOGS; i++) {
       const s = drop.current[i];
       const target = dropTarget.current[i];
       if (target === 0 && s.value === 0) continue;
       stepSpring(s, target, SPRING_DROP, dt);
+      if (Math.abs(s.value - target) > 0.001 || Math.abs(s.velocity) > 0.01) {
+        stillAnimating = true;
+      }
       const g = logRefs.current[i];
       if (g) {
         const v = Math.max(0, Math.min(1.05, s.value));
@@ -100,6 +107,7 @@ export function WoodStockpile({ delivered, hub }: WoodStockpileProps) {
         g.visible = v > 0.01;
       }
     }
+    hasActiveDrop.current = stillAnimating;
   });
 
   const groundY = groundHeight();
