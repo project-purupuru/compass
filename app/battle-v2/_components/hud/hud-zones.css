@@ -149,7 +149,7 @@
    smaller than the player's corner: less weight in the top area. */
 .hud-enemy {
   position: fixed;
-  top: 0;
+  top: 80px;
   right: 10px;
   pointer-events: none;
 }
@@ -164,10 +164,7 @@
   filter: drop-shadow(0 10px 20px oklch(0.04 0.006 80 / 0.55));
 }
 .hud-enemy__puruhani {
-  position: absolute;
-  left: -34px;
-  bottom: 0;
-  z-index: 2;
+  display: block;
   height: clamp(180px, 26vh, 300px);
   width: auto;
   object-fit: contain;
@@ -258,10 +255,7 @@
   filter: drop-shadow(0 10px 20px oklch(0.04 0.006 80 / 0.6));
 }
 .hud-caretaker__puruhani {
-  position: absolute;
-  right: -34px;
-  bottom: 0;
-  z-index: 2;
+  display: block;
   height: clamp(220px, 32vh, 360px);
   width: auto;
   object-fit: contain;
