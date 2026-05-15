@@ -44,19 +44,25 @@ import {
 } from "@react-three/postprocessing";
 import { BlendFunction, ToneMappingMode } from "postprocessing";
 
-/** Every dial in one place — the Ghibli-warm grade is parametric until a LUT lands. */
+/**
+ * Every dial in one place. v1 was tuned too shy ("no visible changes" feedback
+ * 2026-05-14) — v2 keeps the Ghibli restraint but ALL effects are now
+ * actually felt: bloom threshold drops so atmospheric haze blooms around the
+ * map's bright spots, saturation/contrast lift the painting, vignette + grain
+ * are present without going gamer.
+ */
 const FX = {
   bloom: {
-    intensity: 0.6, // a haze, not a glare
-    luminanceThreshold: 0.9, // only the genuinely bright bleed
-    luminanceSmoothing: 0.34,
-    radius: 0.86, // wide + soft
+    intensity: 0.95,
+    luminanceThreshold: 0.55, // most lit mid-tones contribute a soft haze
+    luminanceSmoothing: 0.42,
+    radius: 1.0,
   },
-  saturation: 0.1, // gouache lift
-  brightness: 0.014,
-  contrast: 0.045,
-  vignette: { offset: 0.32, darkness: 0.32 },
-  grain: 0.028, // faint painted texture
+  saturation: 0.2, // gouache lift
+  brightness: 0.04,
+  contrast: 0.08,
+  vignette: { offset: 0.3, darkness: 0.45 },
+  grain: 0.045, // painted-texture noise
 } as const;
 
 export function PostFX() {

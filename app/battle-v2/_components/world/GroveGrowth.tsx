@@ -25,6 +25,7 @@ import type { Group } from "three";
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import type { Vec2 } from "./agents/steering";
+import { buildPuffCluster } from "./clusterGeometry";
 import { mulberry32 } from "./Foliage";
 import { buildGroveTrees, groveTreeCount, type GroveTree } from "./groveLayout";
 import { groundHeight } from "./MapGround";
@@ -51,6 +52,19 @@ interface TreeVisual {
   readonly scale: number;
   readonly hue: string;
 }
+
+// One canopy geometry shared by every tree — two icosphere blobs MERGED with
+// spherical-pivot normals from the canopy centroid. Per the painterly-cluster
+// dig: the leaf-mass reads as ONE volume, not two lumps stuck together.
+// Smooth-shaded; faceted silhouette comes from the low subdivision count.
+const UNIT_CANOPY_GEO = buildPuffCluster(
+  [
+    { offset: [0, 1.05, 0], radius: 0.92, detail: 1 },
+    { offset: [0.22, 1.55, 0.14], radius: 0.58, detail: 1 },
+  ],
+  // Pivot at the canopy's centre of mass — normals radiate outward from here.
+  [0.05, 1.25, 0.03],
+);
 
 export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthProps) {
   // The full candidate pool — generated once, sliced by activation level.
@@ -140,19 +154,18 @@ export function GroveGrowth({ activationLevel, grove, activeBeat }: GroveGrowthP
               <cylinderGeometry args={[0.11, 0.17, 1, 6]} />
               <meshStandardMaterial color={PALETTE.trunk} roughness={1} />
             </mesh>
-            {/* canopy — two faceted blobs, the Foliage silhouette */}
-            <mesh position={[0, 1.05 * s, 0]} scale={0.92 * s} castShadow receiveShadow>
-              <icosahedronGeometry args={[1, 1]} />
-              <meshStandardMaterial color={tv.hue} roughness={0.95} flatShading />
-            </mesh>
+            {/* canopy — ONE merged cluster, spherical-pivot normals: light
+                wraps both blobs as a single leafy mass instead of shading
+                them as separate lumps. Smooth shading is REQUIRED for the
+                trick to work; the low-poly icosphere subdivision gives the
+                faceted silhouette without breaking the unified read. */}
             <mesh
-              position={[0.22 * s, 1.55 * s, 0.14 * s]}
-              scale={0.58 * s}
+              geometry={UNIT_CANOPY_GEO}
+              scale={s}
               castShadow
               receiveShadow
             >
-              <icosahedronGeometry args={[1, 1]} />
-              <meshStandardMaterial color={tv.hue} roughness={0.95} flatShading />
+              <meshStandardMaterial color={tv.hue} roughness={0.95} />
             </mesh>
           </group>
         );

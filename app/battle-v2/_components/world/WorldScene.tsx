@@ -28,10 +28,12 @@ import type { AnchorStore } from "../anchors/anchorStore";
 import { DaemonReact } from "../vfx/DaemonReact";
 import type { Vec2 } from "./agents/steering";
 import { BearColony } from "./BearColony";
+import { CloudLayer } from "./CloudLayer";
 import { Foliage, mulberry32 } from "./Foliage";
 import { GroveGrowth } from "./GroveGrowth";
 import { buildGroveTrees, groveTreeCount } from "./groveLayout";
 import { sampleOnLand } from "./landmass";
+import { MistLayer } from "./MistLayer";
 import { groundHeight, MapGround } from "./MapGround";
 import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { RaptorCamera } from "./RaptorCamera";
@@ -209,6 +211,13 @@ export function WorldScene({
       {/* Session 12: the active element's territory does something the eye
           reads as weather (D3) — drifting motes + a soft light wash. */}
       <RegionWeather activeElement={activeElement} />
+      {/* The raptor flies ABOVE the clouds — a soft halo of cumulus around
+          the continent's edges, a few drifting over the map. Casts shadows
+          inside the directional light's bounds (gentle moving cloud-shade). */}
+      <CloudLayer />
+      {/* Noise-modulated ground mist — two stacked drifting layers that read
+          as patches hugging the lowlands. The Luminist "memory of fog." */}
+      <MistLayer />
       <SoraTower />
       {woodGrove ? (
         <DaemonReact
