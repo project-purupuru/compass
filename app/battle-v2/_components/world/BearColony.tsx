@@ -22,7 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Billboard, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { CanvasTexture, Group, SRGBColorSpace, type Texture } from "three";
+import { CanvasTexture, Group } from "three";
 
 import type { Bear, BearCtx } from "./agents/bearBrain";
 import { stepBear } from "./agents/bearBrain";
@@ -31,12 +31,20 @@ import { mulberry32 } from "./Foliage";
 import { isOnLand, sampleOnLand } from "./landmass";
 import { groundHeight } from "./MapGround";
 import { PALETTE } from "./palette";
+import {
+  SpriteSheetPlane,
+  spriteSheetAspect,
+  type SpriteSheetDefinition,
+} from "./SpriteSheetPlane";
 
-const BEAR_TEXTURES = [
-  "/brand/characters/bear-01.png",
-  "/brand/characters/bear-02.png",
-  "/brand/characters/bear-03.png",
-];
+const WOOD_BEAR_SPRITE: SpriteSheetDefinition = {
+  src: "/brand/sprites/flex-jani-bear.png",
+  columns: 2,
+  rows: 1,
+  frameCount: 2,
+  frameWidth: 227,
+  frameHeight: 213,
+};
 
 const BASE_BEARS = 3; // the grove is never empty — it's always being worked
 const MAX_BEARS = 9; // colony ceiling
@@ -86,8 +94,6 @@ export function BearColony({
   trees,
   onDeliver,
 }: BearColonyProps) {
-  const textures = useTexture(BEAR_TEXTURES) as Texture[];
-
   // A soft contact shadow — one shared radial-gradient texture for the whole
   // colony. Without it the billboard bears float; a grounded blob is the
   // cheap fix that makes them sit ON the continent (the Fresnel-rim fix from
@@ -108,15 +114,13 @@ export function BearColony({
     return new CanvasTexture(c);
   }, []);
 
-  // Sprite aspect per artwork — height fixed, width follows the PNG.
-  const spriteSize = useMemo(() => {
-    return textures.map((tex) => {
-      tex.colorSpace = SRGBColorSpace;
-      const img = tex.image as { width?: number; height?: number } | undefined;
-      const aspect = img?.width && img?.height ? img.width / img.height : 0.8;
-      return { w: BEAR_HEIGHT * aspect, h: BEAR_HEIGHT };
-    });
-  }, [textures]);
+  const spriteSize = useMemo(
+    () => ({
+      w: BEAR_HEIGHT * spriteSheetAspect(WOOD_BEAR_SPRITE),
+      h: BEAR_HEIGHT,
+    }),
+    [],
+  );
 
   // The colony lives in a ref — bears are mutated in place each frame, never
   // re-allocated. `count` state triggers the re-render that adds group slots.
@@ -186,8 +190,7 @@ export function BearColony({
     <group>
       {Array.from({ length: count }, (_, i) => {
         const bear = bearsRef.current[i];
-        const size = spriteSize[(bear?.variant ?? 1) - 1] ?? { w: 0.96, h: BEAR_HEIGHT };
-        const tex = textures[(bear?.variant ?? 1) - 1];
+        const size = spriteSize;
         return (
           <group key={i} ref={(el) => void (groupRefs.current[i] = el)}>
             {/* Contact shadow — flat on the ground, does NOT billboard. Stays
@@ -206,16 +209,15 @@ export function BearColony({
             ) : null}
             <Billboard position={[0, BEAR_HEIGHT / 2, 0]}>
               <group ref={(el) => void (spriteRefs.current[i] = el)}>
-                {/* The bear — billboard sprite, MeshyAI-GLB-ready fallback. */}
-                <mesh>
-                  <planeGeometry args={[size.w, size.h]} />
-                  <meshBasicMaterial
-                    map={tex}
-                    transparent
-                    alphaTest={0.4}
-                    toneMapped={false}
-                  />
-                </mesh>
+                <SpriteSheetPlane
+                  sheet={WOOD_BEAR_SPRITE}
+                  height={size.h}
+                  fps={2.4}
+                  frameOffset={bear?.id ?? i}
+                  phase={(bear?.id ?? i) * 0.17}
+                  alphaTest={0.4}
+                  name={`bear-colony.bear-${bear?.id ?? i}.sprite`}
+                />
                 {/* The carried log — only visible while hauling/delivering. */}
                 <group
                   ref={(el) => void (logRefs.current[i] = el)}
@@ -237,4 +239,4 @@ export function BearColony({
   );
 }
 
-for (const url of BEAR_TEXTURES) useTexture.preload(url);
+useTexture.preload(WOOD_BEAR_SPRITE.src);
