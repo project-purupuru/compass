@@ -38,3 +38,42 @@ The "Browser FPS" exists in a state of architectural hypocrisy: it sells "instan
 - [VisualHFT Open Source Project](https://github.com/ArielSilahian/VisualHFT)
 
 ---
+
+## Dig: Achieving the For The King + Craftopia mountains + Island Beekeeper aesthetic in React Three Fiber — mid-poly painterly worlds (not low-poly flat, not high-detail PBR): warm directional sunset lighting with rim/edge glow on land, painted-texture terrain, mid-poly trees with leaf-card canopies, drifting cloud layers viewed from above, atmospheric depth fog, flat-shaded icosphere blob vocabulary, Ghibli-warm mood
+_2026-05-15T04:03:18.708Z | 13 sources | 715.6s | depth: +++_
+
+### Findings
+
+Faraz Shaikh’s `three-custom-shader-material` (CSM) serves as the technical pivot for the "Sunday Afternoon" aesthetic, enabling the injection of custom GLSL into Three.js’s native lighting chunks. By hijacking the `MeshStandardMaterial`, Shaikh preserves built-in shadow mapping while overriding the fragment shader to calculate a Fresnel-driven "rim glow"—a `dot(normal, viewDir)` calculation that illuminates the edges of a model as if it were caught in a perpetual sunset. (adjacent) This technique mirrors the "Light and Space" movement’s use of light as a tangible material, specifically Larry Bell’s vacuum-coated glass cubes that define volume through edge-glow and refraction rather than surface detail.
+
+Maxime Heckel’s "The Study of Shaders with React Three Fiber" provides the blueprint for "fluffy" mid-poly canopies through spherical normal manipulation. By forcing vertex normals to point outward from a central pivot rather than perpendicular to their actual geometry, the lighting wraps around clusters of "leaf cards" or icosphere blobs as a single organic volume. Heckel emphasizes using "3D Simplex or Perlin noise to displace the vertices along their normals dynamically," creating the "drifting, breathing" quality seen in *Island Beekeeper* clouds. (bridge) The synthesis of Heckel’s displacement logic with Oskar Stålberg’s "Irregular Quad Grids" transforms the mesh from a static shell into a "perceptual container" where the geometry itself acts as a medium for atmospheric turbulence.
+
+Paul Henschel (0xca0a) champions the use of `AccumulativeShadows` to ground the floating hex-grids of *For The King*-style dioramas, arguing that "soft, jittered shadows" are the essential "glue" that makes a digital island feel like a tactile toy. This groundedness is softened by "noise-injected height fog," a technique that replaces standard linear fog with a color gradient (deep purple to warm peach) modulated by noise to simulate "patches" of drifting mist. (adjacent) This layering of atmospheric color echoes the "Luminist" painters of the Hudson River School, such as Albert Bierstadt, who used translucent oil glazes to achieve a "glow of the land"—a physical precursor to the modern Alpha-blended fragment shader.
+
+### Pull Threads
+
+- "Maxime Heckel Kuwahara Filter shader implementation" — How to use variance-based smoothing in a post-processing pass to convert 3D renders into painterly oil strokes.
+- "Oskar Stålberg Townscaper vertex color palette" — Achieving a "painted" look without texture maps by encoding colors directly into the mesh geometry for optimized, low-memory dioramas.
+- "Faraz Shaikh Sunday Afternoon lighting setup" — The specific `CustomShaderMaterial` configuration for achieving warm, low-contrast, non-PBR global illumination.
+- "Kazuo Oga Studio Ghibli poster color clumping" — How to translate the 2D "blob" vocabulary of anime background art into 3D volume modeling and "leaf-card" placement.
+
+### Emergence
+
+A fundamental shift occurs in this aesthetic from "Mathematical Accuracy" to "Perceptual Affect." By hijacking vertex normals and injecting noise into fog, practitioners like Henschel and Heckel are not simulating the physics of light, but the *memory* of a sunset. The tension between the "jagged" mid-poly geometry and the "soft" lighting gradients creates a "haptic visuality"—a world that looks like it would feel warm to the touch.
+
+### Sources
+- [Building a stylized scene with React Three Fiber](https://www.youtube.com/watch?v=R2jI00GZ1bQ)
+- [React Three Fiber - Shaders - Toon Shading](https://tympanus.net/codrops/2023/11/08/the-study-of-shaders-with-react-three-fiber/)
+- [Three.js Fog Hacks](https://medium.com/@_V_S_/three-js-fog-hacks-7424d10e587e)
+- [r3f-fog-effect](https://github.com/AxiomeCG/r3f-fog-effect)
+- [Drei - Outlines and Edges](https://drei.pmnd.rs/)
+- [Lamina documentation](https://github.com/pmndrs/lamina)
+- [Bruno Simon's Three.js Journey](https://threejs-journey.com/)
+- [Maxime Heckel: The Power of the Kuwahara Filter](https://maximeheckel.com/posts/the-power-of-the-kuwahara-filter/)
+- [Faraz Shaikh: THREE-CustomShaderMaterial](https://github.com/FarazzShaikh/THREE-CustomShaderMaterial)
+- [Alexander Birke: The Living Painting Technical Breakdown](https://www.gamedeveloper.com/design/creating-the-painterly-art-style-of-11-11-memories-retold)
+- [Oskar Stålberg's Townscaper Grid Logic](https://twitter.com/OskarStalberg/status/1164101967205244928)
+- [Matt DesLauriers: Generative Impressionism](https://mattdesl.svbtle.com/generative-impressionism)
+- [Poimandres: React Three Fiber Examples](https://docs.pmnd.rs/react-three-fiber/getting-started/examples)
+
+---
