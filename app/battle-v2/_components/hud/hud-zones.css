@@ -149,8 +149,8 @@
    smaller than the player's corner: less weight in the top area. */
 .hud-enemy {
   position: fixed;
-  top: 80px;
-  right: 10px;
+  top: 24px;
+  right: 64px;
   pointer-events: none;
 }
 .hud-enemy__stage {
