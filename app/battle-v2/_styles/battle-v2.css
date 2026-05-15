@@ -537,6 +537,193 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+ * Battle Observatory — opt-in performance + scene inspector.
+ * ─────────────────────────────────────────────────────────────── */
+.battle-observability-tab {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 60;
+  width: 44px;
+  height: 32px;
+  border: 1px solid oklch(0.84 0.06 95 / 0.55);
+  border-radius: 6px;
+  background: oklch(0.18 0.025 95 / 0.9);
+  color: oklch(0.92 0.04 95);
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.battle-observability {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 60;
+  width: min(430px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid oklch(0.84 0.06 95 / 0.45);
+  border-radius: 8px;
+  background: oklch(0.16 0.022 95 / 0.94);
+  color: oklch(0.92 0.035 95);
+  box-shadow: 0 14px 44px oklch(0.02 0.01 95 / 0.5);
+  font-family: var(--font-puru-mono, ui-monospace), monospace;
+  pointer-events: auto;
+}
+
+.battle-observability--good {
+  border-color: oklch(0.78 0.14 142 / 0.55);
+}
+
+.battle-observability--warn {
+  border-color: oklch(0.82 0.14 78 / 0.7);
+}
+
+.battle-observability--bad {
+  border-color: oklch(0.67 0.18 35 / 0.82);
+}
+
+.battle-observability__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.battle-observability__eyebrow {
+  margin-bottom: 0.18rem;
+  color: oklch(0.76 0.035 95);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-observability h2,
+.battle-observability h3 {
+  margin: 0;
+  color: oklch(0.96 0.025 95);
+  letter-spacing: 0;
+}
+
+.battle-observability h2 {
+  font-size: 0.86rem;
+}
+
+.battle-observability h3 {
+  margin-bottom: 0.38rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.battle-observability__actions {
+  display: flex;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.battle-observability__actions button {
+  border: 1px solid oklch(0.78 0.05 95 / 0.45);
+  border-radius: 6px;
+  background: oklch(0.24 0.03 95 / 0.86);
+  color: oklch(0.94 0.03 95);
+  padding: 0.35rem 0.55rem;
+  font: inherit;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.battle-observability__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.battle-observability__grid div {
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid oklch(0.82 0.04 95 / 0.18);
+  border-radius: 6px;
+  background: oklch(0.24 0.025 95 / 0.52);
+}
+
+.battle-observability__grid span,
+.battle-observability__grid strong {
+  display: block;
+}
+
+.battle-observability__grid span {
+  margin-bottom: 0.16rem;
+  color: oklch(0.72 0.035 95);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.battle-observability__grid strong {
+  overflow: hidden;
+  color: oklch(0.96 0.03 95);
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-observability__section {
+  padding: 0.65rem 0;
+  border-top: 1px solid oklch(0.82 0.04 95 / 0.16);
+}
+
+.battle-observability__section p {
+  margin: 0;
+  color: oklch(0.8 0.035 95);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.battle-observability__section code {
+  display: block;
+  margin-top: 0.35rem;
+  color: oklch(0.85 0.11 145);
+  font-size: 0.64rem;
+  white-space: normal;
+}
+
+.battle-observability__list {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.battle-observability__list li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 0.18rem 0.5rem;
+  align-items: baseline;
+  color: oklch(0.82 0.035 95);
+  font-size: 0.64rem;
+  line-height: 1.25;
+}
+
+.battle-observability__list li b {
+  color: oklch(0.93 0.08 82);
+  font-weight: 700;
+}
+
+.battle-observability__list li span {
+  overflow-wrap: anywhere;
+}
+
+.battle-observability__list li span:last-child {
+  grid-column: 2;
+  color: oklch(0.68 0.035 95);
+}
+
+/* ─────────────────────────────────────────────────────────────────
  * VfxLayer — the ritual's answer, drawn in screen space.
  *
  * Fixed full-viewport overlay between the world (z:0) and the HUD

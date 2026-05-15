@@ -37,6 +37,9 @@ import type { ContentDatabase, GameState } from "@/lib/purupuru/contracts/types"
 import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import type { AnchorStore } from "./anchors/anchorStore";
+import { BattleV2ObservabilityPanel } from "./observability/BattleV2ObservabilityPanel";
+import { BattleV2ObservabilityProbe } from "./observability/BattleV2ObservabilityProbe";
+import type { BattleV2ObservabilitySnapshot } from "./observability/types";
 import { PALETTE } from "./world/palette";
 import { PostFX } from "./world/PostFX";
 import { RenderBudgetProbe } from "./world/RenderBudgetProbe";
@@ -72,12 +75,35 @@ export function WorldView({
   // scene raw — the escape hatch for comparison + perf-constrained devices.
   const [postFX, setPostFX] = useState<boolean>(true);
   const [renderProbe, setRenderProbe] = useState(false);
+  const [observabilityEnabled, setObservabilityEnabled] = useState(false);
+  const [observabilityLocked, setObservabilityLocked] = useState(false);
+  const [observabilitySnapshot, setObservabilitySnapshot] =
+    useState<BattleV2ObservabilitySnapshot | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const flag = params.get("fx");
     if (flag === "0" || flag === "false") setPostFX(false);
     setRenderProbe(params.get("probe") === "1");
+    setObservabilityEnabled(
+      params.get("observe") === "1" ||
+        params.get("perf") === "1" ||
+        window.localStorage.getItem("battleV2Observability") === "1",
+    );
+  }, []);
+
+  const toggleObservability = useCallback(() => {
+    setObservabilityEnabled((enabled) => {
+      const next = !enabled;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("battleV2Observability", next ? "1" : "0");
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleObservabilityLock = useCallback(() => {
+    setObservabilityLocked((locked) => !locked);
   }, []);
 
   // Click a district → the raptor stoops in AND STAYS. Also passes the click
@@ -156,7 +182,20 @@ export function WorldView({
             saturation, faint grain. Mounts last so it composites the scene. */}
         {postFX ? <PostFX /> : null}
         {renderProbe ? <RenderBudgetProbe postFX={postFX} /> : null}
+        <BattleV2ObservabilityProbe
+          enabled={observabilityEnabled}
+          locked={observabilityLocked}
+          onSnapshot={setObservabilitySnapshot}
+        />
       </Canvas>
+
+      <BattleV2ObservabilityPanel
+        enabled={observabilityEnabled}
+        locked={observabilityLocked}
+        snapshot={observabilitySnapshot}
+        onToggleEnabled={toggleObservability}
+        onToggleLocked={toggleObservabilityLock}
+      />
 
       {/* Ascend — climb back to the soar. Only present while stooped in. */}
       {focusZoneId ? (

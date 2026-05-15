@@ -40,15 +40,25 @@ export function MapGround() {
   map.anisotropy = 8;
 
   return (
-    <group>
+    <group name="map-ground">
       {/* The sea — a wide calm plane the continent floats in. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+      <mesh
+        name="map-ground.sea-plane"
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.05, 0]}
+        receiveShadow
+      >
         <planeGeometry args={[MAP_SIZE * 2.6, MAP_SIZE * 2.6]} />
         <meshStandardMaterial color={PALETTE.sea} roughness={0.55} metalness={0.04} />
       </mesh>
       {/* The Tsuheji continent — canonical landmass shape. alphaTest discards
           the transparent surround so the sea reads cleanly underneath. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <mesh
+        name="map-ground.continent-plane"
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0, 0]}
+        receiveShadow
+      >
         <planeGeometry args={[MAP_SIZE, MAP_SIZE]} />
         <meshStandardMaterial
           map={map}

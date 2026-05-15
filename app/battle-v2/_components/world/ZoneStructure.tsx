@@ -57,28 +57,41 @@ interface ZoneStructureProps {
 
 // ── The hut — procedural fallback for the `zone.<id>` GLB slot ───────────────
 
-function Hut({ elementId, glow }: { elementId: ElementId; glow: number }) {
+function Hut({
+  elementId,
+  glow,
+  slotId,
+}: {
+  elementId: ElementId;
+  glow: number;
+  slotId: string;
+}) {
   const roof = ELEMENT_ROOF[elementId];
   const glowColor = ELEMENT_GLOW[elementId];
   return (
-    <group>
+    <group name={`${slotId}.hut`}>
       {/* wood-trim base */}
-      <mesh position={[0, 0.06, 0]} castShadow receiveShadow>
+      <mesh name={`${slotId}.hut.base`} position={[0, 0.06, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.02, 0.12, 1.02]} />
         <meshStandardMaterial color={PALETTE.woodDark} roughness={1} />
       </mesh>
       {/* plaster body */}
-      <mesh position={[0, 0.46, 0]} castShadow receiveShadow>
+      <mesh name={`${slotId}.hut.body`} position={[0, 0.46, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.9, 0.7, 0.9]} />
         <meshStandardMaterial color={PALETTE.wall} roughness={0.95} />
       </mesh>
       {/* door */}
-      <mesh position={[0, 0.27, 0.455]} castShadow>
+      <mesh name={`${slotId}.hut.door`} position={[0, 0.27, 0.455]} castShadow>
         <boxGeometry args={[0.26, 0.4, 0.06]} />
         <meshStandardMaterial color={PALETTE.woodDark} roughness={1} />
       </mesh>
       {/* hip roof — element-tinted, the eye reads the village by its roofs */}
-      <mesh position={[0, 1.06, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+      <mesh
+        name={`${slotId}.hut.roof`}
+        position={[0, 1.06, 0]}
+        rotation={[0, Math.PI / 4, 0]}
+        castShadow
+      >
         <coneGeometry args={[0.86, 0.62, 4]} />
         <meshStandardMaterial
           color={roof}
@@ -221,6 +234,7 @@ export function ZoneStructure({
 
   return (
     <group
+      name={`zone.${placement.zoneId}`}
       position={[placement.x, groundY, placement.z]}
       onClick={
         isInteractive
@@ -249,7 +263,12 @@ export function ZoneStructure({
       }
     >
       {/* dirt plot — slightly proud of the terrain so it never z-fights */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} receiveShadow>
+      <mesh
+        name={`zone.${placement.zoneId}.plot`}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.05, 0]}
+        receiveShadow
+      >
         <circleGeometry args={[PLOT_RADIUS, 32]} />
         <meshStandardMaterial color={decorative ? PALETTE.grassDark : PALETTE.dirtDark} roughness={1} />
       </mesh>
@@ -259,7 +278,13 @@ export function ZoneStructure({
         <group ref={hutGroup}>
           <ModelSlot
             slotId={`zone.${placement.zoneId}`}
-            fallback={<Hut elementId={placement.elementId} glow={glow} />}
+            fallback={
+              <Hut
+                elementId={placement.elementId}
+                glow={glow}
+                slotId={`zone.${placement.zoneId}`}
+              />
+            }
           />
         </group>
       </group>

@@ -10,8 +10,22 @@ interface BattleV2RenderStats {
   };
 }
 
+interface BattleV2ObservabilityStats {
+  readonly frame: {
+    readonly fps: number;
+    readonly samples: number;
+  };
+  readonly renderer: {
+    readonly calls: number;
+  };
+  readonly scene: {
+    readonly meshes: number;
+  };
+}
+
 type BattleV2Window = Window & {
   readonly __BATTLE_V2_RENDER_STATS__?: BattleV2RenderStats;
+  readonly __BATTLE_V2_OBSERVABILITY__?: BattleV2ObservabilityStats;
 };
 
 test.use({
@@ -61,5 +75,33 @@ test.describe("/battle-v2", () => {
     await expect(page.locator(".event-log summary")).toContainText(/Event log \([1-9]/);
 
     expect(pageErrors).toEqual([]);
+  });
+
+  test("opens the observability inspector and publishes scene diagnostics", async ({
+    page,
+  }) => {
+    await page.goto("/battle-v2?fx=0&observe=1");
+
+    await expect(page.locator(".battle-observability")).toBeVisible();
+    await expect(page.locator(".battle-observability")).toContainText("Battle V2 Observatory");
+    await expect(page.locator(".world-view canvas")).toHaveCount(1);
+
+    await page.waitForFunction(
+      () => {
+        const stats = (window as BattleV2Window).__BATTLE_V2_OBSERVABILITY__;
+        return (
+          !!stats &&
+          stats.frame.samples > 0 &&
+          stats.renderer.calls > 0 &&
+          stats.scene.meshes > 0
+        );
+      },
+      undefined,
+      { timeout: 20_000 },
+    );
+
+    await page.keyboard.press("F10");
+    await expect(page.locator(".battle-observability")).toHaveCount(0);
+    await expect(page.locator(".battle-observability-tab")).toBeVisible();
   });
 });

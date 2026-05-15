@@ -161,9 +161,9 @@ export function Foliage(props: FoliageProps) {
   );
 
   return (
-    <group>
+    <group name="foliage">
       {/* Trunks — one shared tapered cylinder, brown. */}
-      <Instances limit={trunks.length} castShadow receiveShadow>
+      <Instances name="foliage.trunks" limit={trunks.length} castShadow receiveShadow>
         <cylinderGeometry args={[0.11, 0.17, 1, 6]} />
         <meshStandardMaterial color={PALETTE.trunk} roughness={1} />
         {trunks.map((t, i) => (
@@ -172,7 +172,7 @@ export function Foliage(props: FoliageProps) {
       </Instances>
 
       {/* Canopies — faceted icosphere blobs, per-instance colour. */}
-      <Instances limit={canopies.length} castShadow receiveShadow>
+      <Instances name="foliage.canopies" limit={canopies.length} castShadow receiveShadow>
         <icosahedronGeometry args={[1, 1]} />
         <meshStandardMaterial roughness={0.95} flatShading />
         {canopies.map((c, i) => (
@@ -181,7 +181,7 @@ export function Foliage(props: FoliageProps) {
       </Instances>
 
       {/* Bushes — the same blob, smaller, no trunk. */}
-      <Instances limit={bushes.length} castShadow receiveShadow>
+      <Instances name="foliage.bushes" limit={bushes.length} castShadow receiveShadow>
         <icosahedronGeometry args={[1, 1]} />
         <meshStandardMaterial roughness={0.95} flatShading />
         {bushes.map((b, i) => (

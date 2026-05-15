@@ -149,9 +149,10 @@ export function MistLayer({ height = 0.55 }: MistLayerProps = {}) {
   const planeSize = MAP_SIZE * 1.95;
 
   return (
-    <group>
+    <group name="mist-layer">
       {tex1 ? (
         <mesh
+          name="mist-layer.low-plane"
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, height, 0]}
           renderOrder={1}
@@ -170,6 +171,7 @@ export function MistLayer({ height = 0.55 }: MistLayerProps = {}) {
       ) : null}
       {tex2 ? (
         <mesh
+          name="mist-layer.high-plane"
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, height + 0.55, 0]}
           renderOrder={2}

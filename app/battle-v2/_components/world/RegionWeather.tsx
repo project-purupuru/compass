@@ -124,9 +124,10 @@ export function RegionWeather({ activeElement }: RegionWeatherProps) {
   if (motes.length === 0) return null;
 
   return (
-    <group>
+    <group name={`region-weather.${activeElement}`}>
       {/* The drifting motes — one instanced draw call. */}
       <instancedMesh
+        name={`region-weather.${activeElement}.motes`}
         ref={meshRef}
         args={[undefined, undefined, motes.length]}
         frustumCulled={false}

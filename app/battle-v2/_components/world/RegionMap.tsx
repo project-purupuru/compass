@@ -87,9 +87,13 @@ export function RegionMap({ activeElement }: RegionMapProps) {
   );
 
   return (
-    <group>
+    <group name="region-map">
       {texture ? (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+        <mesh
+          name="region-map.territory-tint"
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.03, 0]}
+        >
           <planeGeometry args={[MAP_SIZE, MAP_SIZE]} />
           <meshBasicMaterial map={texture} transparent depthWrite={false} />
         </mesh>
