@@ -34,6 +34,13 @@ interface RafStats {
   readonly samples: number;
 }
 
+interface LongTaskRecord {
+  readonly at: number;
+  readonly duration: number;
+}
+
+const LONG_TASK_RECENT_WINDOW_MS = 5_000;
+
 export function BattleV2ObservabilityPanel({
   enabled,
   locked,
@@ -41,7 +48,7 @@ export function BattleV2ObservabilityPanel({
   onToggleEnabled,
   onToggleLocked,
 }: BattleV2ObservabilityPanelProps) {
-  const [longTasks, setLongTasks] = useState<readonly number[]>([]);
+  const [longTasks, setLongTasks] = useState<readonly LongTaskRecord[]>([]);
   const [rafStats, setRafStats] = useState<RafStats>({
     fps: 0,
     p95: 0,
@@ -52,8 +59,11 @@ export function BattleV2ObservabilityPanel({
     if (typeof PerformanceObserver === "undefined") return;
     try {
       const observer = new PerformanceObserver((list) => {
-        const durations = list.getEntries().map((entry) => entry.duration);
-        setLongTasks((current) => [...current, ...durations].slice(-12));
+        const records = list.getEntries().map((entry) => ({
+          at: entry.startTime + entry.duration,
+          duration: entry.duration,
+        }));
+        setLongTasks((current) => [...current, ...records].slice(-24));
       });
       observer.observe({ type: "longtask", buffered: true });
       return () => observer.disconnect();
@@ -116,7 +126,11 @@ export function BattleV2ObservabilityPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [enabled, onToggleEnabled, onToggleLocked, snapshot]);
 
-  const latestLongTask = longTasks.at(-1) ?? 0;
+  const now = snapshot?.updatedAt ?? performance.now();
+  const recentLongTasks = longTasks.filter(
+    (task) => now - task.at <= LONG_TASK_RECENT_WINDOW_MS,
+  );
+  const latestLongTask = recentLongTasks.at(-1)?.duration ?? 0;
   const tone = riskTone(snapshot);
   const title = useMemo(() => {
     if (!snapshot) return "Battle V2 Observatory";
@@ -192,8 +206,12 @@ export function BattleV2ObservabilityPanel({
           <strong>{snapshot ? fmt(snapshot.renderer.pixelRatio) : "--"}</strong>
         </div>
         <div>
-          <span>long task</span>
-          <strong>{latestLongTask > 0 ? `${fmt(latestLongTask, 0)}ms` : "none"}</strong>
+          <span>tasks 5s</span>
+          <strong>
+            {latestLongTask > 0
+              ? `${recentLongTasks.length}/${fmt(latestLongTask, 0)}ms`
+              : "none"}
+          </strong>
         </div>
       </section>
 
