@@ -1,0 +1,45 @@
+/*
+ * hud-tokens.css — the HUD framing model.
+ *
+ * Single source of truth for corner-anchored HUD zone positions. Each zone
+ * declares its anchor edge(s) + inset. Components consume these via var() —
+ * no scattered pixel offsets in component CSS.
+ *
+ * The model: every fixed HUD element belongs to ONE named zone. Zones are
+ * desktop-first; mobile breakpoint overrides land later (see the @media
+ * stubs below). Internal clash-arena layout (opponent band, player band,
+ * round herald) is NOT modelled here — that's flex composition inside the
+ * arena, a separate grammar.
+ *
+ * Adding a new zone: name it (operator-style: noun-companion / role-target),
+ * pick an anchor edge pair (top/bottom + left/right), declare insets here,
+ * consume from the component's CSS. Don't scatter literal pixels across
+ * .hud-* rules — the whole point is that this file is the inventory.
+ *
+ * Spec: grimoires/loa/context/17-battle-v2-game-model-reconciliation.md
+ */
+
+.hud-overlay {
+  /* ── operator strip · top-left
+        The username · tagline · active-tide kanji + label. */
+  --hud-operator-top: 12px;
+  --hud-operator-left: 12px;
+
+  /* ── enemy companion · top-right · inward
+        The opponent's puruhani — anchored away from the corner so the upper
+        edge breathes. Sits up alongside the opponent-cards vertical band. */
+  --hud-enemy-top: 24px;
+  --hud-enemy-right: 64px;
+
+  /* ── player companion · bottom-left
+        Your puruhani — grounded at the viewport floor. */
+  --hud-player-bottom: 0;
+  --hud-player-left: 10px;
+}
+
+/* ── mobile breakpoint hook · @media (max-width: 768px) — not yet designed.
+   When mobile lands, redefine the same zone tokens here. Components that
+   consume via var() automatically pick up the override. */
+@media (max-width: 768px) {
+  /* TODO: mobile HUD layout — next cycle. */
+}

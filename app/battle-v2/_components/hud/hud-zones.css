@@ -8,7 +8,13 @@
  * Materials have mass." So: opaque --puru-cloud-* surfaces, no backdrop-filter,
  * 1px --puru-surface-border edges, layered --shadow-tile with the inset glaze,
  * --font-puru-* typography. The route forces data-theme="old-horai" (dark).
+ *
+ * HUD positions consume the named-zone tokens from hud-tokens.css — that's
+ * the single source of truth for corner-anchored placement. Don't hardcode
+ * top/right/left/bottom in component rules; add or reuse a zone instead.
  */
+
+@import "./hud-tokens.css";
 
 .hud-overlay {
   position: fixed;
@@ -59,9 +65,10 @@
 
 /* ── Ribbon (F2) · full-width top strip ─────────────────────── */
 .hud-ribbon {
-  /* stubby — content-width, left-anchored (no right edge) */
-  top: 12px;
-  left: 12px;
+  /* stubby — content-width, left-anchored (no right edge).
+     Position from the named-zone tokens · see hud-tokens.css ── */
+  top: var(--hud-operator-top);
+  left: var(--hud-operator-left);
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -149,8 +156,9 @@
    smaller than the player's corner: less weight in the top area. */
 .hud-enemy {
   position: fixed;
-  top: 24px;
-  right: 64px;
+  /* Position from the named-zone tokens · see hud-tokens.css */
+  top: var(--hud-enemy-top);
+  right: var(--hud-enemy-right);
   pointer-events: none;
 }
 .hud-enemy__stage {
@@ -237,8 +245,9 @@
    caretaker stands at their side. */
 .hud-caretaker {
   position: fixed;
-  bottom: 0;
-  left: 10px;
+  /* Position from the named-zone tokens · see hud-tokens.css */
+  bottom: var(--hud-player-bottom);
+  left: var(--hud-player-left);
   pointer-events: none;
   display: flex;
   flex-direction: column;
