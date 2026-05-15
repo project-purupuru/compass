@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "bash scripts/prebuild-honeycomb.sh",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",
@@ -12,6 +13,8 @@
     "fmt:check": "oxfmt --check",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "check:honeycomb": "bash scripts/check-honeycomb-discipline.sh",
+    "check:honeycomb:selftest": "bash scripts/check-honeycomb-discipline.selftest.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
