@@ -64,7 +64,7 @@ function comboIcon(name: string): LucideIcon | null {
 
 function SynergyChips({ combos }: { readonly combos: readonly Combo[] }) {
   if (combos.length === 0) {
-    return <span className="clash-chips__empty">no synergies</span>;
+    return <span className="clash-chips__empty">No synergies</span>;
   }
   return (
     <div className="clash-chips" aria-live="polite">

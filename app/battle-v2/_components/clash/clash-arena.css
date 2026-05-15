@@ -214,10 +214,8 @@
   border: 1px dashed color-mix(in oklch, var(--puru-ink-dim) 45%, transparent);
   border-radius: var(--radius-full);
   background: transparent;
-  font-family: var(--font-puru-mono), ui-monospace, monospace;
-  font-size: 0.5625rem;
-  font-style: italic;
-  letter-spacing: 0.04em;
+  font-family: var(--font-puru-display), sans-serif;
+  font-size: 0.625rem;
   color: var(--puru-ink-dim);
 }
 .clash-chip {
