@@ -203,17 +203,22 @@
   min-height: 1.7rem;
   max-width: 40rem;
 }
-/* the no-synergies state — a quiet dotted placeholder badge, not text.
-   Reserves the chip-row's vertical space so the layout doesn't jump when
-   the first synergy appears. */
+/* the no-synergies state — a quiet dotted placeholder badge with the label
+   inside. Matches the chip shape so the layout doesn't jump when the first
+   synergy appears. */
 .clash-chips__empty {
-  display: inline-block;
-  width: 4.5rem;
-  height: 1.55rem;
-  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.7rem;
   border: 1px dashed color-mix(in oklch, var(--puru-ink-dim) 45%, transparent);
   border-radius: var(--radius-full);
   background: transparent;
+  font-family: var(--font-puru-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--puru-ink-dim);
 }
 .clash-chip {
   display: inline-flex;
