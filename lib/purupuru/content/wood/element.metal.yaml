@@ -1,0 +1,62 @@
+schemaVersion: "0.1"
+id: metal
+nameKey: element.metal.name
+summaryKey: element.metal.summary
+verbs:
+  - temper
+  - forge
+  - refine
+  - focus
+colorTokens:
+  primary: "oklch(0.72 0.04 286)"
+  muted: "oklch(0.60 0.03 286)"
+  glow: "oklch(0.82 0.05 298)"
+  weather: "oklch(0.88 0.03 298)"
+  ink: "oklch(0.18 0.02 260)"
+motifs:
+  shape:
+    - clean_arc
+    - fine_line
+  worldProps:
+    - small_anvil
+    - wind_chime
+  shrineRelief:
+    - precise_cut
+    - constellation_line
+  daemonSilhouette:
+    - chibi_round_body
+    - little_wire_halo
+vfxGrammar:
+  travel:
+    - pale_sparks
+    - precise_line_arc
+  impact:
+    - clear_chime_pulse
+    - small_facet_flash
+  localizedWeather:
+    - silver_shimmer_column
+    - drifting_motes
+  afterglow:
+    - pale_focus_ring
+  prohibited:
+    - hard_screen_cut
+    - destructive_sparks
+audioGrammar:
+  material:
+    - soft_metal
+    - bell_edge
+  motion:
+    - chime_sway
+  impact:
+    - clear_small_chime
+  ambient:
+    - quiet_wire_hum
+constraints:
+  localizedWeatherOnlyByDefault: true
+  maxAmbientSaliency: 2
+  requiresNamedAnchors: true
+  shouldNotFeelLike:
+    - wood
+    - fire
+  notes:
+    - Metal cards in the wood slice sharpen the ritual without cutting it.

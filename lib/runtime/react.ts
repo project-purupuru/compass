@@ -66,13 +66,28 @@ export const sonifier = {
 
 // ── MatchEngine — the clash game on the substrate ───────────────────────────
 
-// Subscribe to the MatchEngine state stream. `null` only on the first frame
-// (the stream emits the current value immediately on subscribe). React
-// consumers don't see the Effect surface — useState semantics only.
+// Subscribe to the MatchEngine state stream. Seed from `current` first so the
+// clash surface has a playable first frame even when `.changes` only emits
+// subsequent updates.
 export function useMatch(): MatchState | null {
   const [state, setState] = useState<MatchState | null>(null);
 
   useEffect(() => {
+    let active = true;
+    runtime
+      .runPromise(
+        Effect.gen(function* () {
+          const engine = yield* MatchEngine;
+          return yield* engine.current;
+        }),
+      )
+      .then((initial) => {
+        if (active) setState(initial);
+      })
+      .catch((error: unknown) => {
+        console.error("[battle] failed to seed match state", error);
+      });
+
     const fiber = runtime.runFork(
       Effect.gen(function* () {
         const engine = yield* MatchEngine;
@@ -82,6 +97,7 @@ export function useMatch(): MatchState | null {
       }),
     );
     return () => {
+      active = false;
       runtime.runFork(Fiber.interrupt(fiber));
     };
   }, []);

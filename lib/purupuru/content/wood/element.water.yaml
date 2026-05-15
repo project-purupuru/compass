@@ -1,0 +1,62 @@
+schemaVersion: "0.1"
+id: water
+nameKey: element.water.name
+summaryKey: element.water.summary
+verbs:
+  - flow
+  - drift
+  - listen
+  - return
+colorTokens:
+  primary: "oklch(0.74 0.08 226)"
+  muted: "oklch(0.62 0.04 226)"
+  glow: "oklch(0.82 0.07 216)"
+  weather: "oklch(0.90 0.04 216)"
+  ink: "oklch(0.18 0.02 260)"
+motifs:
+  shape:
+    - soft_wave
+    - tide_loop
+  worldProps:
+    - water_bowl
+    - harbor_rope
+  shrineRelief:
+    - ripple_lines
+    - moon_reflection
+  daemonSilhouette:
+    - chibi_round_body
+    - droplet_hood
+vfxGrammar:
+  travel:
+    - mist_dots
+    - low_wave_arc
+  impact:
+    - ripple_pulse
+    - soft_splash_ring
+  localizedWeather:
+    - mist_column
+    - slow_drift
+  afterglow:
+    - blue_focus_ring
+  prohibited:
+    - global_storm
+    - sharp_metal_cut
+audioGrammar:
+  material:
+    - soft_water
+    - wet_stone
+  motion:
+    - ripple_move
+  impact:
+    - small_water_chime
+  ambient:
+    - quiet_tide
+constraints:
+  localizedWeatherOnlyByDefault: true
+  maxAmbientSaliency: 2
+  requiresNamedAnchors: true
+  shouldNotFeelLike:
+    - fire
+    - earth
+  notes:
+    - Water cards in the wood slice support the grove through motion.

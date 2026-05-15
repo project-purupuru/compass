@@ -22,7 +22,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { Billboard, Text } from "@react-three/drei";
+import { Billboard, Instance, Instances, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 
@@ -35,6 +35,11 @@ import { SPRING_BLOOM, stepSpring } from "../vfx/springs";
 import { ModelSlot } from "./modelSlot";
 import { ELEMENT_GLOW, ELEMENT_KANJI, ELEMENT_ROOF, PALETTE } from "./palette";
 import { groundHeight } from "./MapGround";
+import {
+  FENCE_POSTS_PER_ZONE,
+  PLOT_RADIUS,
+  buildFencePostTransforms,
+} from "./renderBudget";
 import type { ZonePlacement } from "./zones";
 
 interface ZoneStructureProps {
@@ -49,9 +54,6 @@ interface ZoneStructureProps {
   readonly anchorStore?: AnchorStore;
   readonly activeBeat?: BeatFireRecord | null;
 }
-
-const FENCE_POSTS = 12;
-const PLOT_RADIUS = 1.55;
 
 // ── The hut — procedural fallback for the `zone.<id>` GLB slot ───────────────
 
@@ -118,21 +120,15 @@ const SeedlingSprout = ({ objectRef }: { objectRef: React.RefObject<Group | null
 // ── Fence ring — low posts around the plot ──────────────────────────────────
 
 function FenceRing() {
-  const posts = [];
-  for (let i = 0; i < FENCE_POSTS; i++) {
-    const a = (i / FENCE_POSTS) * Math.PI * 2;
-    posts.push(
-      <mesh
-        key={i}
-        position={[Math.cos(a) * PLOT_RADIUS, 0.2, Math.sin(a) * PLOT_RADIUS]}
-        castShadow
-      >
-        <boxGeometry args={[0.08, 0.4, 0.08]} />
-        <meshStandardMaterial color={PALETTE.wood} roughness={1} />
-      </mesh>,
-    );
-  }
-  return <group>{posts}</group>;
+  return (
+    <Instances limit={FENCE_POSTS_PER_ZONE} castShadow>
+      <boxGeometry args={[0.08, 0.4, 0.08]} />
+      <meshStandardMaterial color={PALETTE.wood} roughness={1} />
+      {buildFencePostTransforms().map((post, index) => (
+        <Instance key={index} position={post.position} />
+      ))}
+    </Instances>
+  );
 }
 
 // ── ZoneStructure ───────────────────────────────────────────────────────────

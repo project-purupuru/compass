@@ -1,0 +1,62 @@
+schemaVersion: "0.1"
+id: earth
+nameKey: element.earth.name
+summaryKey: element.earth.summary
+verbs:
+  - ground
+  - settle
+  - hold
+  - shelter
+colorTokens:
+  primary: "oklch(0.68 0.09 82)"
+  muted: "oklch(0.58 0.05 82)"
+  glow: "oklch(0.76 0.08 92)"
+  weather: "oklch(0.82 0.05 92)"
+  ink: "oklch(0.18 0.02 260)"
+motifs:
+  shape:
+    - low_ring
+    - stacked_stone
+  worldProps:
+    - tea_stone
+    - low_mound
+  shrineRelief:
+    - terrace_lines
+    - mountain_cut
+  daemonSilhouette:
+    - chibi_round_body
+    - clay_cap
+vfxGrammar:
+  travel:
+    - loam_dust
+    - low_settling_arc
+  impact:
+    - ground_pulse
+    - stone_soft_click
+  localizedWeather:
+    - golden_dust_column
+    - low_mist
+  afterglow:
+    - ochre_focus_ring
+  prohibited:
+    - explosive_fire_burst
+    - tidal_splash
+audioGrammar:
+  material:
+    - soft_clay
+    - stone_tap
+  motion:
+    - dust_settle
+  impact:
+    - muted_ground_chime
+  ambient:
+    - quiet_room_tone
+constraints:
+  localizedWeatherOnlyByDefault: true
+  maxAmbientSaliency: 2
+  requiresNamedAnchors: true
+  shouldNotFeelLike:
+    - fire
+    - water
+  notes:
+    - Earth cards in the wood slice stabilize rather than dominate.

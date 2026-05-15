@@ -1,0 +1,62 @@
+schemaVersion: "0.1"
+id: fire
+nameKey: element.fire.name
+summaryKey: element.fire.summary
+verbs:
+  - kindle
+  - blaze
+  - spark
+  - flare
+colorTokens:
+  primary: "oklch(0.74 0.16 42)"
+  muted: "oklch(0.62 0.07 42)"
+  glow: "oklch(0.78 0.14 52)"
+  weather: "oklch(0.86 0.08 58)"
+  ink: "oklch(0.18 0.02 260)"
+motifs:
+  shape:
+    - ember_arc
+    - rising_spark
+  worldProps:
+    - brazier
+    - warm_lantern
+  shrineRelief:
+    - flame_lines
+    - sun_cut
+  daemonSilhouette:
+    - chibi_round_body
+    - ember_hat
+vfxGrammar:
+  travel:
+    - ember_dots
+    - warm_upward_arc
+  impact:
+    - ember_pulse
+    - small_heat_ripple
+  localizedWeather:
+    - ember_column
+    - heat_shimmer
+  afterglow:
+    - low_amber_focus_ring
+  prohibited:
+    - screen_wide_explosion
+    - destructive_burn
+audioGrammar:
+  material:
+    - paper_char
+    - soft_ember
+  motion:
+    - spark_lift
+  impact:
+    - small_brazier_chime
+  ambient:
+    - quiet_hearth
+constraints:
+  localizedWeatherOnlyByDefault: true
+  maxAmbientSaliency: 2
+  requiresNamedAnchors: true
+  shouldNotFeelLike:
+    - water
+    - metal
+  notes:
+    - Fire cards in the wood slice must read as controlled kindling.

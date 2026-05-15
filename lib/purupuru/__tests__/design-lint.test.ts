@@ -12,7 +12,7 @@ import { describe, expect, test } from "vitest";
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 
 describe("AC-3a: design lints pass for wood pack", () => {
-  test("pnpm content:validate exits 0 with 5 lint passes", () => {
+  test("pnpm content:validate exits 0 with all lint passes", () => {
     let exitCode = 0;
     let stdout = "";
     try {
@@ -25,7 +25,7 @@ describe("AC-3a: design lints pass for wood pack", () => {
       stdout = (e as { stdout?: string; stderr?: string }).stdout ?? "";
     }
     expect(exitCode).toBe(0);
-    expect(stdout).toMatch(/5 pass · 0 fail/);
+    expect(stdout).toMatch(/13 pass · 0 fail/);
     expect(stdout).toMatch(/All schemas validated · all lints passed/);
   });
 

@@ -37,25 +37,33 @@ describe("AC-1: 8 vendored JSON schemas", () => {
   }
 });
 
-describe("AC-2: 8 vendored YAML examples in lib/purupuru/content/wood/", () => {
+describe("AC-2: vendored YAML examples in lib/purupuru/content/wood/", () => {
   const expected = [
-    "element.wood.yaml",
+    "card.earth_grounding.yaml",
+    "card.fire_kindling.yaml",
+    "card.metal_tempering.yaml",
+    "card.water_flowing.yaml",
     "card.wood_awakening.yaml",
-    "zone.wood_grove.yaml",
+    "element.earth.yaml",
+    "element.fire.yaml",
+    "element.metal.yaml",
+    "element.water.yaml",
+    "element.wood.yaml",
     "event.wood_spring_seedling.yaml",
-    "sequence.wood_activation.yaml",
-    "ui.world_map_screen.yaml",
     "pack.core_wood_demo.yaml",
+    "sequence.wood_activation.yaml",
     "telemetry.card_activation_clarity.yaml",
+    "ui.world_map_screen.yaml",
+    "zone.wood_grove.yaml",
   ];
   for (const file of expected) {
     test(`yaml present: ${file}`, () => {
       expect(existsSync(join(CONTENT_DIR, file))).toBe(true);
     });
   }
-  test("exactly 8 YAML files in pack directory", () => {
-    const yamls = readdirSync(CONTENT_DIR).filter((f) => f.endsWith(".yaml"));
-    expect(yamls).toHaveLength(8);
+  test("pack directory contains the expected YAML files", () => {
+    const yamls = readdirSync(CONTENT_DIR).filter((f) => f.endsWith(".yaml")).sort();
+    expect(yamls).toEqual([...expected].sort());
   });
 });
 
@@ -84,10 +92,10 @@ describe("AC-3: every YAML validates against its schema (AJV2020)", () => {
     });
   }
 
-  test("loadPack returns 8 entries (1 each kind)", () => {
+  test("loadPack returns the current wood demo pack shape", () => {
     const pack = loadPack(CONTENT_DIR);
-    expect(pack.elements).toHaveLength(1);
-    expect(pack.cards).toHaveLength(1);
+    expect(pack.elements).toHaveLength(5);
+    expect(pack.cards).toHaveLength(5);
     expect(pack.zones).toHaveLength(1);
     expect(pack.events).toHaveLength(1);
     expect(pack.sequences).toHaveLength(1);
@@ -104,11 +112,17 @@ describe("AC-3: every YAML validates against its schema (AJV2020)", () => {
     expect(db.getEventDefinition("wood_spring_seedling")).toBeDefined();
     expect(db.getPresentationSequence("wood_activation_sequence")).toBeDefined();
     expect(db.getElementDefinition("wood")).toBeDefined();
+    expect(db.getElementDefinition("fire")).toBeDefined();
+    expect(db.getElementDefinition("earth")).toBeDefined();
+    expect(db.getElementDefinition("metal")).toBeDefined();
+    expect(db.getElementDefinition("water")).toBeDefined();
   });
 
   test("normalizer: card resolverSteps populated from YAML resolver.steps", () => {
     const pack = loadPack(CONTENT_DIR);
-    const card = pack.cards[0].data;
+    const card = pack.cards.find((entry) => entry.data.id === "wood_awakening")?.data;
+    expect(card).toBeDefined();
+    if (!card) throw new Error("wood_awakening card missing from pack");
     expect(card.resolverSteps).toBeDefined();
     expect(card.resolverSteps.length).toBeGreaterThan(0);
     // wood_awakening has 3 resolver steps per the YAML

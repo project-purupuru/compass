@@ -39,6 +39,7 @@ import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 import type { AnchorStore } from "./anchors/anchorStore";
 import { PALETTE } from "./world/palette";
 import { PostFX } from "./world/PostFX";
+import { RenderBudgetProbe } from "./world/RenderBudgetProbe";
 import { WorldScene } from "./world/WorldScene";
 import { zoneById } from "./world/zones";
 
@@ -149,6 +150,7 @@ export function WorldView({
         {/* The Ghibli-warm grade — tone curve, soft targeted bloom, gouache
             saturation, faint grain. Mounts last so it composites the scene. */}
         {postFX ? <PostFX /> : null}
+        <RenderBudgetProbe postFX={postFX} />
       </Canvas>
 
       {/* Ascend — climb back to the soar. Only present while stooped in. */}

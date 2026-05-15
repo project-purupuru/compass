@@ -29,7 +29,7 @@ const THEME_BOOT_SCRIPT = `
 
     function readCookie(name) {
       var match = document.cookie.match(
-        new RegExp("(?:^|; )" + name.replace(/[.$?*|{}()\\\\[\\\\]\\\\\\\\\\\\/+^]/g, "\\\\$&") + "=([^;]*)")
+        new RegExp("(?:^|; )" + name.replace(/[-/\\\\^$*+?.()|[\\]{}]/g, "\\\\$&") + "=([^;]*)")
       );
       return match ? decodeURIComponent(match[1]) : null;
     }
