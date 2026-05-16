@@ -37,6 +37,7 @@ import { DaemonReact } from "../vfx/DaemonReact";
 import { ACTIVE_MATCHUP, isActiveElement } from "./activeMatchup";
 import type { Vec2 } from "./agents/steering";
 import { BearColony } from "./BearColony";
+import { BearVillagers } from "./BearVillagers";
 import { CloudLayer } from "./CloudLayer";
 import { Foliage, mulberry32 } from "./Foliage";
 import { GroveGrowth } from "./GroveGrowth";
@@ -361,7 +362,10 @@ export function WorldScene({
         worldHeight={1.6}
       />
 
-      <VillagerSwarm villagers={villagers} activeElement={activeElement} />
+      {/* Bear villagers — replaces VillagerSwarm's cone+sphere primitives
+       * with billboard bear sprites of the appropriate element (operator
+       * 2026-05-16: "the blue template characters should be all bears"). */}
+      <BearVillagers villagers={villagers} />
 
       {ZONE_POSITIONS.filter((p) => isActiveElement(p.elementId)).map((placement) => {
         const zoneState: ZoneRuntimeState = placement.decorative
