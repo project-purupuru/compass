@@ -1,0 +1,312 @@
+/**
+ * paper-puppet.css — 3D-aware keyframes.
+ *
+ * Reworked 2026-05-16 (operator: "doesn't feel like a 2D thing rising from a
+ * 3D surface"). The fix is two-fold:
+ *
+ *   1. The puppet's parent must set `perspective` + `transform-style: preserve-3d`.
+ *      Without perspective, rotateX collapses the element flat instead of
+ *      folding it into the camera. With perspective, rotateX(90deg) puts the
+ *      sprite lying parallel to the floor; rotateX(0) puts it standing
+ *      perpendicular, facing the camera.
+ *
+ *   2. The floor shadow is a SEPARATE element that does NOT rotate with the
+ *      sprite — it stays anchored to the ground plane, scaling/fading
+ *      independently. The drop-shadow on the sprite is the secondary highlight,
+ *      not the ground anchor.
+ *
+ * All puppet transforms hinge at the FEET (transform-origin: 50% 100%) so a
+ * fall reads as a paper cutout tipping forward, not collapsing in place.
+ */
+
+/* ───── Crumple ─────────────────────────────────────────────
+ * Paper falls FORWARD onto the ground. Hinges at the feet.
+ * Reads as: the cardboard is so flimsy it can't stand anymore.
+ */
+@keyframes paper-crumple {
+  0% {
+    transform: rotateX(0deg) translateY(0) scale(1);
+    opacity: 1;
+  }
+  20% {
+    transform: rotateX(8deg) translateY(0) scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: rotateX(35deg) translateY(2px) scale(0.99);
+    opacity: 0.95;
+  }
+  75% {
+    transform: rotateX(72deg) translateY(6px) scale(0.96);
+    opacity: 0.7;
+  }
+  100% {
+    transform: rotateX(92deg) translateY(10px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+@keyframes paper-shadow-crumple {
+  0% {
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateX(-50%) scaleX(1.45) scaleY(1.4);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1.55) scaleY(1.5);
+    opacity: 0;
+  }
+}
+
+/* ───── Action pose snap ─────────────────────────────────────
+ * In-place pulse + slight Z-axis lean. Keeps the puppet rooted.
+ */
+@keyframes paper-action {
+  0% {
+    transform: scale(1) translateY(0) rotateZ(0deg);
+  }
+  30% {
+    transform: scale(1.14) translateY(-6px) rotateZ(-2.5deg);
+  }
+  60% {
+    transform: scale(1.06) translateY(-3px) rotateZ(1.5deg);
+  }
+  100% {
+    transform: scale(1) translateY(0) rotateZ(0deg);
+  }
+}
+
+/* ───── Summon · sticker-stamp ──────────────────────────────
+ * Sticker on the floor (rotateX 90deg = lying flat) → paper hinges
+ * UP to vertical (rotateX 0deg). Hinges at the feet. With perspective
+ * on parent, this reads as a 2D cutout rising from a 3D surface.
+ */
+@keyframes paper-summon-sticker-stamp {
+  0% {
+    transform: rotateX(92deg) translateY(0) scale(0.85);
+    opacity: 0;
+    filter: brightness(1.5);
+  }
+  18% {
+    transform: rotateX(80deg) translateY(-1px) scale(0.9);
+    opacity: 0.55;
+    filter: brightness(1.4);
+  }
+  60% {
+    transform: rotateX(-12deg) translateY(-4px) scale(1.05);
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+  82% {
+    transform: rotateX(5deg) translateY(-1px) scale(1.01);
+    opacity: 1;
+    filter: brightness(1.02);
+  }
+  100% {
+    transform: rotateX(0deg) translateY(0) scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes paper-shadow-summon-sticker-stamp {
+  0% {
+    transform: translateX(-50%) scaleX(1.55) scaleY(1.5);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translateX(-50%) scaleX(1.15) scaleY(1.1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+    opacity: 0.4;
+  }
+}
+
+/* ───── Summon · popup-book ─────────────────────────────────
+ * More theatrical hinge with overshoot. Same physics as sticker-stamp
+ * but with bigger anticipation and rebound.
+ */
+@keyframes paper-summon-popup-book {
+  0% {
+    transform: rotateX(95deg) translateY(0);
+    opacity: 0;
+  }
+  15% {
+    transform: rotateX(88deg) translateY(0);
+    opacity: 0.35;
+  }
+  55% {
+    transform: rotateX(-18deg) translateY(-6px);
+    opacity: 1;
+  }
+  75% {
+    transform: rotateX(8deg) translateY(-2px);
+    opacity: 1;
+  }
+  90% {
+    transform: rotateX(-3deg) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(0deg) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes paper-shadow-summon-popup-book {
+  0% {
+    transform: translateX(-50%) scaleX(1.6) scaleY(1.6);
+    opacity: 0.7;
+  }
+  55% {
+    transform: translateX(-50%) scaleX(1.05) scaleY(1.05);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+    opacity: 0.4;
+  }
+}
+
+/* ───── Summon · origami ────────────────────────────────────
+ * Diagonal unfold — combines rotateX hinge with rotateY skew for
+ * a "paper folding open" feel.
+ */
+@keyframes paper-summon-origami {
+  0% {
+    transform: rotateX(75deg) rotateY(-40deg) scaleX(0.45);
+    opacity: 0;
+  }
+  35% {
+    transform: rotateX(40deg) rotateY(-20deg) scaleX(0.7);
+    opacity: 0.6;
+  }
+  70% {
+    transform: rotateX(-6deg) rotateY(5deg) scaleX(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(0deg) rotateY(0deg) scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes paper-shadow-summon-origami {
+  0% {
+    transform: translateX(-50%) scaleX(1.4) scaleY(1.3);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+    opacity: 0.4;
+  }
+}
+
+/* ───── Sticker glow underlay ───────────────────────────────
+ * Drawn UNDER the puppet on the ground plane. Doesn't rotate.
+ */
+@keyframes paper-sticker-glow {
+  0% {
+    transform: translateX(-50%) scale(0);
+    opacity: 0;
+  }
+  30% {
+    transform: translateX(-50%) scale(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.6;
+  }
+}
+
+/* ───── Summon · puddle-ooze ────────────────────────────────
+ * The puddle is already on the ground — it shouldn't rotateX-rise like a
+ * standing puppet. Instead it OOZES into existence: starts as a point,
+ * spreads wide-and-flat first (a puddle forming), then settles to its
+ * natural shape with a slight slosh-overshoot.
+ *
+ * transform-origin is center (set on the wrapper in PaperPuppetSprite when
+ * forceVariant === "puddle") so the spread happens around the puddle's
+ * midpoint, not its bottom edge.
+ */
+@keyframes paper-summon-puddle-ooze {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0;
+    filter: brightness(1.6);
+  }
+  15% {
+    transform: scale(0.4, 0.15);
+    opacity: 0.5;
+    filter: brightness(1.5);
+  }
+  40% {
+    transform: scale(1.35, 0.45);
+    opacity: 0.95;
+    filter: brightness(1.25);
+  }
+  65% {
+    transform: scale(0.92, 1.1);
+    opacity: 1;
+    filter: brightness(1.05);
+  }
+  82% {
+    transform: scale(1.04, 0.96);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  100% {
+    transform: scale(1, 1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes paper-shadow-summon-puddle-ooze {
+  0% {
+    transform: translateX(-50%) scaleX(0);
+    opacity: 0;
+  }
+  40% {
+    transform: translateX(-50%) scaleX(1.4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1);
+    opacity: 0.5;
+  }
+}
+
+/* ───── Tap-spin · easter-egg ───────────────────────────────
+ * Clicking the puppet triggers a quick 360° rotateY spin and lands back
+ * at the same direction. Joyful interaction — has no gameplay meaning,
+ * just a delight for poking at the cardboard.
+ */
+@keyframes paper-tap-spin {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes paper-confetti-trail {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--trail-dx, 60px), var(--trail-dy, -40px)) scale(1.2);
+    opacity: 0;
+  }
+}
