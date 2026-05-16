@@ -43,6 +43,7 @@ import { buildGroveTrees, groveTreeCount } from "./groveLayout";
 import { sampleOnLand } from "./landmass";
 import { MistLayer } from "./MistLayer";
 import { groundHeight, MapGround } from "./MapGround";
+import { PaperPuppetField } from "./PaperPuppetField";
 import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { RaptorCamera } from "./RaptorCamera";
 import { RegionMap } from "./RegionMap";
@@ -347,6 +348,13 @@ export function WorldScene({
         onDeliver={handleDeliver}
       />
       <WoodStockpile delivered={delivered} hub={hub} />
+
+      {/* Paper-puppet janis — one elemental guardian per district. Additive
+       * sibling of BearColony. State will be driven by GameState hooks in a
+       * future pass; for now: idle billboard variant at zone centers.
+       * worldHeight 1.4 = slightly taller than BearColony's 1.2 bears so they
+       * read as "named guardian" vs "anonymous worker" while staying in scale. */}
+      <PaperPuppetField variant="billboard" worldHeight={1.4} />
 
       <VillagerSwarm villagers={villagers} activeElement={activeElement} />
 
