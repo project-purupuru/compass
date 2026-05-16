@@ -38,6 +38,7 @@ import { ACTIVE_MATCHUP, isActiveElement } from "./activeMatchup";
 import type { Vec2 } from "./agents/steering";
 import { BearColony } from "./BearColony";
 import { BearVillagers } from "./BearVillagers";
+import { regionAt } from "./regions";
 import { CloudLayer } from "./CloudLayer";
 import { Foliage, mulberry32 } from "./Foliage";
 import { GroveGrowth } from "./GroveGrowth";
@@ -106,21 +107,50 @@ interface NPCSpec {
 function buildVillagers(): NPCSpec[] {
   const rand = mulberry32(0xb00b1e);
   const out: NPCSpec[] = [];
+
+  // Operator direction 2026-05-16: thin out villager count per cluster but
+  // add MORE villages spread out across the map on each side. Net effect:
+  // multiple tiny homesteads scattered through each territory rather than one
+  // dense crowd at the district marker. Each side feels INHABITED at many
+  // points, not concentrated.
+  const VILLAGE_COUNT_PER_SIDE = 4;
+  const VILLAGERS_PER_VILLAGE = 2;
+  const ANCHOR_RING_INNER = 6; // min distance from district center
+  const ANCHOR_RING_OUTER = 16; // max distance from district center
+  const CLUSTER_RADIUS = 2.2; // tight cluster around each sub-village anchor
+
   for (const zone of ZONE_POSITIONS) {
-    // 2-element matchup: only spawn villagers in active territories.
     if (!isActiveElement(zone.elementId)) continue;
-    const n = zone.zoneId === "wood_grove" ? 8 : 3;
-    for (let i = 0; i < n; i++) {
-      // Rejection-sampled onto the continent — villagers stand on land.
-      const p = sampleOnLand(zone.x, zone.z, 4.8, rand);
-      if (!p) continue;
-      out.push({
-        x: p[0],
-        z: p[1],
-        elementId: zone.elementId,
-        scale: 0.7 + rand() * 0.4,
-        seed: out.length + 1,
-      });
+
+    for (let v = 0; v < VILLAGE_COUNT_PER_SIDE; v++) {
+      // Pick an anchor on land INSIDE this territory (via regionAt validation
+      // against the active matchup).
+      let anchor: readonly [number, number] | null = null;
+      for (let attempt = 0; attempt < 32; attempt++) {
+        const angle = rand() * Math.PI * 2;
+        const dist =
+          ANCHOR_RING_INNER + rand() * (ANCHOR_RING_OUTER - ANCHOR_RING_INNER);
+        const cx = zone.x + Math.cos(angle) * dist;
+        const cz = zone.z + Math.sin(angle) * dist;
+        if (regionAt(cx, cz, ACTIVE_MATCHUP) === zone.elementId) {
+          anchor = [cx, cz];
+          break;
+        }
+      }
+      // Fallback to zone center if no valid anchor found within 32 attempts.
+      if (!anchor) anchor = [zone.x, zone.z];
+
+      for (let i = 0; i < VILLAGERS_PER_VILLAGE; i++) {
+        const p = sampleOnLand(anchor[0], anchor[1], CLUSTER_RADIUS, rand);
+        if (!p) continue;
+        out.push({
+          x: p[0],
+          z: p[1],
+          elementId: zone.elementId,
+          scale: 0.7 + rand() * 0.4,
+          seed: out.length + 1,
+        });
+      }
     }
   }
   return out;
