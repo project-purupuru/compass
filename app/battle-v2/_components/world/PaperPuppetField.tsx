@@ -1,26 +1,31 @@
 /**
- * PaperPuppetField — places one paper-puppet jani at each element district
- * in the live Tsuheji world scene.
+ * PaperPuppetField — places paper-puppet jani VILLAGES at the active element
+ * districts in the live Tsuheji world scene.
  *
- * Additive layer mounted as a sibling of BearColony / ZoneStructure / etc.
- * inside WorldScene. Pulls zone positions from the canonical ZONE_POSITIONS
- * table — every jani is its district's elemental guardian (wood at Konka,
- * fire at Heart's Hearth, earth at Golden Veil, metal at Steel Jungle Shrine,
- * water at Sea Street Stalls).
+ * Cycle-1 doctrine (per project_battle-v2-zone-composition memory):
+ *   Two-element matchups, Yugioh-shape. Each match has TWO land elements
+ *   active simultaneously (one per side), not all 5 zones at once. The 5-
+ *   district zones.ts partitioning remains the territory model; only the
+ *   `activeElements` are populated with janis. Default matchup = wood vs water.
+ *
+ * Each active zone gets a CLUSTER of 4 janis arranged around the zone center
+ * (not stacked on top of the ZoneStructure marker). Cluster includes a non-
+ * normal variant (wood-flex working pose, water-puddle resting form) for
+ * visual variety — reads as a small village, not a row of identical NPCs.
  *
  * Substrate-coupled: reads JaniManifest + MotionConfig directly. What's tuned
  * in /battle-v2/motion-lab or /battle-v2/puppet-3d ports here verbatim.
  *
- * Default state = idle. Future hookups:
- *   - Drive `state` from GameState.zones[zoneId].activationLevel (recent card
- *     play → `action`; zone activation crosses threshold → `summon`)
- *   - Drive `flipX` from puppet's facing direction toward player camera or
- *     toward a moving target
- *   - Spawn additional janis when activationLevel grows (BearColony pattern)
+ * Future hookups:
+ *   - Drive `state` from GameState.zones[zoneId].activationLevel
+ *   - Drive `activeElements` from match state (which 2 elements are in play)
+ *   - Spawn additional puppets when activationLevel grows (BearColony pattern)
+ *   - Use sampleOnLand to randomize offsets safely (current offsets are fixed)
  */
 
 "use client";
 
+import { type ElementId } from "../puppet/JaniManifest";
 import { PaperPuppet3D } from "../puppet/PaperPuppet3D";
 import {
   MOTION_VARIANTS,
@@ -29,30 +34,90 @@ import {
 import { groundHeight } from "./MapGround";
 import { ZONE_POSITIONS } from "./zones";
 
+interface PuppetSpec {
+  readonly variant?: "normal" | "flex" | "puddle";
+  /** Offset from zone center in world units (dx along X, dz along Z). */
+  readonly offset: readonly [number, number];
+  readonly flipX?: boolean;
+}
+
+/**
+ * Per-element village cluster layouts. 4 puppets per zone arranged in a loose
+ * ring around the zone center. Last entry uses a non-normal variant where one
+ * exists (wood-flex, water-puddle). Offsets ~2 world units from center so the
+ * cluster sits well inside the district without colliding with ZoneStructure.
+ */
+const CLUSTERS: Partial<Record<ElementId, readonly PuppetSpec[]>> = {
+  wood: [
+    { offset: [-2.2, 0.9] },
+    { offset: [2.3, 1.3], flipX: true },
+    { offset: [0.4, -2.2] },
+    { offset: [-0.8, 2.0], variant: "flex" }, // the worker / flexing pose
+  ],
+  water: [
+    { offset: [-1.9, 1.3] },
+    { offset: [2.2, 0.9], flipX: true },
+    { offset: [0.6, -2.0] },
+    { offset: [-1.0, -1.4], variant: "puddle" }, // resting puddle form
+  ],
+  fire: [
+    { offset: [-2.0, 1.0] },
+    { offset: [2.1, 1.1], flipX: true },
+    { offset: [0.4, -2.0] },
+    { offset: [-0.6, -1.4] },
+  ],
+  earth: [
+    { offset: [-2.0, 1.2] },
+    { offset: [2.2, 1.0], flipX: true },
+    { offset: [0.5, -2.1] },
+    { offset: [-0.6, -1.4] },
+  ],
+  metal: [
+    { offset: [-2.0, 1.1] },
+    { offset: [2.1, 1.0], flipX: true },
+    { offset: [0.6, -2.0] },
+    { offset: [-0.6, -1.4] },
+  ],
+};
+
 interface PaperPuppetFieldProps {
+  /** Element zones to populate. Default = cycle-1 demo matchup (wood vs water). */
+  readonly activeElements?: readonly ElementId[];
   readonly variant?: MotionVariant;
   readonly worldHeight?: number;
 }
 
 export function PaperPuppetField({
+  activeElements = ["wood", "water"],
   variant = "billboard",
-  worldHeight = 2.6,
+  worldHeight = 1.6,
 }: PaperPuppetFieldProps) {
   const motion = MOTION_VARIANTS[variant];
   const groundY = groundHeight();
 
   return (
     <>
-      {ZONE_POSITIONS.map((zone) => (
-        <PaperPuppet3D
-          key={`puppet-field-${zone.zoneId}`}
-          element={zone.elementId}
-          motion={motion}
-          state="idle"
-          position={[zone.x, groundY, zone.z]}
-          worldHeight={worldHeight}
-        />
-      ))}
+      {activeElements.flatMap((element) => {
+        const zone = ZONE_POSITIONS.find((z) => z.elementId === element);
+        if (!zone) return [];
+        const cluster = CLUSTERS[element] ?? [{ offset: [0, 0] as const }];
+        return cluster.map((spec, i) => (
+          <PaperPuppet3D
+            key={`puppet-${zone.zoneId}-${i}`}
+            element={element}
+            variant={spec.variant}
+            motion={motion}
+            state="idle"
+            position={[
+              zone.x + spec.offset[0],
+              groundY,
+              zone.z + spec.offset[1],
+            ]}
+            flipX={spec.flipX}
+            worldHeight={worldHeight}
+          />
+        ));
+      })}
     </>
   );
 }

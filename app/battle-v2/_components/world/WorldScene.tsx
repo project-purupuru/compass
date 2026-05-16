@@ -349,12 +349,15 @@ export function WorldScene({
       />
       <WoodStockpile delivered={delivered} hub={hub} />
 
-      {/* Paper-puppet janis — one elemental guardian per district. Additive
-       * sibling of BearColony. State will be driven by GameState hooks in a
-       * future pass; for now: idle billboard variant at zone centers.
-       * worldHeight 1.4 = slightly taller than BearColony's 1.2 bears so they
-       * read as "named guardian" vs "anonymous worker" while staying in scale. */}
-      <PaperPuppetField variant="billboard" worldHeight={1.4} />
+      {/* Paper-puppet jani VILLAGES — 4 puppets per active zone in a loose
+       * cluster around the zone center. Cycle-1 matchup = wood vs water per
+       * project_battle-v2-zone-composition: only 2 zones populated, not all 5.
+       * Future: activeElements driven by GameState match config. */}
+      <PaperPuppetField
+        activeElements={["wood", "water"]}
+        variant="billboard"
+        worldHeight={1.6}
+      />
 
       <VillagerSwarm villagers={villagers} activeElement={activeElement} />
 
