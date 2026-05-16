@@ -25,6 +25,7 @@ import { CanvasTexture, Color } from "three";
 
 import type { ElementId } from "@/lib/purupuru/contracts/types";
 
+import { ACTIVE_MATCHUP } from "./activeMatchup";
 import { COASTLINE } from "./landmass";
 import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { regionAt } from "./regions";
@@ -62,7 +63,8 @@ export function RegionMap({ activeElement }: RegionMapProps) {
         const nz = (gz + 0.5) / TINT_RES;
         const wx = (nx - 0.5) * MAP_SIZE;
         const wz = (nz - 0.5) * MAP_SIZE;
-        const el = regionAt(wx, wz);
+        // Cycle-1: classify into ACTIVE_MATCHUP only (2-territory partition).
+        const el = regionAt(wx, wz, ACTIVE_MATCHUP);
         const idx = (gz * TINT_RES + gx) * 4;
         if (!el) {
           img.data[idx + 3] = 0; // sea — transparent

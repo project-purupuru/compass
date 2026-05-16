@@ -39,10 +39,20 @@ const BORDER_WAVE = 2.6;
  * Which element governs this world position — or null if it's sea.
  *
  * Noise-perturbed nearest-district: the organic-border trick. Each point's
- * sample is nudged by value-noise, then classified to the nearest of the 5
- * element districts. Same input → same output (deterministic).
+ * sample is nudged by value-noise, then classified to the nearest district.
+ * Same input → same output (deterministic).
+ *
+ * Optional `activeElements` filter restricts classification to a subset (e.g.,
+ * the 2-element Yugioh-shape matchup per project_battle-v2-zone-composition).
+ * When provided, the whole continent partitions into just those territories —
+ * inactive zones are skipped in the nearest-seed test, so their land gets
+ * absorbed into the closest active territory.
  */
-export function regionAt(worldX: number, worldZ: number): ElementId | null {
+export function regionAt(
+  worldX: number,
+  worldZ: number,
+  activeElements?: readonly ElementId[],
+): ElementId | null {
   if (!isOnLand(worldX, worldZ)) return null;
 
   const px = worldX + valueNoise(worldX * 0.16, worldZ * 0.16) * BORDER_WAVE;
@@ -51,6 +61,7 @@ export function regionAt(worldX: number, worldZ: number): ElementId | null {
   let best: ElementId | null = null;
   let bestSq = Infinity;
   for (const zone of ZONE_POSITIONS) {
+    if (activeElements && !activeElements.includes(zone.elementId)) continue;
     const dx = px - zone.x;
     const dz = pz - zone.z;
     const sq = dx * dx + dz * dz;

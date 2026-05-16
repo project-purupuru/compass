@@ -34,6 +34,7 @@ import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import type { AnchorStore } from "../anchors/anchorStore";
 import { DaemonReact } from "../vfx/DaemonReact";
+import { ACTIVE_MATCHUP, isActiveElement } from "./activeMatchup";
 import type { Vec2 } from "./agents/steering";
 import { BearColony } from "./BearColony";
 import { CloudLayer } from "./CloudLayer";
@@ -105,6 +106,8 @@ function buildVillagers(): NPCSpec[] {
   const rand = mulberry32(0xb00b1e);
   const out: NPCSpec[] = [];
   for (const zone of ZONE_POSITIONS) {
+    // 2-element matchup: only spawn villagers in active territories.
+    if (!isActiveElement(zone.elementId)) continue;
     const n = zone.zoneId === "wood_grove" ? 8 : 3;
     for (let i = 0; i < n; i++) {
       // Rejection-sampled onto the continent — villagers stand on land.
@@ -350,18 +353,17 @@ export function WorldScene({
       <WoodStockpile delivered={delivered} hub={hub} />
 
       {/* Paper-puppet jani VILLAGES — 4 puppets per active zone in a loose
-       * cluster around the zone center. Cycle-1 matchup = wood vs water per
-       * project_battle-v2-zone-composition: only 2 zones populated, not all 5.
-       * Future: activeElements driven by GameState match config. */}
+       * cluster around the zone center. activeElements driven by the
+       * single-source-of-truth ACTIVE_MATCHUP module. */}
       <PaperPuppetField
-        activeElements={["wood", "water"]}
+        activeElements={ACTIVE_MATCHUP}
         variant="billboard"
         worldHeight={1.6}
       />
 
       <VillagerSwarm villagers={villagers} activeElement={activeElement} />
 
-      {ZONE_POSITIONS.map((placement) => {
+      {ZONE_POSITIONS.filter((p) => isActiveElement(p.elementId)).map((placement) => {
         const zoneState: ZoneRuntimeState = placement.decorative
           ? {
               zoneId: placement.zoneId,

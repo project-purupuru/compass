@@ -31,6 +31,7 @@ import {
   MOTION_VARIANTS,
   type MotionVariant,
 } from "../puppet/PaperPuppetMotion";
+import { ACTIVE_MATCHUP } from "./activeMatchup";
 import { groundHeight } from "./MapGround";
 import { ZONE_POSITIONS } from "./zones";
 
@@ -81,14 +82,14 @@ const CLUSTERS: Partial<Record<ElementId, readonly PuppetSpec[]>> = {
 };
 
 interface PaperPuppetFieldProps {
-  /** Element zones to populate. Default = cycle-1 demo matchup (wood vs water). */
+  /** Element zones to populate. Default = ACTIVE_MATCHUP single source of truth. */
   readonly activeElements?: readonly ElementId[];
   readonly variant?: MotionVariant;
   readonly worldHeight?: number;
 }
 
 export function PaperPuppetField({
-  activeElements = ["wood", "water"],
+  activeElements = ACTIVE_MATCHUP,
   variant = "billboard",
   worldHeight = 1.6,
 }: PaperPuppetFieldProps) {
