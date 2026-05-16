@@ -323,6 +323,78 @@ def _streaming_active() -> bool:
     return not _streaming_disabled()
 
 
+# Cycle-108 sprint-1 T1.F — writer_version single source of truth.
+# Read from .claude/data/cycle-108/modelinv-writer-version once per process.
+# Cached for the lifetime of this module's import (per SDD §21.4 contract).
+_WRITER_VERSION_CACHE: Optional[str] = None
+_WRITER_VERSION_PATH = ".claude/data/cycle-108/modelinv-writer-version"
+
+
+def _find_repo_root(start: Path) -> Path:
+    """Walk up from ``start`` looking for a stable repo-root marker.
+
+    Looks for either ``.git`` or ``.loa.config.yaml`` as the marker
+    (both are present at the canonical loa repo root). Falls back to
+    ``start.parents[4]`` if no marker is found within 10 ancestors —
+    preserves backward-compat with the original hardcoded depth.
+
+    cycle-109 Sprint 5 T5.2 (#875): replaces the brittle ``parents[4]``
+    hardcode that broke when the module moved or was site-packaged.
+    """
+    current = start
+    for _ in range(10):  # bounded walk
+        parent = current.parent
+        if parent == current:
+            break  # reached filesystem root
+        if (parent / ".git").exists() or (parent / ".loa.config.yaml").exists():
+            return parent
+        current = parent
+    # Fallback: original parents[4] depth for callers in well-known
+    # locations (.claude/adapters/loa_cheval/audit/<file>.py → 4 levels up)
+    try:
+        return start.parents[4]
+    except IndexError:
+        return start.parent
+
+
+def _read_writer_version() -> Optional[str]:
+    """Read writer_version from the SoT file. Cached after first read.
+
+    Returns the version string (e.g. '1.2') or None if the file is absent
+    (which preserves v1.1 legacy emit behavior in case of a partial install).
+    """
+    global _WRITER_VERSION_CACHE
+    if _WRITER_VERSION_CACHE is not None:
+        return _WRITER_VERSION_CACHE
+
+    # cycle-109 Sprint 5 T5.2 (#875): repo-root resolution via marker
+    # walker rather than parents[N] hardcode. parents[4] was brittle —
+    # it broke when the module moved, when callers patched __file__,
+    # or when the package was installed as site-packages. The walker
+    # looks for a stable repo-root marker (.git directory or .loa.config.yaml)
+    # and falls back to parents[4] for backward compat.
+    repo_root = _find_repo_root(Path(__file__).resolve())
+    sot_path = repo_root / _WRITER_VERSION_PATH
+
+    if not sot_path.exists():
+        return None
+
+    try:
+        version = sot_path.read_text().strip()
+        if version:
+            _WRITER_VERSION_CACHE = version
+            return version
+    except OSError:
+        pass
+    return None
+
+
+def _reset_writer_version_cache_for_tests() -> None:
+    """Test-only helper to clear the writer_version cache between tests."""
+    global _WRITER_VERSION_CACHE
+    _WRITER_VERSION_CACHE = None
+
+
 def emit_model_invoke_complete(
     *,
     models_requested: List[str],
@@ -338,6 +410,49 @@ def emit_model_invoke_complete(
     final_model_id: Optional[str] = None,
     transport: Optional[str] = None,
     config_observed: Optional[Dict[str, str]] = None,
+    # Cycle-108 sprint-1 T1.F — advisor-strategy additive fields (v1.2 envelope).
+    # Backward-compat: all None defaults → emitter produces v1.1-shaped output.
+    role: Optional[str] = None,
+    tier: Optional[str] = None,
+    tier_source: Optional[str] = None,
+    tier_resolution: Optional[str] = None,
+    sprint_kind: Optional[str] = None,
+    invocation_chain: Optional[List[str]] = None,
+    # Cycle-108 sprint-2 T2.J — envelope-captured pricing (SDD §20.9 ATK-A20).
+    # Snapshot of providers.<p>.models.<m>.pricing at invocation time.
+    pricing_snapshot: Optional[Dict[str, int]] = None,
+    # Cycle-109 Sprint 1 T1.4 — capability-aware substrate evaluation (SDD §3.3.1).
+    # Snapshot of the pre-flight gate decision: effective_input_ceiling,
+    # reasoning_class, recommended_for, ceiling_stale, estimated_input_tokens,
+    # preflight_decision ∈ {dispatch, preempt, chunk}. None when the call
+    # path bypassed the gate (LOA_CHEVAL_DISABLE_INPUT_GATE=1, async mode,
+    # or pre-resolution failure).
+    capability_evaluation: Optional[Dict[str, Any]] = None,
+    # Cycle-109 Sprint 2 T2.3 — verdict-quality envelope (SDD §3.3.1 v1.3
+    # additive + §3.2 schema). Validated + status-stamped envelope built
+    # by the caller via `loa_cheval.verdict.quality.emit_envelope_with_status`.
+    # Optional/additive — callers that don't (yet) produce envelopes simply
+    # omit the kwarg and the payload is shape-identical to pre-T2.3 emits.
+    verdict_quality: Optional[Dict[str, Any]] = None,
+    # Cycle-109 Sprint 4 T4.7 — chunked-review snapshot (SDD §5.4).
+    # Populated when the pre-flight gate routed the call through the
+    # chunking package. Absent when chunking was not invoked.
+    chunked_review: Optional[Dict[str, Any]] = None,
+    # Cycle-109 Sprint 4 T4.7 — streaming-with-recovery telemetry
+    # (SDD §5.4.4 / IMP-014). Populated when the streaming code path
+    # observed (and possibly aborted via) one of the three thresholds.
+    streaming_recovery: Optional[Dict[str, Any]] = None,
+    # Cycle-110 sprint-2b1 T2.8 — MODELINV v1.4 additive fields
+    # ([PRD:FR-3.4, FR-7.1], SDD §3.4). All optional — when ALL are None,
+    # the emitted envelope is shape-identical to v1.3. Operators reading v1.3
+    # envelopes tolerate unknown fields per the cycle-109 forward-compat
+    # contract; cycle-110 readers default absent fields to "http_api" /
+    # per_token / None.
+    auth_type_resolved: Optional[str] = None,
+    auth_type_selection_reason: Optional[str] = None,
+    auto_selection_inputs: Optional[Dict[str, Any]] = None,
+    auto_evaluation_timestamp: Optional[float] = None,
+    semaphore_exhausted: Optional[bool] = None,
 ) -> None:
     """Emit a model.invoke.complete envelope to the MODELINV audit chain.
 
@@ -419,6 +534,147 @@ def emit_model_invoke_complete(
         payload["transport"] = transport
     if config_observed is not None:
         payload["config_observed"] = dict(config_observed)
+
+    # Cycle-108 sprint-1 T1.F — advisor-strategy v1.2 additive fields.
+    # All optional; additionalProperties:false is satisfied because each
+    # field is now declared in the v1.2 schema. Backward-compat: when ALL
+    # of these are None (legacy callers), the emitted envelope is shape-
+    # identical to v1.1.
+    if role is not None:
+        payload["role"] = role
+    if tier is not None:
+        payload["tier"] = tier
+    if tier_source is not None:
+        payload["tier_source"] = tier_source
+    if tier_resolution is not None:
+        payload["tier_resolution"] = tier_resolution
+    if sprint_kind is not None:
+        payload["sprint_kind"] = sprint_kind
+    if invocation_chain is not None:
+        payload["invocation_chain"] = list(invocation_chain)
+
+    # writer_version is set unconditionally for cycle-108+ emitters
+    # (single source of truth from .claude/data/cycle-108/modelinv-writer-version).
+    # Note: ATK-A7 closure (strip-attack detection) lives in the rollup tool
+    # (Sprint 2 deliverable), not here — emitter side just records the version.
+    _writer_version = _read_writer_version()
+    if _writer_version is not None:
+        payload["writer_version"] = _writer_version
+
+    # cycle-108 ATK-A15: replay_marker (env-flag-controlled)
+    if os.environ.get("LOA_REPLAY_CONTEXT") == "1":
+        payload["replay_marker"] = True
+
+    # cycle-108 sprint-2 T2.J — envelope-captured pricing (SDD §20.9 ATK-A20).
+    # Optional; only emitted when caller supplied a snapshot. Rollup tool reads
+    # pricing FROM the envelope, so historical pricing changes never retroactively
+    # rewrite cost reports.
+    if pricing_snapshot is not None:
+        # Defensive copy + integer coerce. Caller may pass numpy ints etc.;
+        # JSON schema requires plain ints. Drops keys that don't validate.
+        _snapshot: Dict[str, Any] = {}
+        for _k in ("input_per_mtok", "output_per_mtok", "reasoning_per_mtok", "per_task_micro_usd"):
+            if _k in pricing_snapshot and pricing_snapshot[_k] is not None:
+                _snapshot[_k] = int(pricing_snapshot[_k])
+        if "pricing_mode" in pricing_snapshot and pricing_snapshot["pricing_mode"] is not None:
+            _snapshot["pricing_mode"] = str(pricing_snapshot["pricing_mode"])
+        # Required-key gate: schema requires input/output. Skip emit if missing.
+        if "input_per_mtok" in _snapshot and "output_per_mtok" in _snapshot:
+            payload["pricing_snapshot"] = _snapshot
+
+    # cycle-109 Sprint 1 T1.4 — capability_evaluation pass-through. Schema
+    # additivity: only emit when caller supplied the dict. Required keys
+    # (effective_input_ceiling, reasoning_class, recommended_for,
+    # ceiling_stale, estimated_input_tokens, preflight_decision) are
+    # enforced by the JSON Schema downstream of redaction; the emitter
+    # passes the dict through verbatim so the caller's pre-flight gate
+    # state is recorded faithfully.
+    if capability_evaluation is not None:
+        # Defensive copy so the caller's dict cannot be mutated by downstream
+        # redaction passes.
+        payload["capability_evaluation"] = dict(capability_evaluation)
+        # Normalize recommended_for to a plain list (defensive against tuples).
+        if "recommended_for" in payload["capability_evaluation"]:
+            payload["capability_evaluation"]["recommended_for"] = list(
+                payload["capability_evaluation"]["recommended_for"]
+            )
+
+    # cycle-109 Sprint 4 T4.7 — chunked_review + streaming_recovery
+    # pass-throughs (SDD §3.3.1 v1.3 additive + §5.4 chunking +
+    # §5.4.4 IMP-014). Defensive copy at the top level so caller's
+    # dict cannot be mutated by downstream redaction passes.
+    if chunked_review is not None:
+        payload["chunked_review"] = dict(chunked_review)
+    if streaming_recovery is not None:
+        payload["streaming_recovery"] = dict(streaming_recovery)
+
+    # Cycle-110 sprint-2b1 T2.8 — MODELINV v1.4 additive fields.
+    # All four flow through the redactor at the end of this function (the
+    # redactor walks the dict recursively, so adding keys here does not
+    # require redaction-table changes). auth_type_resolved is validated
+    # against the closed enum at the call site (resolver), but we defense-
+    # in-depth re-validate here so a stale caller cannot smuggle bad values.
+    if auth_type_resolved is not None:
+        if auth_type_resolved not in ("headless", "http_api", "aws_iam"):
+            raise ValueError(
+                "emit_model_invoke_complete: auth_type_resolved must be one of "
+                f"('headless', 'http_api', 'aws_iam'), got {auth_type_resolved!r}"
+            )
+        payload["auth_type_resolved"] = auth_type_resolved
+    if auth_type_selection_reason is not None:
+        # Match dispatch_filter.SELECTION_REASONS enum.
+        if auth_type_selection_reason not in (
+            "explicit-dispatch_preference",
+            "auto-band-comparison",
+            "auto-cold-start-recommended_for",
+            "auto-cold-start-default-headless",
+        ):
+            raise ValueError(
+                "emit_model_invoke_complete: auth_type_selection_reason must "
+                "be one of {explicit-dispatch_preference, auto-band-comparison, "
+                "auto-cold-start-recommended_for, auto-cold-start-default-headless}, "
+                f"got {auth_type_selection_reason!r}"
+            )
+        payload["auth_type_selection_reason"] = auth_type_selection_reason
+    if auto_selection_inputs is not None:
+        # Defensive copy + shape check. C11 carry-in: must conform to SDD §3.4
+        # canonical example. Three required keys per the spec.
+        if not isinstance(auto_selection_inputs, dict):
+            raise ValueError(
+                "auto_selection_inputs must be a dict, got "
+                f"{type(auto_selection_inputs).__name__}"
+            )
+        # Defensive copy at top level + dict-coerce on the three sub-keys.
+        _aux: Dict[str, Any] = {}
+        for k in ("sample_n_per_bucket", "band_per_bucket", "success_rate_per_bucket"):
+            if k in auto_selection_inputs and auto_selection_inputs[k] is not None:
+                _aux[k] = dict(auto_selection_inputs[k])
+        payload["auto_selection_inputs"] = _aux
+    if auto_evaluation_timestamp is not None:
+        payload["auto_evaluation_timestamp"] = float(auto_evaluation_timestamp)
+    if semaphore_exhausted is not None:
+        payload["semaphore_exhausted"] = bool(semaphore_exhausted)
+
+    # cycle-109 Sprint 2 T2.3 — verdict_quality pass-through (SDD §3.3.1 v1.3
+    # additive). Schema additivity: only emit when caller supplied the dict.
+    # The caller (cheval.cmd_invoke for PRODUCER #1) is responsible for
+    # building + validating the envelope via emit_envelope_with_status; the
+    # emitter trusts the contract and passes the dict through verbatim
+    # (post-redaction) into the MODELINV payload.
+    if verdict_quality is not None:
+        # Defensive copy at the top level so caller's dict cannot be mutated
+        # by the redaction pass. voices_dropped[] entries are dicts too —
+        # do a one-level-deep copy on the list contents for the same reason.
+        _vq_copy: Dict[str, Any] = dict(verdict_quality)
+        _dropped = _vq_copy.get("voices_dropped")
+        if isinstance(_dropped, list):
+            _vq_copy["voices_dropped"] = [
+                dict(d) if isinstance(d, dict) else d for d in _dropped
+            ]
+        _succeeded_ids = _vq_copy.get("voices_succeeded_ids")
+        if isinstance(_succeeded_ids, list):
+            _vq_copy["voices_succeeded_ids"] = list(_succeeded_ids)
+        payload["verdict_quality"] = _vq_copy
 
     # Field-level redaction.
     payload = redact_payload_strings(payload)
