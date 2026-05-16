@@ -25,7 +25,7 @@ import { CanvasTexture, Color } from "three";
 
 import type { ElementId } from "@/lib/purupuru/contracts/types";
 
-import { ACTIVE_MATCHUP } from "./activeMatchup";
+import { activeBattlefieldZones } from "./activeMatchup";
 import { COASTLINE } from "./landmass";
 import { ELEMENT_GLOW, PALETTE } from "./palette";
 import { regionAt } from "./regions";
@@ -47,7 +47,11 @@ interface RegionMapProps {
 export function RegionMap({ activeElement }: RegionMapProps) {
   // The territory tint — one canvas texture, regenerated only when the active
   // element changes (rare). Each texel: regionAt → element colour → alpha.
+  // Uses BATTLEFIELD-overridden zones for the partition so territory wraps
+  // the player/opponent layout (Yugioh playmat shape), not the canonical
+  // district art positions.
   const texture = useMemo(() => {
+    const battlefieldZones = activeBattlefieldZones();
     if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
     canvas.width = TINT_RES;
@@ -63,8 +67,9 @@ export function RegionMap({ activeElement }: RegionMapProps) {
         const nz = (gz + 0.5) / TINT_RES;
         const wx = (nx - 0.5) * MAP_SIZE;
         const wz = (nz - 0.5) * MAP_SIZE;
-        // Cycle-1: classify into ACTIVE_MATCHUP only (2-territory partition).
-        const el = regionAt(wx, wz, ACTIVE_MATCHUP);
+        // Classify against the BATTLEFIELD seed positions so territory follows
+        // the Yugioh playmat shape (player side close, opponent side far).
+        const el = regionAt(wx, wz, battlefieldZones);
         const idx = (gz * TINT_RES + gx) * 4;
         if (!el) {
           img.data[idx + 3] = 0; // sea — transparent

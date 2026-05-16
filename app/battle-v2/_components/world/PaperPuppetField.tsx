@@ -31,9 +31,8 @@ import {
   MOTION_VARIANTS,
   type MotionVariant,
 } from "../puppet/PaperPuppetMotion";
-import { ACTIVE_MATCHUP } from "./activeMatchup";
+import { ACTIVE_MATCHUP, activeBattlefieldZones } from "./activeMatchup";
 import { groundHeight } from "./MapGround";
-import { ZONE_POSITIONS } from "./zones";
 
 interface PuppetSpec {
   readonly variant?: "normal" | "flex" | "puddle";
@@ -95,11 +94,14 @@ export function PaperPuppetField({
 }: PaperPuppetFieldProps) {
   const motion = MOTION_VARIANTS[variant];
   const groundY = groundHeight();
+  // Use battlefield-overridden positions so jani villages cluster on the
+  // player/opponent layout, matching the territory partition + structure markers.
+  const battlefieldZones = activeBattlefieldZones();
 
   return (
     <>
       {activeElements.flatMap((element) => {
-        const zone = ZONE_POSITIONS.find((z) => z.elementId === element);
+        const zone = battlefieldZones.find((z) => z.elementId === element);
         if (!zone) return [];
         const cluster = CLUSTERS[element] ?? [{ offset: [0, 0] as const }];
         return cluster.map((spec, i) => (

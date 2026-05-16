@@ -38,30 +38,34 @@ const BORDER_WAVE = 2.6;
 /**
  * Which element governs this world position — or null if it's sea.
  *
- * Noise-perturbed nearest-district: the organic-border trick. Each point's
- * sample is nudged by value-noise, then classified to the nearest district.
- * Same input → same output (deterministic).
+ * Noise-perturbed nearest-seed: the organic-border trick. Each point's sample
+ * is nudged by value-noise, then classified to the nearest seed zone. Same
+ * input → same output (deterministic).
  *
- * Optional `activeElements` filter restricts classification to a subset (e.g.,
- * the 2-element Yugioh-shape matchup per project_battle-v2-zone-composition).
- * When provided, the whole continent partitions into just those territories —
- * inactive zones are skipped in the nearest-seed test, so their land gets
- * absorbed into the closest active territory.
+ * Optional `seedZones` override replaces ZONE_POSITIONS entirely in the
+ * nearest-seed test. Use cases:
+ *   - active 2-element matchup with battlefield-overridden positions: pass
+ *     `activeBattlefieldZones()` so the territory partition wraps around the
+ *     player/opponent battlefield layout instead of canonical district art
+ *   - debug overlays: pass arbitrary seed configurations
+ *
+ * When `seedZones` is omitted, falls back to canonical ZONE_POSITIONS (full
+ * 5-element partition).
  */
 export function regionAt(
   worldX: number,
   worldZ: number,
-  activeElements?: readonly ElementId[],
+  seedZones?: readonly { readonly elementId: ElementId; readonly x: number; readonly z: number }[],
 ): ElementId | null {
   if (!isOnLand(worldX, worldZ)) return null;
 
   const px = worldX + valueNoise(worldX * 0.16, worldZ * 0.16) * BORDER_WAVE;
   const pz = worldZ + valueNoise(worldX * 0.16 + 41.7, worldZ * 0.16 + 17.3) * BORDER_WAVE;
 
+  const seeds = seedZones ?? ZONE_POSITIONS;
   let best: ElementId | null = null;
   let bestSq = Infinity;
-  for (const zone of ZONE_POSITIONS) {
-    if (activeElements && !activeElements.includes(zone.elementId)) continue;
+  for (const zone of seeds) {
     const dx = px - zone.x;
     const dz = pz - zone.z;
     const sq = dx * dx + dz * dz;

@@ -26,6 +26,7 @@ import { Color, type InstancedMesh, Matrix4 } from "three";
 
 import type { ElementId } from "@/lib/purupuru/contracts/types";
 
+import { activeBattlefieldZones } from "./activeMatchup";
 import { mulberry32 } from "./Foliage";
 import { groundHeight } from "./MapGround";
 import { regionAt } from "./regions";
@@ -70,6 +71,7 @@ export function RegionWeather({ activeElement }: RegionWeatherProps) {
   // Rejection-sample mote homes inside the active element's territory.
   // Recomputed only when the tide turns (rare).
   const { motes, centroid } = useMemo(() => {
+    const battlefieldZones = activeBattlefieldZones();
     const rand = mulberry32(0x3a17 + activeElement.charCodeAt(0) * 131);
     const found: Mote[] = [];
     let sx = 0;
@@ -79,7 +81,9 @@ export function RegionWeather({ activeElement }: RegionWeatherProps) {
       guard++;
       const x = (rand() - 0.5) * MAP_SIZE;
       const z = (rand() - 0.5) * MAP_SIZE;
-      if (regionAt(x, z) !== activeElement) continue;
+      // Use battlefield seeds so weather falls in the player/opponent layout
+      // territory, not at canonical district art positions.
+      if (regionAt(x, z, battlefieldZones) !== activeElement) continue;
       found.push({
         homeX: x,
         homeZ: z,

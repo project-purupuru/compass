@@ -34,7 +34,7 @@ import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 
 import type { AnchorStore } from "../anchors/anchorStore";
 import { DaemonReact } from "../vfx/DaemonReact";
-import { ACTIVE_MATCHUP, isActiveElement } from "./activeMatchup";
+import { ACTIVE_MATCHUP, activeBattlefieldZones } from "./activeMatchup";
 import type { Vec2 } from "./agents/steering";
 import { BearColony } from "./BearColony";
 import { BearVillagers } from "./BearVillagers";
@@ -119,12 +119,11 @@ function buildVillagers(): NPCSpec[] {
   const ANCHOR_RING_OUTER = 16; // max distance from district center
   const CLUSTER_RADIUS = 2.2; // tight cluster around each sub-village anchor
 
-  for (const zone of ZONE_POSITIONS) {
-    if (!isActiveElement(zone.elementId)) continue;
-
+  // Iterate the BATTLEFIELD-overridden zones so sub-villages cluster around
+  // the player/opponent layout positions (Yugioh playmat shape).
+  const battlefieldZones = activeBattlefieldZones();
+  for (const zone of battlefieldZones) {
     for (let v = 0; v < VILLAGE_COUNT_PER_SIDE; v++) {
-      // Pick an anchor on land INSIDE this territory (via regionAt validation
-      // against the active matchup).
       let anchor: readonly [number, number] | null = null;
       for (let attempt = 0; attempt < 32; attempt++) {
         const angle = rand() * Math.PI * 2;
@@ -132,7 +131,8 @@ function buildVillagers(): NPCSpec[] {
           ANCHOR_RING_INNER + rand() * (ANCHOR_RING_OUTER - ANCHOR_RING_INNER);
         const cx = zone.x + Math.cos(angle) * dist;
         const cz = zone.z + Math.sin(angle) * dist;
-        if (regionAt(cx, cz, ACTIVE_MATCHUP) === zone.elementId) {
+        // Verify anchor falls inside this zone's BATTLEFIELD territory.
+        if (regionAt(cx, cz, battlefieldZones) === zone.elementId) {
           anchor = [cx, cz];
           break;
         }
@@ -397,7 +397,7 @@ export function WorldScene({
        * 2026-05-16: "the blue template characters should be all bears"). */}
       <BearVillagers villagers={villagers} />
 
-      {ZONE_POSITIONS.filter((p) => isActiveElement(p.elementId)).map((placement) => {
+      {activeBattlefieldZones().map((placement) => {
         const zoneState: ZoneRuntimeState = placement.decorative
           ? {
               zoneId: placement.zoneId,
