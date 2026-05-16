@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = process.env.PLAYWRIGHT_PORT ?? "3000";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${port}`;
+
 /**
  * Playwright config supports two test suites:
  *   tests/e2e/     — black-box flow tests (existing)
@@ -14,7 +17,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -45,11 +48,20 @@ export default defineConfig({
         toHaveScreenshot: { maxDiffPixels: 200 },
       },
     },
+    {
+      name: "performance",
+      testDir: "./tests/performance",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 800 },
+        deviceScaleFactor: 1,
+      },
+    },
   ],
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    command: `pnpm exec next dev --port ${port}`,
+    url: baseURL,
+    reuseExistingServer: !process.env.CI && process.env.PLAYWRIGHT_FORCE_SERVER !== "1",
     timeout: 120_000,
   },
 });

@@ -1003,31 +1003,31 @@
           "local_id": 1,
           "global_id": 148,
           "label": "Collection substrate",
-          "status": "planned"
+          "status": "completed"
         },
         {
           "local_id": 2,
           "global_id": 149,
           "label": "Pure burn logic",
-          "status": "planned"
+          "status": "completed"
         },
         {
           "local_id": 3,
           "global_id": 150,
           "label": "R2 + chain-bridging substrate ports",
-          "status": "planned"
+          "status": "completed"
         },
         {
           "local_id": 4,
           "global_id": 151,
           "label": "The FR-7a deal seam",
-          "status": "planned"
+          "status": "completed"
         },
         {
           "local_id": 5,
           "global_id": 152,
           "label": "The /burn route + ceremony",
-          "status": "planned"
+          "status": "completed"
         }
       ]
     }

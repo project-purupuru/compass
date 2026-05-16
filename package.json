@@ -16,9 +16,12 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:webperf": "PLAYWRIGHT_PORT=3011 PLAYWRIGHT_FORCE_SERVER=1 playwright test --project=performance",
     "test:visual": "playwright test tests/visual --reporter=line",
     "test:visual:update": "playwright test tests/visual --update-snapshots",
     "assets:check": "tsx scripts/check-assets.ts",
+    "assets:list": "tsx scripts/assets-list.ts",
+    "cards:audit": "tsx scripts/cards-audit.ts",
     "hounfour:drift": "tsx scripts/hounfour-drift.ts",
     "test:types": "pnpm typecheck"
   },

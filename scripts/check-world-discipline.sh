@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # S4-T9 / D4 in-memory enforcement · NO solana imports + NO KV writes in lib/world/
-# Plus card-game-stays-out gate (per PRD §3.2)
+#
+# Historical note: this script used to enforce "no card/battle/deck files
+# anywhere in lib/". Honeycomb is now an accepted local substrate under
+# lib/honeycomb/, so this gate is scoped to lib/world/ only.
 
 set -uo pipefail
 
@@ -26,11 +29,11 @@ if [ "${KV:-0}" != "0" ]; then
   exit 1
 fi
 
-# Card-game-stays-out gate (per PRD §3.2 + cuts §2.3)
-CARD_FILES=$(find lib -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \) 2>/dev/null | wc -l | tr -d ' ')
+# Card-game-stays-out gate for the world substrate.
+CARD_FILES=$(find "$WORLD_DIR" -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \) 2>/dev/null | wc -l | tr -d ' ')
 if [ "${CARD_FILES:-0}" != "0" ]; then
-  echo "FAIL: $CARD_FILES card/battle/deck files in lib/ (card game stays at purupuru-game per D3)"
-  find lib -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \)
+  echo "FAIL: $CARD_FILES card/battle/deck files in $WORLD_DIR (world substrate must not absorb Honeycomb)"
+  find "$WORLD_DIR" -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \)
   exit 1
 fi
 

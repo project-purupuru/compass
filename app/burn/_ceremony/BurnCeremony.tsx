@@ -80,6 +80,44 @@ export function BurnCeremony() {
     };
   }, [refreshCollection]);
 
+  // Dev-only: expose the collection seeders on `__PURU_DEV__` so a burnable
+  // state is reachable from the console on `/burn` directly — mirrors
+  // `DevConsole.installDevGlobal()`. Each seeder refreshes the live `select`
+  // view so the dev loop is tight (seed → see it). Dead code in production.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    let alive = true;
+    void import("@/lib/honeycomb/collection.seed").then((seed) => {
+      const w = globalThis as unknown as {
+        __PURU_DEV__?: Record<string, unknown>;
+      };
+      const after = async () => {
+        if (alive) await refreshCollection();
+      };
+      w.__PURU_DEV__ = {
+        ...w.__PURU_DEV__,
+        enabled: true,
+        seedCompleteSet: async (
+          setType: "jani" | "caretaker_a" | "caretaker_b",
+        ) => {
+          await seed.seedCompleteSet(setType);
+          await after();
+        },
+        seedAllSets: async () => {
+          await seed.seedAllSets();
+          await after();
+        },
+        clearCollection: async () => {
+          await seed.clearCollection();
+          await after();
+        },
+      };
+    });
+    return () => {
+      alive = false;
+    };
+  }, [refreshCollection]);
+
   const candidates = getBurnCandidates(collection);
   const voiceElement: Element = collection[0]?.element ?? "earth";
 

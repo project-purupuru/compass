@@ -22,12 +22,18 @@ export type SeedableSet = Exclude<CardType, "transcendence">;
 /**
  * Dev-gate: seeders are a production-exclusion surface (NFR-6).
  * Every exported function short-circuits to a no-op unless this holds.
+ *
+ * `__PURU_DEV__` is the object surface `{ enabled, ... }` the rest of the
+ * codebase uses (DevConsole's `installDevGlobal`, `match.live.ts`,
+ * `lib/runtime/types.d.ts`) — the gate keys on `.enabled`, not a bare
+ * boolean.
  */
 function devGateOpen(): boolean {
   return (
     process.env.NODE_ENV !== "production" &&
     typeof window !== "undefined" &&
-    (window as unknown as { __PURU_DEV__?: boolean }).__PURU_DEV__ === true
+    (window as unknown as { __PURU_DEV__?: { enabled?: boolean } })
+      .__PURU_DEV__?.enabled === true
   );
 }
 

@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "canvas": {
+    "width": 733,
+    "height": 1024,
+    "note": "Matches existing AssetRecord dimensions for card composites."
+  },
+  "cdnBase": "/art/cards",
+  "layers": [
+    {
+      "name": "background",
+      "zIndex": 0,
+      "source": "adaptive",
+      "faces": ["front"],
+      "selectionLogic": {
+        "type": "element",
+        "variants": {
+          "wood": "backgrounds/wood.svg",
+          "fire": "backgrounds/fire.svg",
+          "earth": "backgrounds/earth.svg",
+          "metal": "backgrounds/metal.svg",
+          "water": "backgrounds/water.svg",
+          "harmony": "backgrounds/harmony.svg"
+        }
+      },
+      "description": "Element-specific background. Adaptive — may be driven by holder element-affinity (Score API) or card element."
+    },
+    {
+      "name": "card_back",
+      "zIndex": 5,
+      "source": "immutable",
+      "faces": ["back"],
+      "selectionLogic": {
+        "type": "static",
+        "path": "/brand/project-purupuru-logo-card-back.png"
+      },
+      "description": "Canonical brand card-back — Project プルプル wordmark on white with rainbow gradient border. Single design for all elements (operator decision 2026-05-12 — element-keyed scene-card backs leaked character art). Asset mirrored from S3 (thj-assets/Purupuru/brand/)."
+    },
+    {
+      "name": "frame",
+      "zIndex": 10,
+      "source": "immutable",
+      "faces": ["front"],
+      "revealStages": [3],
+      "selectionLogic": {
+        "type": "rarity",
+        "variants": {
+          "common": "frames/common.svg",
+          "mid": "frames/mid.svg",
+          "rare": "frames/rare.svg",
+          "rarest": "frames/rarest.svg"
+        }
+      },
+      "description": "Card frame at full reveal. Reveal stages 1-2 swap to frame_pot (mutually exclusive)."
+    },
+    {
+      "name": "frame_pot",
+      "zIndex": 10,
+      "source": "immutable",
+      "faces": ["front"],
+      "revealStages": [1, 2],
+      "selectionLogic": {
+        "type": "element",
+        "variants": {
+          "wood": "frames_pot/wood.svg",
+          "fire": "frames_pot/fire.svg",
+          "earth": "frames_pot/earth.svg",
+          "metal": "frames_pot/metal.svg",
+          "water": "frames_pot/water.svg",
+          "harmony": "frames_pot/harmony.svg"
+        }
+      },
+      "description": "Pot frame for reveal stages 1-2. Mutually exclusive with `frame` (which is gated to revealStage 3)."
+    },
+    {
+      "name": "character",
+      "zIndex": 30,
+      "source": "immutable",
+      "faces": ["front"],
+      "selectionLogic": {
+        "type": "cardType",
+        "variants": {
+          "jani": "art-panels/{caretaker}-{element}.png",
+          "caretaker_a": "art-panels/{caretaker}-{element}.png",
+          "caretaker_b": "art-panels/{caretaker}-{element}.png",
+          "transcendence": "art-panels/{caretaker}-{element}.png"
+        }
+      },
+      "description": "Character art panel. MVP: all cardTypes map to the same per-element panel. Future: per-cardType variants will live alongside (jani-{element}.png, transcendence-{element}.png) — cards:audit CLI surfaces the gap."
+    },
+    {
+      "name": "element_effects",
+      "zIndex": 70,
+      "source": "immutable",
+      "faces": ["front"],
+      "selectionLogic": {
+        "type": "element",
+        "variants": {
+          "wood": "/art/element-effects/wood_glow.svg",
+          "fire": "/art/element-effects/fire_glow.svg",
+          "earth": "/art/element-effects/earth_glow.svg",
+          "metal": "/art/element-effects/metal_glow.svg",
+          "water": "/art/element-effects/water_glow.svg",
+          "harmony": "/art/element-effects/harmony_glow.svg"
+        }
+      },
+      "description": "Element atmospheric overlay. Absolute paths (start with /) — bypass cdnBase prefix."
+    },
+    {
+      "name": "rarity_treatment",
+      "zIndex": 80,
+      "source": "immutable",
+      "faces": ["front"],
+      "selectionLogic": {
+        "type": "rarity",
+        "variants": {
+          "common": "rarity-treatments/common.svg",
+          "mid": "rarity-treatments/mid_shimmer.svg",
+          "rare": "rarity-treatments/rare_glow.svg",
+          "rarest": "rarity-treatments/rarest_full.svg"
+        }
+      },
+      "description": "Rarity visual escalation overlay. Common is transparent (no treatment)."
+    },
+    {
+      "name": "behavioral",
+      "zIndex": 90,
+      "source": "adaptive",
+      "faces": ["front"],
+      "selectionLogic": {
+        "type": "resonance",
+        "thresholds": {
+          "dormant": [0, 25],
+          "awakening": [26, 50],
+          "resonant": [51, 75],
+          "harmonized": [76, 100]
+        },
+        "paths": {
+          "dormant": "behavioral/dormant.svg",
+          "awakening": "behavioral/awakening.svg",
+          "resonant": "behavioral/resonant_{element}.svg",
+          "harmonized": "behavioral/harmonized_{element}.svg"
+        },
+        "elementSpecific": ["resonant", "harmonized"]
+      },
+      "description": "Behavioral overlay driven by holder resonance (Score API). Element-specific for resonant + harmonized states."
+    }
+  ]
+}

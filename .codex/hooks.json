@@ -1,0 +1,131 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill(plan-and-analyze.*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/scripts/cleanup-context.sh --prompt"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/block-destructive-bash.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/team-role-guard.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/team-role-guard-write.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/spiral-dispatch-guard.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/team-role-guard-write.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/spiral-dispatch-guard.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/team-skill-guard.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/spiral-skill-sentinel.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/audit/mutation-logger.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/audit/write-mutation-logger.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/audit/write-mutation-logger.sh'"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/pre-compact-marker.sh'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/post-compact-reminder.sh'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/safety/run-mode-stop-guard.sh'"
+          },
+          {
+            "type": "command",
+            "command": "'/Users/zksoju/Documents/GitHub/compass/.codex/hooks/hygiene/settings-cleanup.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

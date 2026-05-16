@@ -27,6 +27,7 @@
 | 2026-05-09 | sprint-3 T1 close | Replaced `app/api/actions/mint/genesis-stone/route.ts` mock-memo path with real `claim_genesis_stone` integration via Anchor's typed TS client. New helpers: `lib/blink/anchor/{program,build-claim-tx,purupuru_anchor.idl.json,purupuru_anchor.types.ts}` · vendored IDL/types since `programs/**` is excluded from app tsconfig · `KeypairWallet` shim avoids ESM-broken `anchor.Wallet` import · `getPurupuruProgram` returns `Program<PurupuruAnchor>` for type-safe instruction encoding. Renderer threads validated answers into claim button URL (`renderQuizResult({answers, ...})`) so mint POST receives full URL state. Silent improvements baked in: `StoneClaimedSchema` exported from `@purupuru/peripheral-events` (Zerker indexer issue #5 unblocked) · `[mint-success]/[mint-error]` console logs throughout mint route. Next.js build passes · 79 + 23 + 24 = 126 tests green. NOT covered by T1: HMAC mac verify across routes (T2 scope · current parity with prior mock-memo path) · upgrade-authority freeze (operator-run · post-T2 + e2e devnet validation). |
 | 2026-05-09 | sprint-3 T2 close (autonomous SHIP run) | HMAC mac verify wired end-to-end across `quiz/step` + `quiz/result` + `mint/genesis-stone`. Bumped `QuizStep` schema to `1..9` with `QUIZ_COMPLETED_STEP=9` sentinel · invariant `answers.length === step - 1` holds across full range. Renderer `signQuizState`s real macs at every button (was `PLACEHOLDER_MAC`) · accepts optional `hmacKey` config for test injection (env fallback for prod). Result endpoint threads validated mac into claim URL → mint route verifies same canonical state. Tampered URL → 400 with friendly "begin again" fallback. Added `lib/blink/env-check.ts` · single preflight at mint route that surfaces ALL missing env vars in one error (CLAIM_SIGNER_SECRET_BS58 · SPONSORED_PAYER_SECRET_BS58 · QUIZ_HMAC_KEY · KV_REST_API_URL · KV_REST_API_TOKEN) with actionable hints · never echoes values. `quiz/start` route wraps renderer in try/catch with friendly fallback action (handles missing QUIZ_HMAC_KEY gracefully). Next.js build clean · 80 + 23 + 24 = 127 tests pass (added 1 new test for step=9 acceptance · existing test asserting "step=9 throws" updated to "step=10 throws"). Operator note: any in-flight Vercel preview URLs with old PLACEHOLDER_MAC are now invalid · fresh deploy + fresh quiz start required. |
 | 2026-05-09 PM | deployment split · zerker observatory + quiz Blink coexist | Discovered while running `/bridgebuilder-review` on PR #4: zerker merged `feature/observatory-v0` to main with ~100 commits of dashboard work (KPI cards · music · rails · weather UI) AND took the `purupuru-blink.vercel.app` canonical URL with their production deploy. Indexer pivoted to `project-purupuru/radar` repo (per main commit `06636c2`). Resolution: created NEW Vercel project `0xhoneyjar-s-team/purupuru-quiz` · canonical URL `https://purupuru-quiz.vercel.app` · `purupuru-blink.vercel.app` stays with zerker's observatory · operator wires DNS via `purupuru.world` later. Quiz Blink env vars (QUIZ_HMAC_KEY · NEXT_PUBLIC_APP_URL) set on new project · live verified · mint route still missing CLAIM_SIGNER_SECRET_BS58 + SPONSORED_PAYER_SECRET_BS58 + KV_REST_API_URL + KV_REST_API_TOKEN on new project (operator-paste). Issue #5 (purupuru-ttrpg) closed-as-superseded with redirect to radar repo. Issue #6 (purupuru-ttrpg) filed as v1 hardening backlog tracker for relevant bridgebuilder CRITICAL/HIGH findings (eval fixture markers · `.loa-version.json` migration · ESLint flat-config · adversarial-review out_of_scope routing · bedrock probe history · argv-safety race window). Bridgebuilder run cost ~$6-7 against operator's mcv-interface API key. |
+| 2026-05-13 | sprint-plan (purupuru cycle 1) | Authored `grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/sprint.md` (609 lines · 6 sprints · 38 tasks · ~4,300 LOC vs +4,500 cap). Faithful translation of PRD r1 (flatline-integrated · 441 lines) + SDD r0 (724 lines). All 10 PRD goals (G-1 through G-10) mapped to contributing tasks with per-goal validation matrix in Task 5.E2E. Per-sprint structure: S0 calibration spike (FR-0 · 0.5d · delete-after-spike) → S1 schemas+contracts+loader+design-lint (~900 LOC · AC-1/2/2a/3/3a/4) → S2 runtime+state-machines+resolver (~1100 LOC · AC-4/5/6/7/9/14/15) → S3 presentation+sequencer+11-beat (~700 LOC · AC-8/9/15) → S4 /battle-v2 surface+adapter+E2E (~1200 LOC · AC-10/11) → S5 integration+ONE-event-telemetry+docs+final-gate (~400 LOC · AC-12/13/16/17/18). Combined risk register (PRD R1-R11 + SDD-R1-R3) preserves all flatline-integrated mitigations. Audit feedback from prior sprint APPROVED · ledger NOT updated (purupuru cycle uses date-suffixed dir per D12 · ledger tracks Loa-internal cycles only). Beads DEGRADED (stale JSONL 38h) non-blocking. Trajectory at `grimoires/loa/a2a/trajectory/sprint-plan-2026-05-13.jsonl`. |
 | 2026-05-11 | ride (post-shipped) | `/ride compass` against near-shipped state (110 commits since 2026-05-07 prior ride). Reality files regenerated (7-file token-optimized set · 7,180 / 8,500 budget): index, api-surface, types, interfaces, structure, entry-points, architecture-overview. PRD r6 + SDD r2 PRESERVED (ride does not overwrite operator-curated flatline-reviewed planning artifacts). Drift score 8.5/10 · 12 aligned · 1 stale (`.loa-version.json` says v1.116.1 but commit `0316560` updated framework to v1.130.0+649f8e4 · pin not bumped) · 1 hallucinated (README "127 unit tests" vs ~82 *.test.ts files) · 1 ghost (BLINK_DESCRIPTOR upstream PR deferred) · 1 missing (PRD §tl;dr says "3 v0 WorldEvent variants" but code has 4 with `QuizCompletedEvent` added in sprint-2). Consistency 8/10 · 5 BC flags (CLAIM_MESSAGE_SIGNED_BYTES=98 · `_tag` discriminator · Element literals · KV nonce key · CLAIM_SIGNER_PUBKEY hardcoded). HYGIENE FLAG · 4.2 GB of stale `.next.OLD-1778465846/` (1.1 GB) + `.next.OLD2-1778467960/` (3.1 GB) at root · operator should `rm -rf .next.OLD-*` and add `.next.OLD*` to .gitignore. Governance gaps: CHANGELOG.md at root contains LOA framework changelog not project · no semver tags · no project ADRs (only `ADR-001-cycle-099-model-registry.md` is Loa-internal). 11/11 ride artifacts persisted. Trajectory: `grimoires/loa/a2a/trajectory/riding-20260510.jsonl`. |
 
 ## Decision Log
@@ -109,3 +110,115 @@ Synthesizing from training knowledge instead this turn since the user is
 mid-iteration on /battle visuals and cannot wait for an auth fix. Cite the
 proposal file `grimoires/loa/proposals/foundation-vfx-camera-audio-2026-05-12.md`
 for the doctrine that resulted.
+
+## 2026-05-12 · /goal locked for kickoff session
+
+**Goal source:** `grimoires/loa/proposals/kickoff-next-session-2026-05-12.md` §/goal definition (lines 125-161). Operator approved 2026-05-12 PM.
+
+**Headline:** Ship Layer primitive into honeycomb substrate (P4 Registry Plane) + apply to Lock + ElementQuiz rooms with Slay-the-Spire-grade FEEL.
+
+**Done conditions (6):** (1) `lib/cards/layers/{registry.json, types.ts, resolve.ts, CardStack.tsx}` exist + registered in `lib/registry/index.ts` + tests cover 120 combos (5 elements × 4 rarities × 3 reveal × 2 faces). (2) `CardPetal`, `BattleHand`, `OpponentZone` consume `<CardStack>`; card backs no longer use `BRAND.logoCardBack`. (3) `pnpm cards:audit` clean + `pnpm assets:list --orphan` returns zero for `public/art/cards/`. (4) Lock + Quiz pass operator's Slay-the-Spire vibe check. (5) construct-composition workflow demoed end-to-end once. (6) honey/bera PNGs cleaned up.
+
+**Hard NO:** Arena room, substrate reducer, MCP servers.
+
+**Compass-specific delta vs source repo:** add `face: "front" | "back"` axis to `LayerDefinition` — card backs are first-class layers, not patched filenames.
+
+**Sequencing (operator-driven; each Step is a separate prompt):** 0 kickoff (done) → 1 `compose-run audit-feel` (verdict drives whether rooms need new assets vs compositional-only fixes) → 2 `code-implement-and-review` (layer port) → 3 `direct-render` (conditional; only if Step 1 verdict says new assets needed) → 4 `feel-iterate` ×2 (Lock, then Quiz) → 5 `code-implement-and-review` (cards:audit + assets:list CLIs) → 6 cleanup move of honey/bera assets → 7 goal-condition verification.
+
+**Runner resolution:** `compose-run` is not on PATH; actual script is `~/Documents/GitHub/loa-constructs/.claude/scripts/compose-run.sh`. Compositions live at `~/bonfire/construct-compositions/compositions/{discovery,delivery}/*.yaml`. Interactive palette: `~/bonfire/construct-compositions/bin/loom`.
+
+## 2026-05-12 · Kickoff session COMPLETED
+
+All 7 steps from the kickoff brief executed. See `grimoires/loa/proposals/goal-verification-2026-05-12.md` for the full PASS/FAIL audit. Headline:
+
+- ✅ Step 1 — audit-feel verdict written (`audit-feel-verdict-2026-05-12.md`); both rooms classified as compositional-fix-only (no new assets needed). Step 3 (`direct-render`) explicitly skipped per verdict.
+- ✅ Step 2 — Layer primitive shipped at `lib/cards/layers/{registry.json, types.ts, resolve.ts, CardStack.tsx, index.ts}` + 429-test coverage (120 combos × ~3.5 assertions). Registered as `registry.cards.layers`. **Compass delta:** new `face: "front" | "back"` axis + `card_back` layer making element-keyed Tsuheji card backs first-class (replaces `BRAND.logoCardBack` wordmark).
+- ✅ Step 2b — 3 callsites wired: CardPetal · BattleHand · OpponentZone all consume `<CardStack>`. `BRAND.logoCardBack` no longer referenced. Typecheck clean. 663 tests pass.
+- ✅ Step 5 — `pnpm cards:audit` (360/360 combos clean) + `pnpm assets:list` (`--filter`, `--missing`, `--orphan` modes). Surfaced 1 known harmony edge case (`kaori-harmony.png`) — out-of-band, not in production paths.
+- ✅ Step 6 — 97 honey/bera files + 5 card-tree orphans (card-template-water-v{1,2}, jani-trading-{fire,metal,water}) archived to `public/_archive/{honey-collection,orphan-cards}/`. Orphan-check returns zero.
+- 🟡 Step 4 — mechanical FEEL fixes from the audit-feel verdict landed (Quiz: selection +15% / rejection saturate 0.35 + brightness 0.85 + scale 0.9, kanji boosted text-lg → text-2xl/3xl; Lock: wuxing strip's current-weather glyph promoted to status, tile-btn anticipation breathe 3.2s). Judgment-territory items (element-consequence copy, wordmark vs companion center, bottom-stack density) deferred to operator HITL.
+
+**Goal status:** 4 of 6 done-conditions full PASS · 2 PARTIAL pending operator visual review. Hard NOs respected (Arena untouched, substrate reducer untouched, no MCP).
+
+**What to look at first when operator returns:** /battle in the browser — confirm CardStack visual at Lock screen + once you tap through to ElementQuiz, the new selection deltas and rejection desaturate. The dev server has been running clean ("Compiled in 30-50ms") through all edits.
+
+**Where the operator's judgment is needed (per goal-verification doc §"What the operator should review next"):**
+1. Visual check on /battle (CardStack rendering vs prior flat card aesthetic)
+2. Quiz selection feel calibration (scale/saturate/timing knobs available)
+3. Lock wuxing strip: does it now fight `entry-tide` pill since both show today's element?
+4. tile-btn anticipation period/magnitude tuning
+5. CardPetal art treatment — currently renders ALL layers; may want slim variant since `.petal` is already chrome
+6. Decision on whether to fire `direct-render` for strict goal-condition #5 spec match
+
+## 2026-05-12 PM · UI-prompt work + construct pack sync
+
+Session shifted from substrate-build to UI-mockup-prompt iteration. Three rounds: v1 (asset-gen, operator deprecated) → v2 (2×2 grid portrait, produced Image #1 which read as "poster not game") → v3 (split horizontal, in-app-screenshot framing) → v3-MINT (after loading THE MINT pack's `prompting-images` SKILL.md, rewrote §2.1.A with four-block structure + named treatments + OKLCH + single-stamp + composite-vs-generate). Image #2 generated against v3 (pre-MINT-discipline) — gorgeous but still concept-art-tier per operator.
+
+**Pack sync done:** `git pull` in `~/.loa/constructs/packs/{the-mint,k-hole,the-easel,rosenzu}`. the-mint got `prompting-images` SKILL.md properly tracked (was missing locally, I'd manually cp'd it earlier as untracked). artisan + observer are tarball-installed (no .git) — need re-install via `/constructs` next session.
+
+**Headline doc:** `grimoires/loa/proposals/ui-prompts-distillation-2026-05-12.md` — full lesson digest. Next agent should read this BEFORE writing any image prompts.
+
+**Open gap:** Hearthstone-tier game-UI feel vs concept-art-tier. Both image gens produced beautiful concept-art-style mockups. Next refinement is layering HUD chrome (settings cog as wind-chime, account chip, hit-state affordances) painted INTO Gumi's soft-painted Tsuheji idiom. See distillation §5 for the v4 prompt addition.
+
+**`/kit/ui-explorer`** is the operator's mockup tasting surface — now in 16:9 landscape tile mode.
+
+## 2026-05-13 · Purupuru Cycle 1 PRD authored
+
+`/plan-and-analyze` ran under minimal mode + gap-skipping. Build doc (`grimoires/loa/specs/arch-enhance-purupuru-cycle-1-wood-vertical.md`) + Gumi's harness (`~/Downloads/purupuru_architecture_harness/`) WERE the pre-PRD; this session translated them into Loa PRD format at `grimoires/loa/cycles/purupuru-cycle-1-wood-vertical-2026-05-13/prd.md`.
+
+**Operator decisions captured (single consolidated AskUserQuestion gate):**
+- Cycle dir: `purupuru-cycle-1-wood-vertical-2026-05-13` (date-suffixed, matches prior-cycle convention)
+- §13 open questions: defer all 5 to SDD as Q-SDD-* (none block sprint authoring per build-doc close)
+- Vertical-slice route: `/battle-v2` (parallel to existing `/battle`)
+
+**PRD shape:** 12 sections (TL;DR · 12 pre-decided decisions · problem · 10 goals · 18 AC metrics · users · 29 FRs across 5 sprints · technical/NFR · scope · 9 risks · sprint dependency graph · references · 5 Q-SDD-* open questions). Authored against minimal-mode gap-skipping — only one operator gate fired; all phases skip-able because the spec is already exhaustive.
+
+**Invariants confirmed extant in codebase:**
+- `lib/purupuru/` does NOT exist (greenfield namespace per D1)
+- `lib/cards/layers/` exists (preserved · 429-test coverage from battle-foundations-2026-05-12)
+- `lib/honeycomb/` exists (preserved · 8-sprint surface from card-game-in-compass-2026-05-12)
+- `app/battle/` exists (preserved · stays untouched · `/battle-v2` ships in parallel)
+- `lib/registry/index.ts` exists (extensible for `registry.purupuru.runtime` + `registry.purupuru.content`)
+
+**Next step:** `/architect` to produce the SDD. SDD interview resolves Q-SDD-1 through Q-SDD-4 (Q-SDD-5 telemetry destination RESOLVED at PRD-altitude in r1 → JSONL trail).
+
+**r1 post-flatline integration (2026-05-13 PM)**: Operator requested `/flatline-review via /simstim workflow for rigor`. Flatline orchestrator hit the same 2026-05-12 regression class (all 6 Phase-1 model-adapter calls returned bare banners, no `.run/model-invoke.jsonl` envelope written despite cycle-107 routing default-on). Fell back to manual two-voice review: Opus structural (3 BLK + 5 HIGH + 5 MED) + Codex skeptic via codex CLI (4 BLK + 5 HIGH + 5 MED). Both voices verdict REVISE-BEFORE-ARCHITECT. Saved at `grimoires/loa/a2a/flatline/cycle-1-prd-{opus-structural,codex-skeptic,consensus}-2026-05-13.{md,md,json}`. PRD r1 integrates all 14 auto-integrate findings + 4 operator-decided judgment calls.
+
+**Critical Codex catches r1 fixed**:
+- Sequence has **11 beats not 12** (verified: `grep -c '^  - id:' sequence.wood_activation.yaml = 11`)
+- `contracts.ts` is engine-agnostic pseudocode per file header, NOT canonical TypeScript
+- `ajv` + `ajv-formats` already in package.json (only `js-yaml` needs adding)
+- S5 sprint graph had typo `sprint-4` review — fixed to `sprint-5`
+- SemanticEvent union has 15 in contracts.ts + 5 README-only deferred (I had fabricated "18")
+
+**Critical Opus catches r1 fixed**:
+- `validation_rules.md` not vendored (21 design-lint + runtime-assertion rules) → FR-2a NEW
+- Resolver ops list missing `set_flag` + `add_resource` from event YAML → FR-13 expanded
+- Input-lock owner registry missing → FR-11a NEW
+- Sky-eye terminology `growth_rings` → `sky_eye_leaf` per element YAML
+- ZoneToken state machine needs 10 gameplay + 6 UI states compose
+- 4 target registries (anchor/actor/UI-mount/audio-bus) replace single anchor-registry
+
+**Operator decisions captured in r1**:
+- OD-1 (5-zone path): B = 1 schema-backed wood_grove + 4 decorative locked tiles
+- OD-2 (CardStack adapter): A = build `harnessCardToLayerInput()` adapter in S4 (~50 LOC)
+- OD-3 (telemetry destination): A = JSONL trail at `grimoires/loa/a2a/trajectory/telemetry-cycle-1-*.jsonl`
+- OD-4 (S0 spike): C = lightweight (vendor schemas + AJV-validate ONE YAML) — cycle now 6 sprints
+
+**Framework regression report**: Same flatline-orchestrator bug as 2026-05-12 still active. Filed as **loa#877** (https://github.com/0xHoneyJar/loa/issues/877). Root cause isolated: cheval.py registers `claude-opus-4.7` (period form) but NOT `claude-opus-4-7` (dash form) — backfill is incomplete for the current model. Older Opus versions (4.5, 4.6) have BOTH forms registered. Compass `.loa.config.yaml` uses dash form (cycle-104 operator tuning), so all cheval calls fail with `INVALID_CONFIG: Unknown alias`. Diagnostic gap: flatline-orchestrator silently drops cheval's JSON error and only displays the bare banner from model-adapter.sh, forcing manual fallback. Verified the regression exists on upstream main (`6e76582d`) — recent version does NOT fix it. Adjacent open issues: #863 #864 #866. Operator credentials separately exhausted: Anthropic balance + Google project 403 (same DIG fallback issue from 2026-05-12).
+
+**Construct composition this cycle:** ARCH lens (OSTROM · structural · blast radius) + SHIP lens (BARTH · scope guard · cut while-I'm-here) + craft lens (ALEXANDER · pattern language · pixel-level structural).
+
+**Beads health flagged:** JSONL stale 38h. Operator should `br sync` before `/sprint-plan` ships beads tasks.
+
+## 2026-05-12 late · BATTLE SCREEN BREAKTHROUGH (Image #6)
+
+Operator fired §2.2 v1 battle prompt (16KB MINT-disciplined four-block + 7-zone Hearthstone/TFT layout + ember-trail per-element-motif applied per SKY EYES Priority-1 retrofit). ChatGPT image returned a render where ALL discipline held simultaneously: every blank-surface-with-hanko stamp worked (no mangled text), all 7 zones positioned correctly, parallax depth read as 4-5 distance planes, ember-trail particles visible drifting through entire frame, dual HP-gem rails with opponent's metal-violet vs player's fire-vermillion stamp clusters obeyed, chibi puruhani mascot landed in lower-left corner exactly as described, hover-state amber visible on both hand-card AND LOCK-IN CTA simultaneously.
+
+This is the **first render where SKY EYES Priority-1 (per-element non-color motif persistence) shows visually**. Ember-trails are fire's NON-COLOR identity — when this prompt fires with the other 4 elements (water=ripple-circles, wood=growth-rings, metal=clockwork-glints, earth=honeycomb), the element-separation problem (4.8/100 in March 2026) becomes addressable in PRACTICE.
+
+Render saved at `public/art/mockups/clash/a.png` (3MB). Visible at `/kit/ui-explorer`.
+
+Three open next-moves: (A) fire 4 more element battle prompts cold-mode to build full set, (B) composite the legible text via rsvg-convert+magick to prove end-to-end pipeline, (C) start React/CSS port against Image #6 as visual gold standard.
+
+Recommended next: Move A with WATER (Ruan + ripple-circles + harbor-pier-at-rain). Pin Ruan in proper water register (addresses SKY EYES finding she's most visually-inconsistent caretaker) + ripple-circles is the most distinct motif from ember-trails so element-separation gain is biggest on first additional element.

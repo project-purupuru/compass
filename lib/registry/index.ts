@@ -23,6 +23,7 @@
 import { audioEngine, SNAPSHOTS } from "@/lib/audio/engine";
 import { SOUND_REGISTRY } from "@/lib/audio/registry";
 import { cameraEngine } from "@/lib/camera/parallax-engine";
+import { LAYER_REGISTRY } from "@/lib/cards/layers";
 import { CARD_DEFINITIONS, TYPE_POWER } from "@/lib/honeycomb/cards";
 import { COMBO_META } from "@/lib/honeycomb/discovery";
 import { ELEMENT_META, KE, SHENG } from "@/lib/honeycomb/wuxing";
@@ -55,8 +56,13 @@ export const registry = {
   sounds: SOUND_REGISTRY,
   /** Per-element CSS particle kit factories. */
   elementVfx: ELEMENT_VFX,
-  /** Card definitions (jani / caretaker / transcendence). */
-  cards: CARD_DEFINITIONS,
+  /** Card system — definitions + layer compositor registry. */
+  cards: {
+    /** Card definitions (jani / caretaker / transcendence). */
+    definitions: CARD_DEFINITIONS,
+    /** Layer compositor registry — DOM-stacked `<img>` primitive per kickoff brief Pillar 1. */
+    layers: LAYER_REGISTRY,
+  },
   /** Per-card-type base power multiplier. */
   typePower: TYPE_POWER,
   /** Per-element battle conditions (status effects). */
@@ -87,7 +93,7 @@ export const registryIndex: Record<RegistryKey, string> = {
   audio: "Audio engine — bus mixer (master/sfx/music) + ducking + snapshots",
   sounds: "Static array of every registered SFX + music",
   elementVfx: "Per-element CSS particle kit factories (build per impact)",
-  cards: "Card definition catalog (every card in the game)",
+  cards: "Card system — { definitions: catalog, layers: DOM-stack layer compositor registry }",
   typePower: "Card-type → base power multiplier (jani 1.0 / caretaker 0.85 / etc.)",
   conditions: "Per-element battle conditions (status effects)",
   policies: "Per-element opponent AI policies (greedy / defensive / random / etc.)",

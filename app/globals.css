@@ -310,6 +310,42 @@
   --touch-target-min: 44px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ──────────────────────────────────────────────────────────────────
+     DARK-MODE DOCTRINE — read before adding battle/lock styles.
+
+     1. NEVER hardcode oklch lightness > 0.85 as a background unless you
+        also write a [data-theme='old-horai'] + @media prefers-dark
+        counterpart. The cloud-* tokens already swap; use them.
+     2. SVGs with black fill (like /brand/purupuru-wordmark.svg) need a
+        dark-mode `filter: invert(1) brightness(1.05)` rule or a
+        white-fill alternate.
+     3. Per-element vivid + dim shades already swap with theme — prefer
+        `var(--puru-fire-vivid)` over baked oklch literals.
+     4. `oklch(from var(--token) l c h / 0.5)` is the canonical pattern
+        for surfaces — pulls L/C/H from the token, only fixes alpha.
+        Stays theme-aware automatically.
+     5. The quiz screen is the reference. If a screen reads cleanly
+        there but fails on lock or battle, the screen-specific CSS is
+        the culprit, not the design system.
+     ────────────────────────────────────────────────────────────────── */
+
+  /* ── Legacy alias tokens — world-purupuru tokens.css canonical names.
+       Several battle-styles modules (CardPetal, ComboDiscoveryToast,
+       BattleScene, Tutorial, HelpCarousel, TurnClock) were ported with
+       the world-purupuru naming intact (--font-mono, --font-card,
+       --puru-honey-rich, etc.) but the compass globals only exposes the
+       Tailwind-utility-friendly --font-puru-* shapes. Without these
+       aliases those modules silently fall back to default sans-serif /
+       inherit colors, which is why the petal felt off in dark mode.
+       Source: world-purupuru/sites/world/src/lib/tokens.css:246-249 +
+       :76 for honey-rich (was always missing — map to base). */
+  --font-body: var(--font-puru-body);
+  --font-display: var(--font-puru-display);
+  --font-card: var(--font-puru-card);
+  --font-cn: var(--font-puru-cn);
+  --font-mono: var(--font-puru-mono);
+  --puru-honey-rich: var(--puru-honey-base);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -868,6 +904,28 @@ a,
 }
 .puru-wordmark-drift {
   animation: wordmark-drift 3.2s var(--ease-puru-breathe) infinite;
+}
+
+/* Card Layer System — default positioning for the CardStack primitive.
+   `:where()` has zero specificity so any consumer class (.card-art,
+   .card-back, .petal-art-stack) trivially overrides. */
+:where(.card-stack) {
+  position: relative;
+}
+:where(.card-stack-layer) {
+  user-select: none;
+}
+
+/* Visual Center Lifting (视觉中心上移) — ZCOOL designer Zheng Qingke's
+   adjustment for dense kanji radicals on mobile screens. Shifts the
+   visible mass of the glyph up by ~6% so the bottom whitespace reads
+   correctly when the glyph sits alongside non-CJK type. Apply via
+   `.kanji-lift` to any element rendering 木火土金水 etc.
+   Source: dig wuxing/East-Asian-UI 2026-05-12, ZCOOL community doctrine. */
+.kanji-lift {
+  display: inline-block;
+  transform: translateY(-0.06em);
+  line-height: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

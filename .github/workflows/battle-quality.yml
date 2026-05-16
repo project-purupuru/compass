@@ -26,6 +26,11 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests (vitest)
         run: pnpm test
+      - name: Substrate guardrails
+        run: |
+          bash scripts/check-single-runtime.sh
+          bash scripts/check-world-discipline.sh
+          bash scripts/check-honeycomb-discipline.sh
       - name: Asset manifest audit
         # Validator exits 0 on green-or-expected-broken, non-zero on new
         # 4xx/5xx. Exit 69 (EX_UNAVAILABLE) → warning, not failure.

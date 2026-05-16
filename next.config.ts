@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
     "@purupuru/world-sources",
     "@purupuru/medium-blink",
   ],
+  experimental: {
+    // Next already optimizes lucide-react and effect by default. These are
+    // the remaining named-export packages on the battle/burn client surfaces.
+    optimizePackageImports: ["motion", "@phosphor-icons/react"],
+  },
 };
 
 export default nextConfig;

@@ -91,13 +91,14 @@ export interface AdmittedEffect {
 
 type Listener = (active: readonly AdmittedEffect[]) => void;
 
-class VfxScheduler {
+export class VfxScheduler {
   readonly config: VfxConfig = JSON.parse(JSON.stringify(DEFAULT_VFX_CONFIG));
   private active: AdmittedEffect[] = [];
   private lastSpawnAt: Map<string, number> = new Map(); // key: `${family}:${element ?? "_"}`
   private listeners: Map<VfxFamily, Set<Listener>> = new Map();
   private allListeners: Set<Listener> = new Set();
-  private gcTimer: number | null = null;
+  private gcTimer: ReturnType<typeof setTimeout> | null = null;
+  private gcDeadline = 0;
   private nextId = 1;
 
   /**
@@ -184,8 +185,9 @@ class VfxScheduler {
       // FAGAN M2: clear the gcTimer chain so a previous-state sweep
       // doesn't fire after we just nuked everything.
       if (this.gcTimer !== null) {
-        window.clearTimeout(this.gcTimer);
+        clearTimeout(this.gcTimer);
         this.gcTimer = null;
+        this.gcDeadline = 0;
       }
     }
   }
@@ -202,8 +204,9 @@ class VfxScheduler {
    */
   dispose(): void {
     if (this.gcTimer !== null) {
-      window.clearTimeout(this.gcTimer);
+      clearTimeout(this.gcTimer);
       this.gcTimer = null;
+      this.gcDeadline = 0;
     }
     this.active = [];
     this.lastSpawnAt.clear();
@@ -271,13 +274,20 @@ class VfxScheduler {
   }
 
   private scheduleGc(delayMs: number) {
-    if (this.gcTimer !== null) return;
-    this.gcTimer = window.setTimeout(() => {
+    const deadline = performance.now() + delayMs;
+    if (this.gcTimer !== null) {
+      if (deadline >= this.gcDeadline) return;
+      clearTimeout(this.gcTimer);
+    }
+    this.gcDeadline = deadline;
+    this.gcTimer = setTimeout(() => {
       this.gcTimer = null;
+      this.gcDeadline = 0;
       this.gc();
       // If still active, schedule next sweep
       if (this.active.length > 0) {
-        const next = Math.max(50, this.active[0].expiresAt - performance.now());
+        const nextExpiry = Math.min(...this.active.map((effect) => effect.expiresAt));
+        const next = Math.max(50, nextExpiry - performance.now());
         this.scheduleGc(next);
       }
     }, delayMs);
