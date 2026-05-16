@@ -8,14 +8,9 @@
 
 import type { Card } from "@/lib/honeycomb/cards";
 import { ELEMENT_META, type Element } from "@/lib/honeycomb/wuxing";
-import { BRAND, cardArtChain } from "@/lib/cdn";
-import { CdnImage } from "./CdnImage";
+import { CardStack } from "@/lib/cards/layers";
 
 export type OpponentZoneArenaPhase = "rearrange" | "locked" | "clashing" | "result";
-
-function cardArtFor(card: Card): readonly string[] {
-  return cardArtChain(card.cardType, card.element);
-}
 
 interface OpponentZoneProps {
   readonly lineup: readonly Card[];
@@ -28,8 +23,6 @@ interface OpponentZoneProps {
   readonly dying?: ReadonlySet<number>;
   readonly shielded?: ReadonlySet<number>;
 }
-
-const BRAND_CARD_BACK = BRAND.logoCardBack;
 
 export function OpponentZone({
   lineup,
@@ -85,12 +78,20 @@ export function OpponentZone({
                 style={{ "--card-idx": i } as React.CSSProperties}
               >
                 {isArrange ? (
-                  <img className="card-back" src={BRAND_CARD_BACK} alt="face down" />
+                  <CardStack
+                    className="card-back"
+                    element={card.element}
+                    cardType={card.cardType}
+                    face="back"
+                    alt="face down"
+                  />
                 ) : (
                   <>
-                    <CdnImage
+                    <CardStack
                       className="card-art"
-                      sources={cardArtFor(card)}
+                      element={card.element}
+                      cardType={card.cardType}
+                      face="front"
                       alt={`${ELEMENT_META[card.element].caretaker} · ${card.cardType}`}
                     />
                     <span

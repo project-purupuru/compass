@@ -175,13 +175,6 @@
 		transform: scale(1.25);
 		box-shadow: 0 0 8px oklch(from var(--puru-honey-rich) l c h / 0.45);
 	}
-	.round-chip__survivors {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		letter-spacing: 0.06em;
-		color: var(--puru-fire-vivid);
-		opacity: 0.85;
-	}
 
 	.action-bar {
 		padding: var(--space-xs) var(--space-lg) 0;
@@ -198,7 +191,10 @@
 		font-family: var(--font-body);
 		font-size: var(--text-md);
 		font-weight: 700;
-		color: var(--puru-ink-rich);
+		/* Text on honey stays dark in BOTH themes — was --puru-ink-rich
+		   which flipped to near-white in dark mode against the honey
+		   button bg, making "Lock in" unreadable. Operator feedback. */
+		color: var(--puru-on-honey);
 		background: var(--puru-honey-base);
 		border: none;
 		padding: var(--space-sm) var(--space-2xl);

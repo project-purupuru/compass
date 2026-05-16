@@ -94,9 +94,14 @@
   .card-slot[data-element='metal'] { background: linear-gradient(145deg, var(--puru-metal-tint), var(--puru-metal-pastel)); color: oklch(0.28 0.06 309); }
   .card-slot[data-element='water'] { background: linear-gradient(145deg, var(--puru-water-tint), var(--puru-water-pastel)); color: oklch(0.28 0.08 266); }
 
+  /* Face-down opponent cards render the canonical brand card-back
+     (Project プルプル wordmark on white with a rainbow gradient border).
+     Asset at /brand/project-purupuru-logo-card-back.png; the registry
+     card_back layer routes face: "back" → that single static path.
+     Single design for all elements, so the opponent's element stays
+     hidden until reveal. Operator decision 2026-05-12. */
   .face-down {
-    background: var(--puru-cloud-dim) !important;
-    color: var(--puru-ink-ghost) !important;
+    background: var(--puru-cloud-deep) !important;
   }
 
   @keyframes card-reveal {
@@ -113,7 +118,6 @@
     height: 100%;
     object-fit: cover;
     border-radius: inherit;
-    opacity: 0.45;
     pointer-events: none;
   }
 

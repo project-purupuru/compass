@@ -135,14 +135,31 @@
     outline-offset: 2px;
   }
 
-  .scene-wrap.chosen { transform: scaleY(1.01) scaleX(1.04); }
+  /* audit-feel verdict (2026-05-12): selection commit too gentle.
+     Crank the chosen-card delta so the snap reads as "locked in" not
+     "softly highlighted". Lift z-index so the chosen card pops over
+     its faded neighbors. Slay-the-Spire character-select vocabulary. */
+  .scene-wrap.chosen {
+    transform: scaleY(1.12) scaleX(1.15);
+    z-index: 2;
+    transition: transform var(--duration-fast) var(--ease-puru-bounce);
+  }
   .scene-wrap.chosen .scene-card {
     border-color: var(--puru-honey-base);
-    box-shadow: var(--shadow-card-hover), 0 0 16px var(--puru-honey-dim);
+    box-shadow: var(--shadow-card-hover), 0 0 28px var(--puru-honey-base),
+                0 0 60px var(--puru-honey-dim);
   }
+  /* audit-feel verdict (2026-05-12): rejected cards faded → REJECTED.
+     Opacity-only signals "we're politely looking elsewhere"; desaturate
+     + slight grayscale signals "this is not the path." SpS uses the same
+     posterize+dim treatment for unaffordable cards. */
   .scene-wrap.faded {
-    opacity: 0.35;
-    transform: scaleY(0.97) scaleX(0.95);
+    opacity: 0.32;
+    transform: scaleY(0.94) scaleX(0.9);
+    filter: saturate(0.35) brightness(0.85);
+    transition: transform var(--duration-normal) var(--ease-puru-settle),
+                opacity var(--duration-normal) var(--ease-puru-settle),
+                filter var(--duration-normal) var(--ease-puru-settle);
   }
 
   .scene-art {
@@ -173,17 +190,26 @@
 
   .scene-kanji {
     position: absolute;
-    /* Operator feedback (2026-05-12): inset more from the card edge so
-       the glyph reads as PART OF the composition, not crammed against
-       the corner. Was xs (4-8px); now md (16-24px). */
+    /* audit-feel verdict (2026-05-12): kanji was reading as a label
+       (small, informational). The top-of-card was the operator-flagged
+       empty zone. Boost the existing kanji from label → presentational
+       glyph: roughly 2× size, higher contrast, deeper drop-shadow so
+       it carries the top half of the card the way the mural carries
+       the bottom. */
     top: var(--space-md);
     right: var(--space-md);
     font-family: var(--font-card);
-    font-size: var(--text-lg);
-    color: oklch(1 0 0 / 0.3);
+    font-size: clamp(var(--text-2xl), 6vw, var(--text-3xl));
+    line-height: 0.9;
+    color: oklch(1 0 0 / 0.55);
     z-index: 3;
-    /* Slight backdrop softening so the kanji holds against any art */
-    text-shadow: 0 1px 4px oklch(0 0 0 / 0.5);
+    text-shadow: 0 2px 8px oklch(0 0 0 / 0.55),
+                 0 0 24px oklch(0 0 0 / 0.35);
+    pointer-events: none;
+  }
+  .scene-wrap.chosen .scene-kanji {
+    color: oklch(1 0 0 / 0.85);
+    transition: color var(--duration-fast) var(--ease-puru-settle);
   }
 
   .mural-caretaker {

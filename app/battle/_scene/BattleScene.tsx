@@ -176,8 +176,6 @@ export function BattleScene() {
                 phase={snap.phase}
                 currentRound={snap.currentRound}
                 totalRounds={3}
-                survivors={snap.p1Lineup.length}
-                handSize={5}
               />
               <BattleHand
                 cards={snap.p1Lineup}
@@ -275,19 +273,14 @@ function RoundContextChip({
   phase,
   currentRound,
   totalRounds,
-  survivors,
-  handSize,
 }: {
   readonly phase: import("@/lib/honeycomb/match.port").MatchPhase;
   readonly currentRound: number;
   readonly totalRounds: number;
-  readonly survivors: number;
-  readonly handSize: number;
 }) {
   if (!["arrange", "committed", "clashing", "disintegrating", "between-rounds"].includes(phase)) {
     return null;
   }
-  const showSurvivorLine = phase === "between-rounds" && survivors < handSize;
   const dots = Array.from({ length: totalRounds }, (_, i) => {
     const state = i < currentRound ? "done" : i === currentRound ? "active" : "pending";
     return state;
@@ -305,11 +298,6 @@ function RoundContextChip({
           <span key={i} className={`round-chip__dot round-chip__dot--${state}`} />
         ))}
       </div>
-      {showSurvivorLine && (
-        <span className="round-chip__survivors">
-          {survivors} of {handSize} card{survivors === 1 ? "" : "s"} surviving
-        </span>
-      )}
     </div>
   );
 }

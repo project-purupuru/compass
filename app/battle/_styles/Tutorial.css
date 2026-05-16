@@ -196,12 +196,18 @@
     100% { opacity: 1; transform: translateX(0); }
   }
 
-  /* ── Tile button — ceramic, matches battle page ── */
+  /* ── Tile button — ceramic, matches battle page ──
+     `--puru-on-honey` keeps text dark in BOTH themes (honey bg is honey
+     in both). Was --puru-ink-rich, which is white in dark mode and made
+     the button text disappear. This rule sits LATER in the @import
+     order than EntryScreen.css so it was overriding the canonical fix
+     even after it landed. Operator feedback 2026-05-12 surfaced both
+     locations. */
   .tile-btn {
     font-family: var(--font-body);
     font-size: var(--text-base);
     font-weight: 600;
-    color: var(--puru-ink-rich);
+    color: var(--puru-on-honey);
     background: var(--puru-honey-base);
     background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.18) 0%, transparent 50%);
     border: none;

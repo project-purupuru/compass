@@ -84,9 +84,10 @@ export function EntryScreen({
               src="/brand/purupuru-wordmark.svg"
               alt="Purupuru"
               width={240}
-              height={120}
+              height={90}
               priority
               className="wordmark-svg"
+              style={{ width: "240px", height: "auto" }}
             />
           </div>
           <span className="entry-subtitle">the game</span>
@@ -126,8 +127,15 @@ export function EntryScreen({
           {challengeVs ? "Accept challenge" : "Play"}
         </button>
 
-        {/* Ambient wuxing breathing strip — five kanji cycle in Shēng order */}
-        <div className="entry-wuxing-strip" aria-hidden>
+        {/* Wuxing status strip — five kanji in Shēng order; the
+            element matching today's `weather` reads as the operative
+            status indicator (audit-feel verdict 2026-05-12: promote
+            from ambient → operative). The other four still breathe. */}
+        <div
+          className="entry-wuxing-strip"
+          data-weather={weather}
+          aria-hidden
+        >
           {ELEMENT_ORDER.map((el, i) => (
             <span
               key={el}

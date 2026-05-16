@@ -111,6 +111,19 @@
     z-index: 1;
   }
   .entry-wordmark { opacity: 0; animation: rise 900ms var(--ease-puru-settle) 400ms forwards; }
+  /* Wordmark dark-mode swap — the shipped SVG is black-fill. Invert it
+     in dark mode so the title reads white-on-dark instead of vanishing
+     into the void. brightness(1.05) keeps the inverted form warm-white
+     rather than fluorescent. Fix landed 2026-05-12 with the systemic
+     dark-mode audit. */
+  [data-theme='old-horai'] .wordmark-svg {
+    filter: invert(1) brightness(1.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .wordmark-svg {
+      filter: invert(1) brightness(1.05);
+    }
+  }
   .entry-subtitle {
     font-family: var(--font-body);
     font-size: var(--text-xs);
@@ -247,6 +260,23 @@
   .entry-wuxing-glyph[data-element='earth'] { --glyph-vivid: var(--puru-earth-vivid); }
   .entry-wuxing-glyph[data-element='metal'] { --glyph-vivid: var(--puru-metal-vivid); }
   .entry-wuxing-glyph[data-element='water'] { --glyph-vivid: var(--puru-water-vivid); }
+
+  /* audit-feel verdict (2026-05-12): the strip was reading as ambient
+     decoration. Today's-weather glyph stays lit + scaled — it becomes
+     the operative status indicator. The other four keep breathing as
+     atmospheric context. Slay-the-Spire pattern: discrete glanceable
+     status. */
+  .entry-wuxing-strip[data-weather='wood']  .entry-wuxing-glyph[data-element='wood'],
+  .entry-wuxing-strip[data-weather='fire']  .entry-wuxing-glyph[data-element='fire'],
+  .entry-wuxing-strip[data-weather='earth'] .entry-wuxing-glyph[data-element='earth'],
+  .entry-wuxing-strip[data-weather='metal'] .entry-wuxing-glyph[data-element='metal'],
+  .entry-wuxing-strip[data-weather='water'] .entry-wuxing-glyph[data-element='water'] {
+    animation: none;
+    opacity: 1;
+    transform: translateY(-3px) scale(1.25);
+    color: oklch(from var(--glyph-vivid) l c h);
+    text-shadow: 0 0 16px oklch(from var(--glyph-vivid) l c h / 0.5);
+  }
   @keyframes wuxing-breathe {
     0%, 100% {
       opacity: 0.18;
@@ -296,12 +326,17 @@
     letter-spacing: 0.04em;
   }
 
-  /* Tile button — duplicated from page for scoped encapsulation */
+  /* Tile button — duplicated from page for scoped encapsulation.
+     `--puru-on-honey` is the canonical text-on-honey contrast token —
+     stays dark in both themes since the button bg stays honey in both.
+     Was --puru-ink-rich, which is dark in light mode (fine) but
+     near-white in dark mode (L 0.9 on L 0.84 honey = unreadable).
+     Operator feedback 2026-05-12: "button variant difficult to read." */
   .tile-btn {
     font-family: var(--font-body);
     font-size: var(--text-lg);
     font-weight: 600;
-    color: var(--puru-ink-rich);
+    color: var(--puru-on-honey);
     background: var(--puru-honey-base);
     border: none;
     padding: var(--space-md) var(--space-2xl);
@@ -310,11 +345,31 @@
     box-shadow: var(--shadow-tile), 0 4px 20px oklch(0.82 0.14 85 / 0.25);
     background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.18) 0%, transparent 50%);
     transition: transform var(--duration-fast) var(--ease-puru-bounce), box-shadow var(--duration-fast) var(--ease-puru-settle);
+    /* audit-feel verdict (2026-05-12): the CTA had no anticipation curve.
+       Slay's Continue button breathes faintly while you wait. Same here. */
+    animation: tile-btn-anticipate 3.2s var(--ease-puru-breathe) 1800ms infinite;
+  }
+  .tile-btn:hover,
+  .tile-btn:active {
+    animation-play-state: paused;
   }
   .tile-btn:active {
     transform: scaleY(0.94) scaleX(1.03);
     box-shadow: var(--shadow-card), 0 2px 8px oklch(0.82 0.14 85 / 0.15);
     transition-duration: var(--duration-press);
+  }
+  @keyframes tile-btn-anticipate {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+      box-shadow: var(--shadow-tile), 0 4px 20px oklch(0.82 0.14 85 / 0.25);
+    }
+    50% {
+      transform: translateY(-1.5px) scale(1.015);
+      box-shadow: var(--shadow-tile), 0 6px 28px oklch(0.82 0.14 85 / 0.35);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile-btn { animation: none; }
   }
 
   .tile-btn-element {

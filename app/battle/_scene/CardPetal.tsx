@@ -3,18 +3,21 @@
 /**
  * CardPetal — modal detail view for a single card.
  *
- * Opens when the player long-presses (touch) or right-clicks (desktop)
- * a card in their hand. Renders:
- *   - Full-size CDN art (cardArtChain fallbacks)
- *   - Element kanji + caretaker name
- *   - Type label (striker / support / utility / transcendence)
- *   - Type-power number
- *   - Flavor text from card definition
- *   - Element virtue (Confucian — 仁/禮/信/義/智)
+ * Architecture (operator decision 2026-05-12):
+ *   The CARD is JUST stacked images (background + frame + character +
+ *   foil shine + glare + element stone overlay). It tilts as one
+ *   physical object via the Pokemon-cards-css 3D parallax in
+ *   lib/cards/useCardTilt.
  *
- * Closes on backdrop click or Esc. Locks body scroll while open.
+ *   The TEXT / chrome (caretaker name, type label, virtue, power,
+ *   cycle, flavor, close button) lives in a detached sidebar
+ *   (.petal-info) that does NOT tilt. The two compose horizontally on
+ *   desktop, vertically on narrow viewports.
  *
- * The "petal" name comes from the world-purupuru convention — a card
+ * Opens on long-press (touch) / right-click (desktop). Closes on
+ * backdrop click or Esc. Locks body scroll while open.
+ *
+ * The "petal" name comes from world-purupuru convention — a card
  * blooms outward into a contemplative full view.
  */
 
@@ -24,7 +27,8 @@ import type { Card } from "@/lib/honeycomb/cards";
 import { findDef, TYPE_POWER } from "@/lib/honeycomb/cards";
 import { ELEMENT_META, SHENG, KE } from "@/lib/honeycomb/wuxing";
 import { audioEngine } from "@/lib/audio/engine";
-import { CARD_ART_PANELS, WORLD_SCENES } from "@/lib/cdn";
+import { CardStack } from "@/lib/cards/layers";
+import { useCardTilt } from "@/lib/cards/useCardTilt";
 
 interface CardPetalProps {
   readonly card: Card | null;
@@ -39,7 +43,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export function CardPetal({ card, onClose }: CardPetalProps) {
-  // Lock scroll + listen for Esc while open
+  // Pokemon-cards-css 3D parallax — pointer over the CARD writes
+  // --rotate-x/y, --pointer-x/y, --holo-hue, --card-opacity to the .petal
+  // node. Only the card surface tilts; the info sidebar stays still.
+  const tiltRef = useCardTilt<HTMLElement>(card?.element);
+
   useEffect(() => {
     if (!card) return;
     const onKey = (e: KeyboardEvent) => {
@@ -70,89 +78,118 @@ export function CardPetal({ card, onClose }: CardPetalProps) {
           role="dialog"
           aria-label={`${ELEMENT_META[card.element].caretaker} card detail`}
         >
-          <motion.article
-            className="petal"
+          {/* Motion handles bloom/exit (writes inline transform). The
+              tilt + the info panel are independent children. The mount
+              also establishes the 3D scene so the .petal's rotateX/Y
+              has somewhere to project into. */}
+          <motion.div
+            className="petal-mount"
             data-element={card.element}
-            data-card-type={card.cardType}
             initial={{ opacity: 0, y: 30, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 300, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <header className="petal-header">
-              <span className="petal-kanji" data-element={card.element}>
-                {ELEMENT_META[card.element].kanji}
-              </span>
-              <div className="petal-titles">
-                <span className="petal-caretaker">
-                  {ELEMENT_META[card.element].caretaker}
-                </span>
-                <span className="petal-type">{TYPE_LABEL[card.cardType] ?? card.cardType}</span>
-              </div>
-              <span
-                className="petal-virtue"
-                title={ELEMENT_META[card.element].virtue}
-              >
-                {ELEMENT_META[card.element].virtueKanji}
-              </span>
-            </header>
-
-            {/* COMPOSED art panel — bare scene + character overlay,
-                NO pre-rendered template chrome. The chrome is the
-                .petal frame itself. Layers (bottom to top):
-                1. .petal-art-bg     — soft scene background (low op)
-                2. .petal-art        — the character art-panel composite
-                3. .petal-power-badge— top-left rounded power chip
-                4. .petal-cycle-strip— bottom strip with sheng/ke neighbors */}
-            <div className="petal-art-wrap">
-              <img
-                className="petal-art-bg"
-                src={WORLD_SCENES[card.element]}
-                alt=""
-                aria-hidden
-              />
-              <img
-                className="petal-art"
-                src={CARD_ART_PANELS[card.element]}
+            {/* ─── THE CARD ───────────────────────────────────────────
+                Pure image stack: bg + frame + character + element-glow
+                + rarity treatment + behavioral. Tilts as one physical
+                surface. Stone moved to info panel (operator decision
+                2026-05-12). */}
+            <article
+              ref={tiltRef as React.RefObject<HTMLElement>}
+              className="petal-card"
+              data-element={card.element}
+              data-card-type={card.cardType}
+            >
+              <CardStack
+                className="petal-card-art"
+                element={card.element}
+                cardType={card.cardType}
+                face="front"
                 alt={`${ELEMENT_META[card.element].caretaker} · ${card.cardType}`}
               />
-              <div className="petal-power-badge" aria-label="power">
-                <span className="petal-power-badge__num">{TYPE_POWER[card.cardType].toFixed(2)}</span>
-                <span className="petal-power-badge__times">×</span>
-              </div>
-              {/* Sheng/Ke cycle strip — what this element BEATS and is BEATEN BY.
-                  Replaces the placeholder bear icons. Real lore content. */}
-              <div className="petal-cycle-strip">
-                <div className="petal-cycle-pair" title={`Generates ${ELEMENT_META[SHENG[card.element]].name}`}>
-                  <span className="petal-cycle-arrow">→</span>
-                  <span
-                    className="petal-cycle-kanji"
-                    data-element={SHENG[card.element]}
-                  >
-                    {ELEMENT_META[SHENG[card.element]].kanji}
-                  </span>
-                </div>
-                <div className="petal-cycle-pair" title={`Overcomes ${ELEMENT_META[KE[card.element]].name}`}>
-                  <span className="petal-cycle-arrow">⚔</span>
-                  <span
-                    className="petal-cycle-kanji"
-                    data-element={KE[card.element]}
-                  >
-                    {ELEMENT_META[KE[card.element]].kanji}
-                  </span>
-                </div>
-              </div>
-            </div>
+              {/* Holographic foil — drifts under pointer position */}
+              <span className="petal-card-shine" aria-hidden />
+              {/* Glare — bright spot follows the cursor */}
+              <span className="petal-card-glare" aria-hidden />
+            </article>
 
-            <footer className="petal-footer">
-              {findDef(card.defId)?.name && (
-                <p className="petal-name">{findDef(card.defId)?.name}</p>
-              )}
-              <p className="petal-flavor">{flavorFor(card)}</p>
+            {/* ─── DETACHED INFO PANEL ────────────────────────────────
+                Caretaker name, type, virtue, power, sheng/ke cycle,
+                flavor text. Does NOT tilt — lives beside the card on
+                desktop, below on mobile. */}
+            <aside className="petal-info" data-element={card.element}>
+              <header className="petal-info-header">
+                <span className="petal-info-kanji" data-element={card.element}>
+                  {ELEMENT_META[card.element].kanji}
+                </span>
+                <div className="petal-info-titles">
+                  <span className="petal-info-caretaker">
+                    {ELEMENT_META[card.element].caretaker}
+                  </span>
+                  <span className="petal-info-type">
+                    {TYPE_LABEL[card.cardType] ?? card.cardType}
+                  </span>
+                </div>
+                {/* Element stone — replaces the virtue glyph in this
+                    slot per operator request (2026-05-12). The kanji
+                    is embossed on the stone, the virtue moves out of
+                    the header (deferred / surfaceable elsewhere). */}
+                <img
+                  className="petal-info-stone"
+                  src={`/art/stones/transparent/${card.element}.png`}
+                  alt={`${ELEMENT_META[card.element].kanji} stone`}
+                  title={`${ELEMENT_META[card.element].virtue} — ${ELEMENT_META[card.element].name}`}
+                  draggable={false}
+                />
+              </header>
+
+              <div className="petal-info-stats">
+                <div className="petal-info-power" aria-label="power">
+                  <span className="petal-info-power__num">
+                    {TYPE_POWER[card.cardType].toFixed(2)}
+                  </span>
+                  <span className="petal-info-power__times">×</span>
+                </div>
+                <div className="petal-info-cycle">
+                  <div
+                    className="petal-info-cycle-pair"
+                    title={`Generates ${ELEMENT_META[SHENG[card.element]].name}`}
+                  >
+                    <span className="petal-info-cycle-arrow">→</span>
+                    <span
+                      className="petal-info-cycle-kanji"
+                      data-element={SHENG[card.element]}
+                    >
+                      {ELEMENT_META[SHENG[card.element]].kanji}
+                    </span>
+                  </div>
+                  <div
+                    className="petal-info-cycle-pair"
+                    title={`Overcomes ${ELEMENT_META[KE[card.element]].name}`}
+                  >
+                    <span className="petal-info-cycle-arrow">⚔</span>
+                    <span
+                      className="petal-info-cycle-kanji"
+                      data-element={KE[card.element]}
+                    >
+                      {ELEMENT_META[KE[card.element]].kanji}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="petal-info-flavor">
+                {findDef(card.defId)?.name && (
+                  <p className="petal-info-name">{findDef(card.defId)?.name}</p>
+                )}
+                <p className="petal-info-text">{flavorFor(card)}</p>
+              </div>
+
               <button
                 type="button"
-                className="petal-close"
+                className="petal-info-close"
                 onClick={() => {
                   audioEngine().play("ui.toggle");
                   onClose();
@@ -161,8 +198,8 @@ export function CardPetal({ card, onClose }: CardPetalProps) {
               >
                 close
               </button>
-            </footer>
-          </motion.article>
+            </aside>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -172,7 +209,6 @@ export function CardPetal({ card, onClose }: CardPetalProps) {
 function flavorFor(card: Card): string {
   const def = findDef(card.defId);
   if (!def) return "an unfamiliar card";
-  // Caretaker cards inherit element-themed flavor; transcendence have abilities
   if (def.cardType === "transcendence") {
     return `${def.name} — ability: ${(def as { ability?: string }).ability ?? "—"}`;
   }

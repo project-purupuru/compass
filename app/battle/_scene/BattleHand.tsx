@@ -14,8 +14,7 @@ import { ELEMENT_META, type Element } from "@/lib/honeycomb/wuxing";
 import { type Combo, getPositionMultiplier } from "@/lib/honeycomb/combos";
 import { juiceProfile } from "@/lib/juice/profile";
 import { audioEngine } from "@/lib/audio/engine";
-import { cardArtChain } from "@/lib/cdn";
-import { CdnImage } from "./CdnImage";
+import { CardStack } from "@/lib/cards/layers";
 
 interface BattleHandProps {
   readonly cards: readonly Card[];
@@ -77,11 +76,6 @@ function setLabel(t: Card["cardType"]): string {
   if (t === "caretaker_a") return "support";
   if (t === "caretaker_b") return "utility";
   return "transcendence";
-}
-
-/** Ordered fallback chain for card art — see lib/cdn.ts. */
-function cardArtFor(card: Card): readonly string[] {
-  return cardArtChain(card.cardType, card.element);
 }
 
 export function BattleHand({
@@ -239,9 +233,11 @@ export function BattleHand({
                     aria-label={`Play ${card.element} ${ELEMENT_META[card.element].name}`}
                     aria-pressed={isSelected}
                   >
-                    <CdnImage
+                    <CardStack
                       className="card-art"
-                      sources={cardArtFor(card)}
+                      element={card.element}
+                      cardType={card.cardType}
+                      face="front"
                       alt={`${ELEMENT_META[card.element].caretaker} · ${setLabel(card.cardType)}`}
                     />
                     {/* CSS-shader iridescent foil — composable VFX. */}

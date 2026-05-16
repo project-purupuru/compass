@@ -371,6 +371,32 @@
     mix-blend-mode: screen;
   }
 
+  /* The .arena-canopy + .arena-walls gradients are tuned for the cream
+     cloud-base — they all use light oklch L > 0.85 sources at 0.18–0.45
+     alpha, which in dark mode adds a warm haze across the whole UI
+     (operator feedback 2026-05-12 "color overlay looks weird on dark
+     more"). Dropping their composite intensity + switching to overlay
+     blend keeps the atmosphere read without lightening the substrate. */
+  [data-theme='old-horai'] .arena-canopy,
+  [data-theme='old-horai'] .arena-walls {
+    opacity: 0.38;
+    mix-blend-mode: overlay;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .map-flat {
+      opacity: 0.18;
+      filter: saturate(0.7) brightness(1.15);
+    }
+    :root:not([data-theme]) .backdrop .territory {
+      mix-blend-mode: screen;
+    }
+    :root:not([data-theme]) .arena-canopy,
+    :root:not([data-theme]) .arena-walls {
+      opacity: 0.38;
+      mix-blend-mode: overlay;
+    }
+  }
+
   /* ══════════════════════════════════════════════════════════
      ATMOSPHERE — per-element canopy, walls, floor animations.
      Driven by data-weather attribute. Each element creates
