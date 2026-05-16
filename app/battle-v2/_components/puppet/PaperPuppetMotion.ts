@@ -26,6 +26,49 @@ export type PuppetState = "idle" | "walk" | "action" | "summon" | "crumple";
 export type SummonPattern = "popup-book" | "origami" | "sticker-stamp" | "puddle-ooze";
 
 /**
+ * Frame-pacing mode per state — Cuphead/HD-2D doctrine (operator 2026-05-16):
+ * "characters and stickers can go cuphead" while the 3D environment stays Ghibli-
+ * smooth. Stepped pacing makes motion read as "drawn" (discrete authored poses);
+ * smooth reads as "computed" (continuous tween).
+ *
+ *   stepped(N)   timing-function = steps(N, jump-end); CSS interpolation snaps
+ *                to N discrete frames across the animation duration. The %-stops
+ *                in the keyframe still drive transform values; steps() controls
+ *                what fraction of the eye sees per frame.
+ *   smooth       timing-function = the provided cubic-bezier; continuous tween.
+ */
+export type FramePacing =
+  | { readonly mode: "stepped"; readonly steps: number }
+  | { readonly mode: "smooth"; readonly easing: string };
+
+/**
+ * LightDirection — fake-directional rim/shadow/highlight via offset drop-shadows.
+ *
+ * Operator (2026-05-16): "Let's go true rim best to prototype directionally
+ * towards the ideal setup. We can start cheap and go richer as we've been doing.
+ * R3F would be next stage."
+ *
+ * Cheap implementation: offset all three lighting elements (ground shadow, rim
+ * glow, edge highlight) per a 2D light vector. Reads as "lit from upper-left"
+ * (the classic painterly convention). True directional rim requires r3f sprites
+ * with per-jani normal maps — this CSS layer is the prototype, not the ceiling.
+ */
+export interface LightDirection {
+  /** Light source X position relative to subject. -1 = left, 0 = center, 1 = right. */
+  readonly x: number;
+  /** Light source Y position. -1 = top (sky), 0 = side, 1 = below. */
+  readonly y: number;
+  /** 0-1 scalar; modulates shadow + rim + highlight strengths. */
+  readonly intensity: number;
+  /** Ground-shadow offset magnitude in px. */
+  readonly shadowDistance: number;
+  /** Rim-glow offset magnitude in px (rim appears on the BACK side from light). */
+  readonly rimDistance: number;
+  /** Edge-highlight offset magnitude in px (highlight on the LIT side). */
+  readonly highlightDistance: number;
+}
+
+/**
  * What's visible on the back face of the paper during a 3D walk-flip.
  *
  *  frame2-direct        the sprite-sheet's second frame, pre-rotated 180° so
@@ -120,7 +163,27 @@ export interface MotionConfig {
 
   // ── Direction-flip atom (cardboard rotates when changing direction) ────
   readonly directionFlip: CardboardFlip;
+
+  // ── Frame-pacing per state (Cuphead body / smooth env) ──────────────────
+  readonly framePacing: {
+    readonly action: FramePacing;
+    readonly summon: FramePacing;
+    readonly crumple: FramePacing;
+  };
+
+  // ── Light direction for the cheap directional rim/shadow ────────────────
+  readonly light: LightDirection;
 }
+
+/** Default upper-left light direction (classic painterly convention). */
+export const DEFAULT_LIGHT_UPPER_LEFT: LightDirection = {
+  x: -0.7,
+  y: -0.7,
+  intensity: 0.9,
+  shadowDistance: 2.5,
+  rimDistance: 3,
+  highlightDistance: 1.2,
+};
 
 export const MOTION_VARIANTS: Record<MotionVariant, MotionConfig> = {
   billboard: {
@@ -147,11 +210,18 @@ export const MOTION_VARIANTS: Record<MotionVariant, MotionConfig> = {
       sweepDeg: 180,
       overshootDeg: 0, // strict — no overshoot
       durationMs: 280,
-      easing: "cubic-bezier(0.4, 0, 0.2, 1)", // ease-puru-in
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)", // direction-flip stays SMOOTH (single transformation)
       backface: "mirror",
       perspectivePx: 1200,
       edgeOnDepthPx: 0,
     },
+    framePacing: {
+      // billboard variant = strictest Cuphead read · low step counts = more "drawn"
+      action: { mode: "stepped", steps: 6 },
+      summon: { mode: "stepped", steps: 8 },
+      crumple: { mode: "stepped", steps: 6 },
+    },
+    light: { ...DEFAULT_LIGHT_UPPER_LEFT, intensity: 1.0 }, // strong rim · dramatic
   },
   bend: {
     variant: "bend",
@@ -177,11 +247,18 @@ export const MOTION_VARIANTS: Record<MotionVariant, MotionConfig> = {
       sweepDeg: 180,
       overshootDeg: 6,
       durationMs: 340,
-      easing: "cubic-bezier(0.34, 1.4, 0.64, 1)", // overshoot-out
+      easing: "cubic-bezier(0.34, 1.4, 0.64, 1)", // overshoot-out · stays smooth
       backface: "mirror",
       perspectivePx: 900,
       edgeOnDepthPx: 0,
     },
+    framePacing: {
+      // bend = middle ground · more frames than billboard for the softer read
+      action: { mode: "stepped", steps: 8 },
+      summon: { mode: "stepped", steps: 10 },
+      crumple: { mode: "stepped", steps: 8 },
+    },
+    light: { ...DEFAULT_LIGHT_UPPER_LEFT, intensity: 0.85 },
   },
   theater: {
     variant: "theater",
@@ -207,10 +284,22 @@ export const MOTION_VARIANTS: Record<MotionVariant, MotionConfig> = {
       sweepDeg: 180,
       overshootDeg: 12,
       durationMs: 420,
-      easing: "cubic-bezier(0.34, 1.56, 0.64, 1)", // ease-puru-bounce
+      easing: "cubic-bezier(0.34, 1.56, 0.64, 1)", // theatrical bounce · stays smooth
       backface: "element-color-slice", // theater = Mulan-style silhouette mid-flip
       perspectivePx: 700,
       edgeOnDepthPx: 4,
+    },
+    framePacing: {
+      // theater = richest · more frames for the puppet-show flourish (still stepped per operator)
+      action: { mode: "stepped", steps: 12 },
+      summon: { mode: "stepped", steps: 14 },
+      crumple: { mode: "stepped", steps: 10 },
+    },
+    light: {
+      ...DEFAULT_LIGHT_UPPER_LEFT,
+      intensity: 0.75, // softer, more diffuse
+      rimDistance: 4, // wider halo
+      highlightDistance: 1.5,
     },
   },
 };

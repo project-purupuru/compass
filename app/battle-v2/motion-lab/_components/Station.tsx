@@ -156,6 +156,34 @@ export function Station({
           }}
         />
 
+        {/* Ambient dust motes — the-easel §5 atom 4. The stage breathes between
+         * puppet events. 4 motes with varied delays + paths. Hollow Knight's
+         * screen-space dust is the canonical reference. */}
+        {[
+          { left: "22%", bottom: "20%", delay: "0s", duration: "13s" },
+          { left: "55%", bottom: "35%", delay: "3.4s", duration: "16s" },
+          { left: "78%", bottom: "18%", delay: "6.1s", duration: "14s" },
+          { left: "38%", bottom: "48%", delay: "8.8s", duration: "17s" },
+        ].map((m, i) => (
+          <div
+            key={i}
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: m.left,
+              bottom: m.bottom,
+              width: 2,
+              height: 2,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, oklch(0.95 0.04 80 / 0.85) 0%, oklch(0.95 0.04 80 / 0.4) 50%, transparent 70%)",
+              filter: "blur(0.3px)",
+              animation: `puru-mote-drift ${m.duration} ease-in-out ${m.delay} infinite`,
+              pointerEvents: "none",
+            }}
+          />
+        ))}
+
         <CardSummonEffect
           element={element}
           motion={motion}
@@ -165,6 +193,24 @@ export function Station({
           flipX={flipX}
           forceVariant={variant}
           onSettle={onSettle}
+        />
+
+        {/* Universal paper grain overlay — the-easel §4 + vfx-playbook §3.1.
+         * The asset /art/patterns/grain-warm.webp existed but was unused. Soft-light
+         * blend mode is load-bearing (multiply reads as dirt, overlay as harsh,
+         * soft-light as paper). Welds the whole frame to one painted material. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "url(/art/patterns/grain-warm.webp)",
+            backgroundSize: "256px 256px",
+            mixBlendMode: "soft-light",
+            opacity: 0.42,
+            pointerEvents: "none",
+            zIndex: 50,
+          }}
         />
       </div>
 

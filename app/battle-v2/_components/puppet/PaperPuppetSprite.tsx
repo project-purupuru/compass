@@ -34,7 +34,12 @@ import {
   type ElementId,
   type SpriteSheet,
 } from "./JaniManifest";
-import type { MotionConfig, PuppetState } from "./PaperPuppetMotion";
+import type {
+  FramePacing,
+  LightDirection,
+  MotionConfig,
+  PuppetState,
+} from "./PaperPuppetMotion";
 
 interface PaperPuppetSpriteProps {
   readonly element: ElementId;
@@ -72,6 +77,77 @@ const ELEMENT_SLICE_COLOR: Record<ElementId, string> = {
   metal: "oklch(0.85 0.020 240)",
   water: "oklch(0.78 0.130 220)",
 };
+
+/** Per-element rim-glow colors — inner tight halo + outer softer halo. */
+const ELEMENT_RIM_INNER: Record<ElementId, string> = {
+  wood: "oklch(0.85 0.170 112.7 / 0.45)",
+  fire: "oklch(0.78 0.180 36 / 0.55)",
+  earth: "oklch(0.84 0.160 85 / 0.45)",
+  metal: "oklch(0.85 0.020 240 / 0.40)",
+  water: "oklch(0.78 0.130 220 / 0.45)",
+};
+const ELEMENT_RIM_OUTER: Record<ElementId, string> = {
+  wood: "oklch(0.85 0.170 112.7 / 0.22)",
+  fire: "oklch(0.78 0.180 36 / 0.28)",
+  earth: "oklch(0.84 0.160 85 / 0.22)",
+  metal: "oklch(0.85 0.020 240 / 0.18)",
+  water: "oklch(0.78 0.130 220 / 0.22)",
+};
+
+/**
+ * Paper-puppet filter stack — DIRECTIONAL composition (2026-05-16, operator
+ * direction "let's go true rim, start cheap go richer; r3f next stage").
+ *
+ * Composes 5 drop-shadows that together imply a single light source:
+ *   1. ground shadow      offset OPPOSITE the light (light from upper-left
+ *                         → shadow falls lower-right)
+ *   2. paper-thickness    tight 0.5px feathered shadow at silhouette edge —
+ *                         the silent tell separating "sticker" from "paper
+ *                         cutout" (vfx-playbook §6.2)
+ *   3. inner rim          element-vivid drop-shadow OFFSET AWAY from light —
+ *                         rim glow appears on the silhouette edge furthest
+ *                         from the source (back-lit halo)
+ *   4. outer rim halo     same direction as inner rim, softer + larger
+ *   5. edge highlight     subtle white drop-shadow offset TOWARD the light —
+ *                         catches the lit edge (cheap specular hint)
+ *
+ * This is the CHEAP prototype. True directional rim per Octopath requires r3f
+ * sprites with per-jani normal maps + a real DirectionalLight in the scene.
+ * The data layer (LightDirection in MotionConfig) ports forward verbatim.
+ */
+function paperFilterStack(
+  element: ElementId,
+  shadowEnabled: boolean,
+  light: LightDirection,
+): string {
+  if (!shadowEnabled) return "";
+  const sx = -light.x * light.shadowDistance;
+  const sy = -light.y * light.shadowDistance;
+  const rx = -light.x * light.rimDistance;
+  const ry = -light.y * light.rimDistance;
+  const hx = light.x * light.highlightDistance;
+  const hy = light.y * light.highlightDistance;
+  const i = light.intensity;
+  return [
+    `drop-shadow(${sx.toFixed(1)}px ${(sy + 1).toFixed(1)}px 1.5px rgba(0,0,0,${(0.28 * i).toFixed(2)}))`,
+    `drop-shadow(0 0 0.5px rgba(0,0,0,0.55))`,
+    `drop-shadow(${rx.toFixed(1)}px ${ry.toFixed(1)}px 4px ${ELEMENT_RIM_INNER[element]})`,
+    `drop-shadow(${(rx * 1.4).toFixed(1)}px ${(ry * 1.4).toFixed(1)}px 11px ${ELEMENT_RIM_OUTER[element]})`,
+    `drop-shadow(${hx.toFixed(1)}px ${hy.toFixed(1)}px 1px oklch(1 0 0 / ${(0.32 * i).toFixed(2)}))`,
+  ].join(" ");
+}
+
+/**
+ * Pick CSS animation-timing-function from a FramePacing config.
+ * Stepped → steps(N, jump-end) for the Cuphead "drawn" read.
+ * Smooth  → the provided cubic-bezier for continuous tween.
+ */
+function timingFor(pacing: FramePacing): string {
+  if (pacing.mode === "stepped") {
+    return `steps(${pacing.steps}, jump-end)`;
+  }
+  return pacing.easing;
+}
 
 export function PaperPuppetSprite({
   element,
@@ -158,11 +234,14 @@ export function PaperPuppetSprite({
 
   let outerAnimation: string | undefined;
   if (state === "crumple") {
-    outerAnimation = `paper-crumple ${motion.crumpleDuration}s cubic-bezier(0.4, 0, 0.6, 1) forwards`;
+    // Operator chose Cuphead-style stepped for body motion (2026-05-16). The
+    // %-stop transforms in the keyframe still drive the overshoot; steps()
+    // snaps the eye to discrete poses so motion reads as "drawn."
+    outerAnimation = `paper-crumple ${motion.crumpleDuration}s ${timingFor(motion.framePacing.crumple)} forwards`;
   } else if (state === "summon") {
-    outerAnimation = `paper-summon-${effectiveSummonPattern} ${motion.summonDuration}s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`;
+    outerAnimation = `paper-summon-${effectiveSummonPattern} ${motion.summonDuration}s ${timingFor(motion.framePacing.summon)} forwards`;
   } else if (state === "action") {
-    outerAnimation = `paper-action ${motion.actionDuration}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+    outerAnimation = `paper-action ${motion.actionDuration}s ${timingFor(motion.framePacing.action)}`;
   }
 
   // The direction-flip rotation. Inactive (rotateY 0) when not flipped.
@@ -222,9 +301,7 @@ export function PaperPuppetSprite({
             transformOrigin: "50% 100%",
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
-            filter: motion.shadowEnabled
-              ? "drop-shadow(0 2px 1px rgba(0,0,0,0.2))"
-              : undefined,
+            filter: paperFilterStack(element, motion.shadowEnabled, motion.light),
           }}
         />
 
@@ -266,9 +343,7 @@ export function PaperPuppetSprite({
                     transformOrigin: "50% 100%",
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",
-                    filter: motion.shadowEnabled
-                      ? "drop-shadow(0 2px 1px rgba(0,0,0,0.2))"
-                      : undefined,
+                    filter: paperFilterStack(element, motion.shadowEnabled, motion.light),
                   }
             }
           />
