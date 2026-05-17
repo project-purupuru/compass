@@ -987,9 +987,22 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
         // Cycle-3 fixture-ecs-instancing S1-T1 test surface. ON: aggregate
         // all leaves across the grid into ONE InstancedLeafField (cycle-1
         // substrate), each HexPlot's fixtures suppress their own LeafPuff
-        // mounts. Outline regression on instanced leaves applies (drei
-        // <Outlines> doesn't instance — accepted per cycle-1 NFR).
+        // mounts. Outlines on instanced leaves NOW WORK (codex flatline
+        // verified drei 10.7.7 Outlines.js has isInstancedMesh branch).
         label: "instanced leaves",
+      },
+    );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedTrees",
+      {
+        // Cycle-3 fixture-ecs-instancing S1-T3 test surface. ON: aggregate
+        // all "tree" fixtures into ONE InstancedTreeField (2 InstancedMeshes:
+        // trunk + branch cylinders, each with drei <Outlines>). HexPlot
+        // receives suppressFixtures: Set(["tree"]) and skips Tree JSX. Use
+        // alongside "instanced leaves" to also send branch-tip leaves
+        // through the leaf field.
+        label: "instanced trees",
       },
     );
   },

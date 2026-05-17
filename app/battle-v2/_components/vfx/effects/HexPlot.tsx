@@ -20,7 +20,9 @@ import {
 } from "three";
 
 import { hexToWorld, hexVertices, type HexCoord } from "@/lib/hex";
-import type { PlotT } from "@/lib/hex/plot";
+import type { FixtureRefT, PlotT } from "@/lib/hex/plot";
+
+type FixtureKindT = FixtureRefT["kind"];
 
 import { PALETTE, ELEMENT_ROOF } from "../../world/palette";
 import { DEFAULT_TOON_GRADIENT } from "../celShading";
@@ -306,6 +308,21 @@ interface HexPlotProps {
    * Cycle: engine-substrate-2026-05-17 / sprint-2.
    */
   readonly suppressLeaves?: boolean;
+  /**
+   * Per-fixture-kind opt-out for instanced rendering paths. When a kind is
+   * present in this set, HexPlot skips its JSX dispatch for that kind — the
+   * caller (BigRealmScene cycle-3) is expected to render the matching
+   * fixtures via an `Instanced<Kind>Field` aggregated across plots.
+   *
+   * Orthogonal to `suppressLeaves` (which suppresses leaf-puff children of
+   * fixtures that still render their own bodies). Both flags can be ON
+   * simultaneously (e.g. trees skip their JSX entirely AND their leaves go
+   * through the leaf field).
+   *
+   * Default = empty Set → existing HexPlot callers unaffected. Added cycle
+   * fixture-ecs-instancing-2026-05-17 (S1-T3).
+   */
+  readonly suppressFixtures?: ReadonlySet<FixtureKindT>;
 }
 
 export function HexPlot({
@@ -315,6 +332,7 @@ export function HexPlot({
   cornerYs,
   edgeBottomYs,
   suppressLeaves = false,
+  suppressFixtures,
 }: HexPlotProps) {
   const [worldX, worldZ] = hexToWorld(plot.coord, size);
   const coordSeed = ((plot.coord.q | 0) * 73856093) ^ ((plot.coord.r | 0) * 19349663);
@@ -432,6 +450,12 @@ export function HexPlot({
 
       {/* Fixtures placed on top — y coords sit on this tile's elevation. */}
       {plot.fixtures.map((fix, i) => {
+        // Cycle-3 fixture-ecs-instancing S1-T3: skip kinds the caller is
+        // rendering through an Instanced<Kind>Field aggregated at the
+        // scene level (e.g. BigRealmScene mounting InstancedTreeField for
+        // all "tree" fixtures across the grid).
+        if (suppressFixtures?.has(fix.kind)) return null;
+
         const fy = elev; // sit on cap
         const fx = fix.offset[0];
         const fz = fix.offset[1];

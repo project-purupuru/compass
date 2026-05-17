@@ -673,15 +673,33 @@ export const BigRealmSceneConfig = S.extend(
      * When ON, each HexPlot receives `suppressLeaves=true` so its Tree /
      * Mushroom / Wildflower / Rock children skip their `<LeafPuff>` mounts,
      * and BigRealmScene mounts a single `<InstancedLeafField>` fed by
-     * `gatherLeavesFromPlots`. Trade-off accepted per cycle-1 sprint NFR:
-     * drei `<Outlines>` doesn't natively instance, so leaves render without
-     * ink outlines on this path. Toon cel-band gradient PRESERVED.
+     * `gatherLeavesFromPlots`. Outline regression on cycle-1 leaf path is
+     * NOW RESOLVED (drei <Outlines> on InstancedMesh works per codex
+     * flatline finding) — toon cel-band + ink outline both PRESERVED.
      *
      * Added cycle fixture-ecs-instancing-2026-05-17 (S1-T1 visual-test
      * preparation — operator wants to test instanced leaves AT SCALE before
      * the 5 fixture archetypes adopt the same pattern in S1-T2 onwards).
      */
     useInstancedLeaves: S.Boolean,
+
+    /**
+     * Aggregate ALL trees across the scene into ONE InstancedTreeField
+     * (TreeTrunkArchetype + TreeBranchArchetype), instead of per-fixture
+     * `<Tree>` JSX. When ON, each HexPlot receives `suppressFixtures: Set("tree")`
+     * so its tree fixtures are skipped at the React level, and BigRealmScene
+     * mounts a single `<InstancedTreeField specs={treeSpecsFromPlots(...)}>`
+     * with 2 instanced meshes (trunks + branches) + drei <Outlines> children
+     * preserving the ink-line craft.
+     *
+     * Leaves at branch tips continue to flow through the cycle-1 leaf path
+     * (use `useInstancedLeaves` ALONG WITH `useInstancedTrees` for the full
+     * cycle-3 collapse on the tree-kind).
+     *
+     * Added cycle fixture-ecs-instancing-2026-05-17 (S1-T3 — first non-leaf
+     * archetype, sets the pattern for Bush/Rock/Mushroom/Wildflower in S2).
+     */
+    useInstancedTrees: S.Boolean,
   }),
 );
 
@@ -719,4 +737,5 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   monumentScale: 1.0,
   debugPerf: true,
   useInstancedLeaves: false,
+  useInstancedTrees: false,
 };

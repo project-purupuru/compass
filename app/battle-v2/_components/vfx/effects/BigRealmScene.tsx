@@ -36,7 +36,9 @@ import { useThree } from "@react-three/fiber";
 import { hexToWorld, type HexCoord } from "@/lib/hex";
 import { BIOMES, type BiomeIdT } from "@/lib/hex/biome";
 import { decoratePlot } from "@/lib/hex/decorator";
-import { type PlotT } from "@/lib/hex/plot";
+import { type FixtureRefT, type PlotT } from "@/lib/hex/plot";
+
+type FixtureKindT = FixtureRefT["kind"];
 import { ELEMENT_META, ALL_ELEMENTS, type ElementIdT } from "@/lib/wuxing/element";
 import { resonanceMultiplier } from "@/lib/wuxing/resonance";
 import {
@@ -49,10 +51,12 @@ import type { BigRealmSceneConfigT } from "../VfxConfig";
 
 import { DustMotes } from "./DustMotes";
 import { Embers } from "./Embers";
+import { gatherLeavesFromPlots } from "./leafExtractors";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
 import { InstancedLeafField } from "./InstancedLeafField";
-import { gatherLeavesFromPlots } from "./leafExtractors";
+import { InstancedTreeField } from "./InstancedTreeField";
+import { treeSpecsFromPlots } from "./fixtureExtractors";
 import { LeafSwirl } from "./LeafSwirl";
 import { Mist } from "./Mist";
 import { PerfReadout } from "./PerfReadout";
@@ -476,6 +480,47 @@ export function BigRealmScenePreview({
     );
   }, [config.showMonuments, tilesByElement]);
 
+  // ── Cycle-3 fixture-ecs-instancing derivations ───────────────────────────
+  // Plot world positions (hoisted from inline JSX so both InstancedLeafField
+  // and InstancedTreeField — and any S2 InstancedXField — can share the
+  // same source-of-truth without re-computing hexToWorld per render).
+  const plotWorldPositions = useMemo<ReadonlyArray<readonly [number, number]>>(
+    () => plots.map((plot) => hexToWorld(plot.coord, config.hexSize)),
+    [plots, config.hexSize],
+  );
+
+  // suppressFixtures Set derived from per-kind toggles. HexPlot skips its
+  // JSX dispatch for kinds in this Set; the matching Instanced<Kind>Field
+  // below renders them through aggregated InstancedMeshes. S2 will extend
+  // this with bush/rock/mushroom/wildflower as their toggles + archetypes
+  // land. ReadonlySet keeps HexPlot's prop type honest about non-mutation.
+  const suppressFixtures = useMemo<ReadonlySet<FixtureKindT>>(() => {
+    const set = new Set<FixtureKindT>();
+    if (config.useInstancedTrees) set.add("tree");
+    return set;
+  }, [config.useInstancedTrees]);
+
+  // Leaf specs — gather only when useInstancedLeaves is ON, otherwise pass
+  // an empty array (cheap). The InstancedLeafField conditional below skips
+  // mount when count=0, but computing once here keeps the dependency chain
+  // honest with useMemo.
+  const leafSpecs = useMemo(
+    () =>
+      config.useInstancedLeaves && config.showTileContent
+        ? gatherLeavesFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedLeaves, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Tree specs (trunks + branches) — gather only when useInstancedTrees ON.
+  const treeSpecs = useMemo(
+    () =>
+      config.useInstancedTrees && config.showTileContent
+        ? treeSpecsFromPlots(plots, plotWorldPositions)
+        : { trunks: [], branches: [] },
+    [config.useInstancedTrees, config.showTileContent, plots, plotWorldPositions],
+  );
+
   return (
     <group>
       <BigRealmAtmosphere phase={phase} fogDensity={config.fogDensity} />
@@ -502,26 +547,26 @@ export function BigRealmScenePreview({
             size={config.hexSize}
             triggerKey={triggerKey}
             suppressLeaves={config.useInstancedLeaves}
+            suppressFixtures={suppressFixtures}
           />
         ))}
 
-      {/* Cycle-3 fixture-ecs-instancing S1-T1 test surface — aggregate all
-       *  leaves across the grid into ONE InstancedLeafField (cycle-1
-       *  substrate). Wires the existing leaf-instancing path into the
-       *  big-realm composer so the operator can visually validate per-
-       *  instance color (BLACK-leaves fix) AT SCALE before T2-T6
-       *  archetypes adopt the same pattern. Outline regression accepted
-       *  per cycle-1 NFR (drei <Outlines> doesn't instance). */}
-      {config.useInstancedLeaves && config.showTileContent && (
-        <InstancedLeafField
-          specs={gatherLeavesFromPlots(
-            plots,
-            plots.map((plot) => {
-              const [wx, wz] = hexToWorld(plot.coord, config.hexSize);
-              return [wx, wz] as const;
-            }),
-          )}
-        />
+      {/* Cycle-3 fixture-ecs-instancing S1-T1 — aggregate all leaves across
+       *  the grid into ONE InstancedLeafField (cycle-1 substrate). Outlines
+       *  on instanced leaves work via drei isInstancedMesh branch (codex
+       *  flatline verified). */}
+      {config.useInstancedLeaves && config.showTileContent && leafSpecs.length > 0 && (
+        <InstancedLeafField specs={leafSpecs} />
+      )}
+
+      {/* Cycle-3 fixture-ecs-instancing S1-T3 — aggregate all "tree" fixtures
+       *  across the grid into ONE InstancedTreeField with 2 InstancedMeshes
+       *  (trunk + branch cylinders, each with drei <Outlines> for ink-line
+       *  craft). HexPlot skips its <Tree> JSX dispatch for these (per
+       *  suppressFixtures above). First non-leaf cycle-3 archetype renderer;
+       *  sets the pattern for S2 Bush/Rock/Mushroom/Wildflower fields. */}
+      {config.useInstancedTrees && config.showTileContent && (treeSpecs.trunks.length > 0 || treeSpecs.branches.length > 0) && (
+        <InstancedTreeField specs={treeSpecs} />
       )}
 
       {/* Per-element glow discs — kept as a subtle ground tint overlay so
