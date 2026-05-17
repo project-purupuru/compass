@@ -27,7 +27,7 @@ import { DragGhost } from "../drag/DragGhost";
 import { DragLayer } from "../drag/DragLayer";
 import { CaretakerCorner } from "./CaretakerCorner";
 import { EnemyCorner } from "./EnemyCorner";
-import { Ribbon } from "./Ribbon";
+import { ProfileAvatar } from "./ProfileAvatar";
 import "./hud-zones.css";
 
 interface HudOverlayProps {
@@ -39,7 +39,9 @@ interface HudOverlayProps {
 export function HudOverlay({ state }: HudOverlayProps) {
   return (
     <div className="hud-overlay">
-      <Ribbon state={state} />
+      {/* Top-left player profile pic (replaces the old Ribbon username strip
+       * per operator 2026-05-16 — "no username for now, big PFP circle"). */}
+      <ProfileAvatar />
       <EnemyCorner />
       <CaretakerCorner activeElement={state.weather.activeElement} />
       {/* Card drag-to-region: window pointer tracking + the cursor-following
