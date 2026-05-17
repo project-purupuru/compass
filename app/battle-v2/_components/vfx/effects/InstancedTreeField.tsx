@@ -232,8 +232,12 @@ export function InstancedTreeField({ specs }: InstancedTreeFieldProps) {
           {/* drei Outlines on InstancedMesh — verified via codex flatline
               against node_modules/@react-three/drei/core/Outlines.js's
               `parent.isInstancedMesh` branch. Outlines instance alongside
-              the trunks, sharing the parent's instanceMatrix. */}
-          <Outlines color={INK.color} thickness={INK.heavy} />
+              the trunks, sharing the parent's instanceMatrix.
+              Thickness 2× INK weight: see InstancedLeafField long comment
+              on operator visual gate 2026-05-17 — drei's instanced outline
+              renders at ~half perceived thickness vs the per-mesh Tree.tsx
+              outline at the same INK weight. Doubling compensates. */}
+          <Outlines color={INK.color} thickness={INK.heavy * 2} />
         </instancedMesh>
       )}
 
@@ -250,7 +254,7 @@ export function InstancedTreeField({ specs }: InstancedTreeFieldProps) {
             color={PALETTE.trunk}
             gradientMap={DEFAULT_TOON_GRADIENT}
           />
-          <Outlines color={INK.color} thickness={INK.mid} />
+          <Outlines color={INK.color} thickness={INK.mid * 2} />
         </instancedMesh>
       )}
     </group>

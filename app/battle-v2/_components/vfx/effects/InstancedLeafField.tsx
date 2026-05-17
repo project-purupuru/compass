@@ -220,11 +220,17 @@ export function InstancedLeafField({
        * installed drei 10.7.7 at node_modules/@react-three/drei/core/
        * Outlines.js, which has an explicit `parent.isInstancedMesh`
        * branch creating a second InstancedMesh that shares
-       * parent.instanceMatrix. Outlines now render on every leaf
-       * instance for free — no custom inverted-hull shader needed.
-       * INK.fine is the lightest weight (matches the small leaf scale).
+       * parent.instanceMatrix.
+       *
+       * Thickness 2× INK weight (operator visual gate 2026-05-17):
+       * drei's outline shader applies `tNormal = instanceMatrix * tNormal`
+       * then normalizes in clip space; the per-instance scale's
+       * contribution to the normal direction's PROJECTED magnitude does
+       * not match the per-mesh Tree.tsx outline's apparent thickness,
+       * rendering at roughly half the perceived weight. Doubling the
+       * thickness uniform compensates for visual parity.
        */}
-      <Outlines color={INK.color} thickness={INK.fine} />
+      <Outlines color={INK.color} thickness={INK.fine * 2} />
     </instancedMesh>
   );
 }
