@@ -124,6 +124,53 @@ describe("Archetype", () => {
     expect(arch.columnArray("y")[0]).toBe(0);
   });
 
+  it("clears omitted columns when reusing a slot after destroy (regression: stale data leak)", () => {
+    // Adversarial review 2026-05-17 caught this: swap-remove decrements
+    // length but doesn't zero the now-unused tail slot. A subsequent
+    // add() with a PARTIAL init would silently inherit stale column data.
+    const arch = new Archetype(
+      [
+        { name: "x", itemSize: 1 },
+        { name: "y", itemSize: 1 },
+      ],
+      8,
+    );
+    arch.add({ x: [10], y: [99] });
+    arch.destroy(0 as EntityId);
+    arch.add({ x: [20] }); // partial init — y must NOT carry 99 over
+
+    expect(arch.columnArray("x")[0]).toBe(20);
+    expect(arch.columnArray("y")[0]).toBe(0);
+  });
+
+  it("clears multi-float omitted columns when reusing a slot", () => {
+    const arch = new Archetype(
+      [
+        { name: "pos", itemSize: 3 },
+        { name: "scale", itemSize: 1 },
+      ],
+      8,
+    );
+    arch.add({ pos: [1, 2, 3], scale: [7] });
+    arch.destroy(0 as EntityId);
+    arch.add({ pos: [10, 20, 30] }); // scale omitted
+
+    const pos = arch.columnArray("pos");
+    expect(pos[0]).toBe(10);
+    expect(pos[1]).toBe(20);
+    expect(pos[2]).toBe(30);
+    expect(arch.columnArray("scale")[0]).toBe(0);
+  });
+
+  it("zero-pads partial init arrays shorter than itemSize", () => {
+    const arch = new Archetype([{ name: "pos", itemSize: 3 }], 8);
+    arch.add({ pos: [1, 2] }); // 2 elements for a 3-element column
+    const pos = arch.columnArray("pos");
+    expect(pos[0]).toBe(1);
+    expect(pos[1]).toBe(2);
+    expect(pos[2]).toBe(0);
+  });
+
   it("throws on destroy with out-of-range id", () => {
     const arch = new Archetype([{ name: "x", itemSize: 1 }], 8);
     arch.add({ x: [10] });

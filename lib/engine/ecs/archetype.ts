@@ -65,7 +65,15 @@ export class Archetype<TCols extends string = string> {
 
   /**
    * Append an entity. Returns its slot id. Capacity doubles when full.
-   * Columns not present in `init` are left at zero.
+   *
+   * Columns absent from `init` are zero-filled — this matters after a
+   * `destroy()` because swap-remove decrements `length` but does NOT zero
+   * the now-unused tail slot, so reusing that slot with a partial init
+   * would otherwise inherit stale data from the destroyed entity.
+   * Caught by adversarial review 2026-05-17 (sprint-1 cycle
+   * engine-substrate-2026-05-17).
+   *
+   * Init arrays shorter than `itemSize` are zero-padded the same way.
    */
   add(
     init: Partial<Record<TCols, readonly number[] | Float32Array>> = {},
@@ -75,15 +83,19 @@ export class Archetype<TCols extends string = string> {
     }
     const slot = this._length;
     for (const [name, spec] of this._specs) {
+      const col = this._cols.get(name)!;
+      const offset = slot * spec.itemSize;
       const initVal = (init as Record<string, readonly number[] | Float32Array | undefined>)[name];
       if (initVal !== undefined) {
-        const col = this._cols.get(name)!;
-        const offset = slot * spec.itemSize;
         for (let i = 0; i < spec.itemSize; i++) {
           col[offset + i] = initVal[i] ?? 0;
         }
+      } else {
+        // Explicitly zero — slot may have been previously occupied.
+        for (let i = 0; i < spec.itemSize; i++) {
+          col[offset + i] = 0;
+        }
       }
-      // else: column stays at zero (Float32Array default)
     }
     this._length++;
     return slot as EntityId;
