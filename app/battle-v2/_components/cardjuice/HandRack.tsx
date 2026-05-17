@@ -314,11 +314,8 @@ export function HandRack({ config, locked = false, onLineupChange }: HandRackPro
         style={{
           pointerEvents: locked ? "none" : "auto",
           position: "relative",
-          display: "flex",
-          gap: config.cardGapPx,
-          alignItems: "flex-end",
-          justifyContent: "center",
-          minWidth: totalWidth + 64,
+          width: totalWidth + 100,
+          height: config.cardHeightPx + 40,
           padding: "0 24px",
           ["--card-face-w" as never]: `${config.cardWidthPx}px`,
           ["--card-face-h" as never]: `${config.cardHeightPx}px`,
@@ -329,6 +326,9 @@ export function HandRack({ config, locked = false, onLineupChange }: HandRackPro
             key={slot.instanceId}
             slot={slot}
             index={i}
+            slotOffsetX={
+              24 + i * (config.cardWidthPx + config.cardGapPx)
+            }
             config={config}
             isDragOver={dragOver === slot.instanceId && dragSrc !== slot.instanceId}
             isDragSrc={dragSrc === slot.instanceId}
@@ -341,7 +341,11 @@ export function HandRack({ config, locked = false, onLineupChange }: HandRackPro
             onDragEnd={onDragEnd}
           />
         ))}
-        <DiscardPileMarker h={config.cardHeightPx * 0.5} />
+        <DiscardPileMarker
+          h={config.cardHeightPx * 0.5}
+          offsetX={24 + slots.length * (config.cardWidthPx + config.cardGapPx) + 4}
+          baseY={config.cardHeightPx * 0.25 + 20}
+        />
       </div>
     </div>
   );
@@ -352,6 +356,8 @@ export function HandRack({ config, locked = false, onLineupChange }: HandRackPro
 interface CardSlotProps {
   readonly slot: SlotState;
   readonly index: number;
+  /** X offset in the rack (driven by slot index — animates when reordered). */
+  readonly slotOffsetX: number;
   readonly config: HandRackConfig;
   readonly isDragOver: boolean;
   readonly isDragSrc: boolean;
@@ -367,6 +373,7 @@ interface CardSlotProps {
 function CardSlot({
   slot,
   index,
+  slotOffsetX,
   config,
   isDragOver,
   isDragSrc,
@@ -403,31 +410,50 @@ function CardSlot({
   const isHovered = slot.mode === "hovered" || slot.mode === "haptic" || isDragOver;
   const isArmed = slot.mode === "armed";
 
+  // Outer wrapper handles ABSOLUTE positioning by slot index — when the
+  // slot reorders, slotOffsetX changes and CSS transition handles the
+  // animated slide to the new position. Inner wrapper handles per-mode
+  // transforms (hover lift, discard fly-out, drawing slide-in).
+  //
+  // FLIP-style reorder is achieved cheaply via this position-based layout
+  // instead of a measure-and-invert loop.
   return (
     <div
-      draggable={!isArmed} // armed cards stay put; un-armed cards can be dragged
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
       style={{
-        pointerEvents: "auto",
+        position: "absolute",
+        left: 0,
+        top: 0,
+        transform: `translateX(${slotOffsetX}px)`,
+        transition:
+          "transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1)",
         width: config.cardWidthPx,
         height: config.cardHeightPx,
-        transform: `translateY(${translateY}px) scale(${scale})`,
-        transformOrigin: "50% 100%",
-        transition: `transform ${transitionTime}s ${transitionEase}, opacity ${transitionTime}s ${transitionEase}`,
-        opacity,
-        animation:
-          slot.mode === "drawing"
-            ? `card-draw-in ${config.replacementDurationSec}s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`
-            : undefined,
-        position: "relative",
-        cursor: isArmed ? "pointer" : "grab",
+        pointerEvents: "auto",
       }}
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
     >
+      <div
+        draggable={!isArmed} // armed cards stay put; un-armed cards can be dragged
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        style={{
+          width: config.cardWidthPx,
+          height: config.cardHeightPx,
+          transform: `translateY(${translateY}px) scale(${scale})`,
+          transformOrigin: "50% 100%",
+          transition: `transform ${transitionTime}s ${transitionEase}, opacity ${transitionTime}s ${transitionEase}`,
+          opacity,
+          animation:
+            slot.mode === "drawing"
+              ? `card-draw-in ${config.replacementDurationSec}s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`
+              : undefined,
+          position: "relative",
+          cursor: isArmed ? "pointer" : "grab",
+        }}
+        onMouseEnter={() => onHover(true)}
+        onMouseLeave={() => onHover(false)}
+      >
       <CardFace
         card={slot.card}
         hovered={isHovered}
@@ -511,16 +537,27 @@ function CardSlot({
           }
         }
       `}</style>
+      </div>
     </div>
   );
 }
 
-function DiscardPileMarker({ h }: { h: number }) {
+function DiscardPileMarker({
+  h,
+  offsetX,
+  baseY,
+}: {
+  h: number;
+  offsetX: number;
+  baseY: number;
+}) {
   return (
     <div
       aria-hidden
       style={{
-        marginLeft: 12,
+        position: "absolute",
+        left: offsetX,
+        top: baseY,
         width: h * 0.7,
         height: h,
         border: "1.5px dashed rgba(200,160,100,0.35)",
