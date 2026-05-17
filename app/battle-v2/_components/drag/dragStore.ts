@@ -14,6 +14,7 @@
 import { useSyncExternalStore } from "react";
 
 import type { LayerRarity } from "@/lib/cards/layers";
+import type { CardType as LayerCardType } from "@/lib/honeycomb/cards";
 import type { ElementId } from "@/lib/purupuru/contracts/types";
 
 export type DragPhase = "idle" | "pending" | "dragging";
@@ -23,6 +24,7 @@ export interface DragState {
   readonly cardId: string | null;
   /** Visual payload for the ghost — set at beginPending. */
   readonly element: ElementId;
+  readonly cardType: LayerCardType;
   readonly rarity: LayerRarity;
   /** Pointer-down position (screen px) — the promote-to-drag origin. */
   readonly origin: { readonly x: number; readonly y: number };
@@ -46,6 +48,7 @@ const IDLE: DragState = {
   phase: "idle",
   cardId: null,
   element: "wood",
+  cardType: "jani",
   rarity: "common",
   origin: { x: 0, y: 0 },
   pointer: { x: 0, y: 0 },
@@ -82,6 +85,7 @@ export function useDragState(): DragState {
 export function beginPending(payload: {
   readonly cardId: string;
   readonly element: ElementId;
+  readonly cardType: LayerCardType;
   readonly rarity: LayerRarity;
   readonly pointer: { readonly x: number; readonly y: number };
 }): void {
@@ -90,6 +94,7 @@ export function beginPending(payload: {
     phase: "pending",
     cardId: payload.cardId,
     element: payload.element,
+    cardType: payload.cardType,
     rarity: payload.rarity,
     origin: payload.pointer,
     pointer: payload.pointer,

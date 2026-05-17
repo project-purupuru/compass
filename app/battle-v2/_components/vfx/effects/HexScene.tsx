@@ -193,7 +193,7 @@ export function HexScenePreview({
       }
       map.set(
         hexKey(plot.coord),
-        edges as readonly [
+        edges as unknown as readonly [
           readonly [number, number], readonly [number, number],
           readonly [number, number], readonly [number, number],
           readonly [number, number], readonly [number, number],

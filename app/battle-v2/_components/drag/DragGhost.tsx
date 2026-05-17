@@ -44,7 +44,12 @@ export function DragGhost() {
       }}
     >
       <div className="drag-ghost__card">
-        <CardStack element={drag.element} rarity={drag.rarity} alt="" />
+        <CardStack
+          element={drag.element}
+          cardType={drag.cardType}
+          rarity={drag.rarity}
+          alt=""
+        />
       </div>
     </div>
   );

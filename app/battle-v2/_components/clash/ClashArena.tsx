@@ -93,7 +93,12 @@ function CardArt({ card, stamped }: { readonly card: BattleCard; readonly stampe
       animate={{ scale: stamped ? 0.86 : 1, opacity: stamped ? 0.5 : 1 }}
       transition={{ type: "spring", stiffness: 240, damping: 20 }}
     >
-      <CardStack element={card.element} rarity={card.rarity} alt={card.name} />
+      <CardStack
+        element={card.element}
+        cardType={card.cardType}
+        rarity={card.rarity}
+        alt={card.name}
+      />
       {stamped ? (
         <motion.span
           className="bai-stamp"
