@@ -51,6 +51,8 @@ import { DustMotes } from "./DustMotes";
 import { Embers } from "./Embers";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
+import { InstancedLeafField } from "./InstancedLeafField";
+import { gatherLeavesFromPlots } from "./leafExtractors";
 import { LeafSwirl } from "./LeafSwirl";
 import { Mist } from "./Mist";
 import { PerfReadout } from "./PerfReadout";
@@ -486,7 +488,12 @@ export function BigRealmScenePreview({
        *  this is the substrate's real workload at scale. Mirrors HexScene's
        *  per-plot rendering pattern. Skip when showTileContent is OFF so
        *  the operator can A/B substrate-only (just element discs + ambients)
-       *  vs full-content scenes. */}
+       *  vs full-content scenes.
+       *
+       *  suppressLeaves={config.useInstancedLeaves}: when the operator
+       *  enables the cycle-3 S1-T1 test surface, each HexPlot's fixtures
+       *  skip their own LeafPuff JSX. The shared InstancedLeafField below
+       *  renders all leaves through ONE archetype + ONE InstancedMesh. */}
       {config.showTileContent &&
         plots.map((plot) => (
           <HexPlot
@@ -494,8 +501,28 @@ export function BigRealmScenePreview({
             plot={plot}
             size={config.hexSize}
             triggerKey={triggerKey}
+            suppressLeaves={config.useInstancedLeaves}
           />
         ))}
+
+      {/* Cycle-3 fixture-ecs-instancing S1-T1 test surface — aggregate all
+       *  leaves across the grid into ONE InstancedLeafField (cycle-1
+       *  substrate). Wires the existing leaf-instancing path into the
+       *  big-realm composer so the operator can visually validate per-
+       *  instance color (BLACK-leaves fix) AT SCALE before T2-T6
+       *  archetypes adopt the same pattern. Outline regression accepted
+       *  per cycle-1 NFR (drei <Outlines> doesn't instance). */}
+      {config.useInstancedLeaves && config.showTileContent && (
+        <InstancedLeafField
+          specs={gatherLeavesFromPlots(
+            plots,
+            plots.map((plot) => {
+              const [wx, wz] = hexToWorld(plot.coord, config.hexSize);
+              return [wx, wz] as const;
+            }),
+          )}
+        />
+      )}
 
       {/* Per-element glow discs — kept as a subtle ground tint overlay so
        *  the element-cluster pattern stays visible even with full content. */}

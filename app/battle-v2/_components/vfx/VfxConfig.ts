@@ -387,6 +387,56 @@ export const ZONE_SCENE_DEFAULTS: ZoneSceneConfigT = {
   debugPerf: false,
 };
 
+// ── Card-lab (Session 18 — card-to-map choreography substrate) ───────────
+
+/**
+ * CardLab config — every Gemini timing pin as a tweakpane knob. The lab
+ * lives as a vfx-lab effect entry so it sits alongside zone-scene,
+ * realm-scene, etc. (operator-pinned 2026-05-17). Real cards via
+ * `CardFace` + `CardStack` from the battle-v2 substrate. NO bespoke
+ * card visuals.
+ */
+export const CardLabConfig = S.extend(
+  VfxEffectBase,
+  S.Struct({
+    kind: S.Literal("card-lab"),
+    hoverLiftPx: S.Number,
+    hoverScaleMul: S.Number,
+    hoverDurationSec: S.Number,
+    keybindFlashDurationSec: S.Number,
+    keybindFlashOpacity: S.Number,
+    discardDurationSec: S.Number,
+    replacementDurationSec: S.Number,
+    replacementOvershoot: S.Number,
+    cardGapPx: S.Number,
+    cardWidthPx: S.Number,
+    cardHeightPx: S.Number,
+    bottomPx: S.Number,
+  }),
+);
+
+export type CardLabConfigT = S.Schema.Type<typeof CardLabConfig>;
+
+export const CARD_LAB_DEFAULTS: CardLabConfigT = {
+  id: "card-lab.default",
+  surface: "dom",
+  duration: "infinite",
+  trigger: "manual",
+  kind: "card-lab",
+  hoverLiftPx: 20,
+  hoverScaleMul: 1.15,
+  hoverDurationSec: 0.1,
+  keybindFlashDurationSec: 0.06,
+  keybindFlashOpacity: 0.32,
+  discardDurationSec: 0.22,
+  replacementDurationSec: 0.28,
+  replacementOvershoot: 1.08,
+  cardGapPx: 14,
+  cardWidthPx: 130,
+  cardHeightPx: 184,
+  bottomPx: 28,
+};
+
 // ── Composition (layering primitive) ──────────────────────────────────────
 
 /**
@@ -513,6 +563,7 @@ export const AnyEffectConfig = S.Union(
   HexSceneConfig,
   ZoneSceneConfig,
   RealmSceneConfig,
+  CardLabConfig,
 );
 export type AnyEffectConfigT = S.Schema.Type<typeof AnyEffectConfig>;
 
@@ -614,6 +665,23 @@ export const BigRealmSceneConfig = S.extend(
 
     // Debug
     debugPerf: S.Boolean,
+
+    /**
+     * Aggregate ALL leaves across the scene into ONE InstancedLeafField (the
+     * cycle-1 leaf substrate), instead of per-fixture `<LeafPuff>` JSX.
+     *
+     * When ON, each HexPlot receives `suppressLeaves=true` so its Tree /
+     * Mushroom / Wildflower / Rock children skip their `<LeafPuff>` mounts,
+     * and BigRealmScene mounts a single `<InstancedLeafField>` fed by
+     * `gatherLeavesFromPlots`. Trade-off accepted per cycle-1 sprint NFR:
+     * drei `<Outlines>` doesn't natively instance, so leaves render without
+     * ink outlines on this path. Toon cel-band gradient PRESERVED.
+     *
+     * Added cycle fixture-ecs-instancing-2026-05-17 (S1-T1 visual-test
+     * preparation — operator wants to test instanced leaves AT SCALE before
+     * the 5 fixture archetypes adopt the same pattern in S1-T2 onwards).
+     */
+    useInstancedLeaves: S.Boolean,
   }),
 );
 
@@ -650,4 +718,5 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   showMonuments: false,
   monumentScale: 1.0,
   debugPerf: true,
+  useInstancedLeaves: false,
 };

@@ -17,6 +17,8 @@ import type { Schema as S } from "effect";
 import type { ComponentType } from "react";
 
 import {
+  CARD_LAB_DEFAULTS,
+  CardLabConfig,
   HEX_SCENE_DEFAULTS,
   HexSceneConfig,
   MINI_SCENE_DEFAULTS,
@@ -31,6 +33,7 @@ import {
   RealmSceneConfig,
   ZONE_SCENE_DEFAULTS,
   ZoneSceneConfig,
+  type CardLabConfigT,
   type HexSceneConfigT,
   type MiniSceneConfigT,
   type BigRealmSceneConfigT,
@@ -39,6 +42,7 @@ import {
   type WaterSplashConfigT,
   type ZoneSceneConfigT,
 } from "./VfxConfig";
+import { CardLabPreview } from "./effects/CardLab";
 import { HexScenePreview } from "./effects/HexScene";
 import { MiniScenePreview } from "./effects/MiniScene";
 import { BigRealmScenePreview } from "./effects/BigRealmScene";
@@ -976,6 +980,76 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
     debug.addBinding(config as unknown as Record<string, unknown>, "debugPerf", {
       label: "perf readout",
     });
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedLeaves",
+      {
+        // Cycle-3 fixture-ecs-instancing S1-T1 test surface. ON: aggregate
+        // all leaves across the grid into ONE InstancedLeafField (cycle-1
+        // substrate), each HexPlot's fixtures suppress their own LeafPuff
+        // mounts. Outline regression on instanced leaves applies (drei
+        // <Outlines> doesn't instance — accepted per cycle-1 NFR).
+        label: "instanced leaves",
+      },
+    );
+  },
+};
+
+// ── card-lab (Session 18 — card-to-map choreography substrate) ─────────────
+
+const CARD_LAB_DEF: VfxEffectDefinition<CardLabConfigT> = {
+  id: "card-lab",
+  label: "card-lab",
+  sub: "5-card hand · juice substrate",
+  schema: CardLabConfig,
+  defaults: CARD_LAB_DEFAULTS,
+  Preview: CardLabPreview,
+  registerKnobs(pane, config) {
+    const hover = pane.addFolder({ title: "hover", expanded: true });
+    hover.addBinding(config as unknown as Record<string, unknown>, "hoverLiftPx", {
+      label: "lift (px)", min: 0, max: 60, step: 1,
+    });
+    hover.addBinding(config as unknown as Record<string, unknown>, "hoverScaleMul", {
+      label: "scale", min: 1.0, max: 1.5, step: 0.01,
+    });
+    hover.addBinding(config as unknown as Record<string, unknown>, "hoverDurationSec", {
+      label: "duration (s)", min: 0.05, max: 0.5, step: 0.01,
+    });
+
+    const keybind = pane.addFolder({ title: "keybind haptic", expanded: true });
+    keybind.addBinding(config as unknown as Record<string, unknown>, "keybindFlashDurationSec", {
+      label: "pulse (s)", min: 0.02, max: 0.3, step: 0.01,
+    });
+    keybind.addBinding(config as unknown as Record<string, unknown>, "keybindFlashOpacity", {
+      label: "opacity", min: 0, max: 1, step: 0.01,
+    });
+
+    const discard = pane.addFolder({ title: "discard", expanded: true });
+    discard.addBinding(config as unknown as Record<string, unknown>, "discardDurationSec", {
+      label: "fly-out (s)", min: 0.1, max: 0.8, step: 0.01,
+    });
+
+    const draw = pane.addFolder({ title: "replacement draw", expanded: true });
+    draw.addBinding(config as unknown as Record<string, unknown>, "replacementDurationSec", {
+      label: "slide-in (s)", min: 0.1, max: 0.8, step: 0.01,
+    });
+    draw.addBinding(config as unknown as Record<string, unknown>, "replacementOvershoot", {
+      label: "overshoot", min: 1.0, max: 1.4, step: 0.01,
+    });
+
+    const layout = pane.addFolder({ title: "layout", expanded: false });
+    layout.addBinding(config as unknown as Record<string, unknown>, "cardWidthPx", {
+      label: "card w (px)", min: 80, max: 220, step: 1,
+    });
+    layout.addBinding(config as unknown as Record<string, unknown>, "cardHeightPx", {
+      label: "card h (px)", min: 110, max: 320, step: 1,
+    });
+    layout.addBinding(config as unknown as Record<string, unknown>, "cardGapPx", {
+      label: "gap (px)", min: 0, max: 60, step: 1,
+    });
+    layout.addBinding(config as unknown as Record<string, unknown>, "bottomPx", {
+      label: "bottom (px)", min: 0, max: 120, step: 1,
+    });
   },
 };
 
@@ -989,9 +1063,11 @@ export type AnyVfxDefinition =
   | VfxEffectDefinition<HexSceneConfigT>
   | VfxEffectDefinition<ZoneSceneConfigT>
   | VfxEffectDefinition<RealmSceneConfigT>
-  | VfxEffectDefinition<BigRealmSceneConfigT>;
+  | VfxEffectDefinition<BigRealmSceneConfigT>
+  | VfxEffectDefinition<CardLabConfigT>;
 
 export const VFX_REGISTRY: readonly AnyVfxDefinition[] = [
+  CARD_LAB_DEF,
   BIG_REALM_SCENE_DEF,
   REALM_SCENE_DEF,
   ZONE_SCENE_DEF,
