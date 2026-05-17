@@ -39,6 +39,10 @@ Per-commit substrate gifts:
   - Gift: opening the substrate index files answers "what is this for?" in one sentence.
 - `b9b9f782` — `chore(lint): fix cleanup-scope lint errors`
   - Gift: cleanup-scope lint/format/typecheck is clean; out-of-scope `.agents` oxlint errors are deferred with WHY.
+- `41f6cd99` — `docs(distill): session 20 cleanup substrate hygiene`
+  - Gift: the cleanup pass has a durable substrate/application/taste summary.
+- `95414cc1` — `chore(triage): record live-drift cleanup defers`
+  - Gift: live operator-lane files that appeared after target-1 triage are classified without crossing into `lib/engine/`.
 
 Verification after each cleanup commit:
 
