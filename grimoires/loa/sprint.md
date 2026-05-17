@@ -1,167 +1,111 @@
 ---
 status: draft-r0
 type: sprint-plan
-cycle: engine-substrate-2026-05-17
-session: 16
-mode: ARCH (OSTROM) + craft lens (ALEXANDER) + k-hole-as-teacher
-branch: feat/ecs-leaves-2026-05-17
+cycle: hex-composition-scale-2026-05-17
+session: 18 (post-session-17 handoff)
+mode: ARCH (OSTROM) + craft lens (ALEXANDER) — push scale boundaries
+branch: feat/ecs-leaves-2026-05-17 (continues — see provenance below)
 prd: grimoires/loa/prd.md
 sdd: grimoires/loa/sdd.md
-prd_source: grimoires/loa/specs/enhance-substrate-perf-and-engine.md
-kickoff: grimoires/loa/specs/enhance-columnar-ecs-teaching-session.md
-digs:
-  - grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md
-  - grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md
-convergence_target: "hex-scene leaves render through ONE InstancedMesh driven by ONE useFrame; useInstancedLeaves toggle A/Bs the path; ≥10× draw-call drop, FPS unchanged or better, visual parity at static frame"
-run_id: 2026-05-17-9a4d3d
+prd_source: grimoires/loa/specs/enhance-substrate-perf-and-engine.md (parent)
+predecessor_cycle: engine-substrate-2026-05-17 (PARTIAL close — substrate proven, scale unverified)
+predecessor_distillation: grimoires/loa/distillations/session-16-ecs-substrate-proof-2026-05-17.md
+session_17_handoff: lib/wuxing/*, lib/hex/zone.ts, app/battle-v2/_components/vfx/effects/{ZoneScene,RealmScene,LeafSwirl,PollenMotes,Mist,RippleField,Embers,DustMotes,Sparks,PuruhaniWalker,ZoneMonument,ShengFlow,MusubiSilhouette,MountainRing}.tsx (all uncommitted operator in-flight)
+convergence_target: "BigRealmScene composes N×N hex blocks via extended PlotT (element + ambientBindings). Scale-test at 5×5 → 10×10 → 20×20 captures perf signal that the 7-plot engine-substrate cycle couldn't surface. Numbers reveal what to ECS-ize next."
 created: 2026-05-17
 ---
 
-# Engine Substrate — Cycle 2 — Leaves Proof Sprint Plan
+# Hex Composition + Scale Cycle
 
-Three sprints. ~350 LOC of new code, additive only — no deletion of existing
-fixture render paths. The new `useInstancedLeaves` toggle in HexSceneConfig
-gates the alternate render path, so operator A/Bs by flipping it in PostPane.
+Build on the closed engine-substrate cycle. Substrate is proven; this cycle
+proves the **composition shape** at the scale where it actually matters.
 
-This sprint plan is the proof-tier slice of the larger engine-substrate PRD
-(`grimoires/loa/specs/enhance-substrate-perf-and-engine.md`). Subsequent
-cycles will handle the render-plugin port (PRD step 5), event-bus (step 6),
-physics-plugin (step 7), VFX vocabulary expansion (step 8), and oracle
-ingestion (step 9). This cycle proves the ECS + InstancedMesh pattern works
-in our cel-shaded register before extending it.
+Operator framing (verbatim):
+> "Each of these hexagon grids should be composable. We should think about
+> it like building blocks, kind of like a Minecraft block. Each thing
+> represents an individual section of the world, and then you can compose
+> together a bunch of procedural stuff and environmental stuff together…
+> we should see how it feels."
 
 ## Dependency graph
 
 ```
-  S1 (ECS substrate) ──→ S2 (renderer + integration) ──→ S3 (verify + distill)
-
-  - S1 ships standalone, fully unit-tested. lib/engine/ becomes consumable.
-  - S2 consumes S1; adds the toggle + per-fixture suppression; manual smoke confirms visual parity.
-  - S3 captures the A/B PerfReadout measurement + writes Stage-5 distillation.
+  S1 (PlotT extension + Zone refactor)
+     │
+     ▼
+  S2 (BigRealmScene composer + VfxRegistry effect)
+     │
+     ▼
+  S3 (scale-test 5×5 → 10×10 → 20×20 + distill what bottlenecks)
 ```
 
-S1 and S2 must run sequentially (S2 imports S1). S3 depends on S2 (needs the
-toggle wired). No parallelism within the cycle.
+Each sprint runs implement → review (cross-model dissent) → audit (cross-
+model dissent) → COMPLETED. Same gate pattern as cycle engine-substrate.
 
----
+## Sprint 1 — Substrate composition primitives (~30 LOC)
 
-## Sprint 1 — ECS substrate primitives
-
-**Scope**: scaffold `lib/engine/` with the smallest viable archetype + system
-shape needed for the leaf proof. No app code touches yet. Pure substrate.
-
-**Files created**: 5 source + 2 test = ~150 LOC
+Already partially landed (PlotT extension committed in this session). Tests
+and Zone passthrough are the remaining work.
 
 | Task | Files | AC |
 |---|---|---|
-| S1-T1 | `lib/engine/ecs/archetype.ts` — `Archetype<TCols>` class with typed-array column slabs, `add(init): EntityId` (returns dense slot), `destroy(id)` via swap-remove, `columnArray(name): Float32Array` accessor, capacity grows in powers of 2 | tsc passes; exports `Archetype` class + `ColumnSpec` type |
-| S1-T2 | `lib/engine/ecs/world.ts` — `World` with `createEntity(archetype, init): EntityId`, `destroyEntity(id)`. Single-archetype lookup (no routing across archetypes). Lightweight. | tsc passes; exports `World` class + `EntityId` brand type |
-| S1-T3 | `lib/engine/ecs/system.ts` — `System<TCols>` type alias `(arch, dt, t) => void`. No scheduler, no registry — systems are called manually from useFrame. | tsc passes; exports `System` type |
-| S1-T4 | `lib/engine/animation/sway-system.ts` — `swayLeafSystem` reads `(phase, amplitude, frequency)` columns + writes the rotation portion of a `matrix4` column. Uses `swayAngle` math semantically equivalent to `app/battle-v2/_components/vfx/celVocab.ts` (verify against the existing helper). | tsc passes; pure function; matches existing celVocab sway math |
-| S1-T5 | `lib/engine/index.ts` — re-exports `Archetype, World, System, swayLeafSystem` | tsc passes |
-| S1-T6 | `lib/engine/ecs/archetype.test.ts` — vitest: (a) create + add 5 → length 5; (b) destroy slot 2 → swap-remove behavior preserves contiguity; (c) capacity grows from 4 → 8 → 16 when filled; (d) columnArray returns the actual backing slab (mutations visible). ≥6 assertions. | `vitest run lib/engine` passes |
-| S1-T7 | `lib/engine/animation/sway-system.test.ts` — vitest: (a) same archetype state + same `t` → bit-identical output across calls (determinism); (b) different `phase` columns → independent sway; (c) writes only the rotation portion of matrix4 (translation+scale untouched). ≥3 assertions. | vitest passes |
+| S1-T1 | `lib/hex/plot.ts` — DONE: `element?: ElementIdT` + `ambientBindings?: ElementIdT[]` optional fields on Plot schema | tsc passes; existing PlotT consumers unaffected (Plot was extended additively) |
+| S1-T2 | `lib/hex/zone.ts` — verify Zone primitive composes cleanly with extended PlotT (no required changes; Zone already carries `element` at the group level) | no edits required; cite that this composes |
+| S1-T3 | `lib/hex/plot.test.ts` (new) — assert PlotT can be constructed with and without `element` / `ambientBindings`; assert `S.Schema` validation accepts both shapes | vitest passes; ≥3 assertions |
 
-**Sprint 1 exit criteria**: `pnpm tsc --noEmit` passes, `pnpm vitest run lib/engine` passes (all assertions green), no exports consumed by app code yet.
+**Sprint exit**: tsc passes; new test file green; no regression in `lib/engine` tests; PlotT consumers downstream unaffected.
 
-**Not in scope**: no integration with R3F, no Three.js imports, no `@effect/schema`-derived layouts, no multi-archetype scheduler.
-
----
-
-## Sprint 2 — Renderer + integration
-
-**Scope**: wire the ECS substrate to a single `<InstancedMesh>` and gate the
-alternate render path behind `useInstancedLeaves`. When toggle is ON, fixtures
-skip their `<LeafPuff>` JSX and the scene mounts one `<InstancedLeafField>`
-collecting all leaf data via extractor pure functions.
-
-**Files created/modified**: 1 new renderer + 1 new extractor module + 1 config
-edit + 4 fixture edits + 1 scene edit = ~190 LOC
+## Sprint 2 — BigRealmScene composer (~120 LOC + knob registration)
 
 | Task | Files | AC |
 |---|---|---|
-| S2-T1 | `app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx` — R3F `<InstancedMesh>` bound to a `LeafArchetype` (allocated in `useMemo`). One `useFrame` mounts `swayLeafSystem(arch, dt, t)` then writes back to `mesh.instanceMatrix` (with `needsUpdate = true`) + `mesh.instanceColor`. Uses `icosahedronGeometry(detail=0)` + `meshToonMaterial` with `DEFAULT_TOON_GRADIENT` to match LeafPuff's primary puff. | tsc passes; component renders an instanced mesh given an archetype prop |
-| S2-T2 | `app/battle-v2/_components/vfx/effects/leafExtractors.ts` — pure functions: `treeLeafData(fixture, plotOrigin)`, `mushroomLeafData(fixture, plotOrigin)`, `wildflowerLeafData(fixture, plotOrigin)`, `rockMossLeafData(fixture, plotOrigin)`. Each returns `LeafData[]` with `{ worldPosition, color, swayParams }`. Math mirrors the current per-fixture render (`buildBranches` in Tree.tsx, etc.). | tsc passes; vitest snapshot of stable scatter for one seed (≥2 assertions) |
-| S2-T3 | `app/battle-v2/_components/vfx/VfxConfig.ts` — add `useInstancedLeaves: S.Boolean` to `HexSceneConfig` schema, default `false`. PostPane → debug section picks it up automatically via the existing schema-driven control rendering. | tsc passes; PostPane shows toggle under "debug" |
-| S2-T4 | `app/battle-v2/_components/vfx/effects/Tree.tsx` — accept optional `suppressLeaves?: boolean` prop. When `true`, skip the `<LeafPuff>` JSX at each branch tip. Render trunk + branches normally. | tsc passes; visual smoke: toggle OFF behaves identically; toggle ON shows tree with no leaves |
-| S2-T5 | `app/battle-v2/_components/vfx/effects/Mushroom.tsx` + `Wildflower.tsx` + `Rock.tsx` — same `suppressLeaves` prop pattern. Mushroom suppresses its cap LeafPuff; Wildflower suppresses its bloom-head LeafPuff; Rock suppresses its moss-tuft LeafPuff. Bush.tsx is OUT OF SCOPE (uses internal sub-puffs, not LeafPuff). | tsc passes |
-| S2-T6 | `app/battle-v2/_components/vfx/effects/HexScene.tsx` — when `config.useInstancedLeaves` is true: walk `plots[].fixtures`, call the matching extractor per fixture kind, build one `LeafArchetype` with all leaves, mount `<InstancedLeafField archetype={archetype}>` once at the scene level. Pass `suppressLeaves={config.useInstancedLeaves}` to each fixture in HexPlot. | manual smoke: toggle ON renders all leaves through one InstancedMesh; toggle OFF unchanged |
-| S2-T7 | `app/battle-v2/_components/vfx/effects/HexPlot.tsx` — forward `suppressLeaves` prop from HexScene through to Tree/Mushroom/Wildflower/Rock render calls (no own logic; pure pass-through). | tsc passes |
+| S2-T1 | `app/battle-v2/_components/vfx/effects/BigRealmScene.tsx` — new effect. Takes `gridCols × gridRows` axial hex grid; assigns each cell an element via a seeded pattern (e.g. modulo cycle or Voronoi-style clustering); mounts terrain + element-glow disc per cell; mounts SHARED per-element ambients (one LeafSwirl across all `wood` cells, one Mist across all `water` cells, etc.) | tsc passes; renders an arbitrary-N hex grid with correct world positions; element distribution visibly mixed |
+| S2-T2 | `app/battle-v2/_components/vfx/effects/BigRealmScene.tsx` — atmosphere driver (reuse RealmScene's pattern: time-of-day-driven sky + fog + lights) | tsc passes |
+| S2-T3 | `app/battle-v2/_components/vfx/VfxConfig.ts` — add `BigRealmSceneConfig` schema (gridCols, gridRows, elementDistribution: "checker"/"voronoi"/"stripes", ambientBase, fogDensity, showWalkers, walkerCount, showMonuments, monumentEveryN, debugPerf, scatterSeed) + `BIG_REALM_SCENE_DEFAULTS` | tsc passes |
+| S2-T4 | `app/battle-v2/_components/vfx/VfxRegistry.ts` — register `big-realm-scene` effect at top of picker (next to realm-scene) with all knob bindings | toggle appears in PostPane |
 
-**Sprint 2 exit criteria**: `pnpm tsc --noEmit` passes; manual smoke in `/battle-v2/vfx-lab` confirms (a) toggle OFF behaves as today; (b) toggle ON renders all leaves visually equivalent at idle (modulo ink outlines on leaves — see "documented regressions" below).
+**Sprint exit**: `/battle-v2/vfx-lab` picker shows `big-realm-scene`. Selecting it renders an N×N hex grid with mixed elements + shared per-element ambients + atmosphere. Operator can change gridCols/gridRows live.
 
-**Documented regression** (Alexander craft-lens flag): drei's `<Outlines>` uses
-an inverted-hull mesh that does NOT support instancing. The instanced path
-will have NO ink outlines on the LEAVES specifically. Trunks, branches,
-mushroom caps, wildflower stems, rocks — all keep their outlines. Per the
-PRD's "outline parity" rule, this is a structural compromise we accept for
-the proof; revisit with a custom instanced-outline shader in a later cycle if
-the visual impact is significant.
+**Constraints (load-bearing)**:
+- NEVER author 3D character/walker geometry — use PaperPuppet3D for any walker render (per session-17 doctrine memory `[[paper-puppet-aesthetic]]`)
+- NEVER perimeter-ring mountains on a gameplay-facing surface (use terrain-class hexes for mountains)
+- Consult `.claude/constructs/packs/purupuru-codex/` before assigning element affinity to specific landmark concepts
+- Don't re-implement wuxing/zone/element primitives — import from `lib/wuxing/*` and `lib/hex/zone.ts`
+- ECS-ize walkers is OUT OF SCOPE this cycle — keep them as-is; the scale test will tell us at what N they bottleneck
 
-**Not in scope**: Bush.tsx refactor, custom instanced-outline shader, render-plugin
-port abstraction, deletion of LeafPuff or per-fixture render paths.
-
----
-
-## Sprint 3 — A/B verify + distill
-
-**Scope**: measure the A/B PerfReadout numbers, write the cycle's RESULTS doc
-and the Stage-5 distillation per the build doc's pacing.
-
-**Files created**: 3 docs + 1 cycle marker = no source code
+## Sprint 3 — Scale-test + distill
 
 | Task | Files | AC |
 |---|---|---|
-| S3-T1 | Capture PerfReadout values: navigate to `/battle-v2/vfx-lab`, enable `config.debugPerf`. Record (FPS, draw calls, triangles, useFrame count if available) with `config.useInstancedLeaves: false`. Toggle to `true` without other changes. Record again. | numbers recorded in S3-T2 file |
-| S3-T2 | `grimoires/loa/cycles/engine-substrate-2026-05-17/RESULTS.md` — table with OFF vs ON values + delta, includes commit hashes from S1+S2, plus a static-frame screenshot pair if practical (in `RESULTS-assets/` if added). | file exists; convergence target met (≥10× draw-call drop confirmed; FPS unchanged or better; visual parity acknowledged) |
-| S3-T3 | `grimoires/loa/distillations/session-16-ecs-substrate-proof-2026-05-17.md` — Stage 5 distillation per build doc: (a) what we learned about columnar ECS in OUR substrate (validating Table-over-Sparse against scene reality), (b) shape chosen + empirical justification (the fixture-table empirical analysis), (c) proof numbers (links to RESULTS.md), (d) explicit list of deferred items per PRD steps 5/6/7/8/9 + Bush internal refactor + custom outline shader, (e) open questions for next pair-point (e.g., when does a Sparse archetype appear in the engine roadmap?). | file exists; ≥1 explicit deferred item per PRD step; links to RESULTS.md |
-| S3-T4 | `grimoires/loa/cycles/engine-substrate-2026-05-17/CYCLE-COMPLETED.md` — marker with shipped commits (S1, S2 from this cycle), LOC delta, proof status (PROVEN / PARTIAL / NOT-MET), references to RESULTS + distillation. | file exists; references S1+S2 commit shas |
-
-**Sprint 3 exit criteria**: distillation written, results captured, cycle
-marked complete. Convergence target evaluated honestly (PROVEN / PARTIAL /
-NOT-MET).
-
----
-
-## Acceptance criteria for the whole cycle
-
-| # | Criterion | Verification |
-|---|---|---|
-| AC-1 | All hex-plot leaves render through ONE `<InstancedMesh>` when `useInstancedLeaves` is ON | Three.js scene introspection in PerfReadout shows `InstancedMesh` count = 1 for leaves |
-| AC-2 | Single `useFrame` updates all leaves | `app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx` mounts exactly one `useFrame`; per-fixture LeafPuff `useFrame`s skipped when `suppressLeaves` true |
-| AC-3 | Draw call count drops ≥ 10× from OFF to ON | PerfReadout numbers in RESULTS.md |
-| AC-4 | FPS unchanged or better when ON vs OFF at idle | PerfReadout numbers in RESULTS.md |
-| AC-5 | Visual parity at static frame (modulo documented outline regression) | Manual A/B in PostPane; screenshot pair in RESULTS.md if practical |
-| AC-6 | Per-fixture render paths still work with `useInstancedLeaves` OFF | Toggle OFF behaves indistinguishably from current main |
+| S3-T1 | Capture PerfReadout: 5×5 (25 tiles), 10×10 (100 tiles), 20×20 (400 tiles). Record FPS / FRAME / DRAW / TRIS / GEO / TEX / PROG at each scale, both with ambients ON and OFF, walkers ON and OFF | numbers exist in S3-T2 file |
+| S3-T2 | `grimoires/loa/cycles/hex-composition-scale-2026-05-17/RESULTS.md` — measurement table with all scales × all toggles; visual observations at each scale | file exists; convergence target evaluated honestly |
+| S3-T3 | `grimoires/loa/distillations/session-18-hex-composition-scale-2026-05-17.md` — Stage-5 distill: what bottlenecks at scale, what substrate evolution is earned next (walker ECS? shared ambient instances? LOD?), explicit deferred items | file exists |
+| S3-T4 | `grimoires/loa/cycles/hex-composition-scale-2026-05-17/CYCLE-COMPLETED.md` — marker | file exists |
 
 ## What NOT to build (Barth)
 
-- NO `RenderPlugin` port abstraction (PRD step 5 — different cycle)
-- NO `PhysicsPlugin` port (PRD step 7)
-- NO event-bus / oracle ingestion (PRD steps 6 + 9)
-- NO migration of grass / rocks / macro-foliage to ECS — only LEAVES across hex-plot fixtures this cycle
-- NO multi-archetype scheduler — single sway-system function called from one useFrame is the proof
-- NO `@effect/schema`-derived buffer layouts — deferred until 2+ archetypes exist
-- NO Bush internal sub-puff refactor — Bush stays as-is this cycle
-- NO custom instanced-outline shader — accept ink-outline regression on leaves, document
-- NO deletion of LeafPuff.tsx, Tree.tsx, Bush.tsx, Mushroom.tsx, Wildflower.tsx, Rock.tsx — alternate path only
+- NO new ECS archetypes (walker pool stays React-side; defer until S3 numbers say so)
+- NO LOD strategy (surface as deferred item in distill; defer to next cycle)
+- NO ambient-instance sharing optimization beyond the simple "one InstancedMesh per element across all tiles with that binding"
+- NO new VFX primitives (LeafSwirl/Mist/Embers/etc are all in session-17 substrate; reuse them)
+- NO render-plugin port (PRD step 5, different cycle)
+- NO mountains as a perimeter ring on the gameplay surface
+- NO 3D character geometry — paper-puppet doctrine is LOCKED
+- NO biome-decorator integration into BigRealmScene this cycle (HexScene's biome+decorator system stays for HexScene; BigRealmScene uses a lighter element-tinted terrain rendering until biome composition earns its keep at scale)
 
 ## Risks
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| leafExtractors math drifts from Tree.tsx render → visual parity breaks | medium | S2-T2 snapshot test pins extractor output; manual A/B catches drift |
-| InstancedMesh + meshToonMaterial doesn't compose at instance scale | low | Rain.tsx already proves the combo works; matching its material setup |
-| Outline regression on leaves is visually significant (not just small leaves) | medium | Document in RESULTS; if too noticeable, S3 distill names "custom instanced-outline shader" as the next session's first task |
-| /run sprint-plan branch creation collides with feat/ecs-leaves-2026-05-17 (already on this branch) | low | If /run wants a fresh branch, it'll suffix the timestamp; that's fine |
+| 20×20 = 400 tiles may exceed M4 perf budget without LOD | high | This is the POINT of the cycle — surface where the wall is |
+| Element-ambient sharing across N tiles may have unexpected behavior (e.g. tile-confined spawn math may not generalize to a 20×20 grid's worth of `wood` tiles) | medium | Test at 5×5 first; bisect on shape if anomalies |
+| Time-of-day atmosphere may overwhelm small differences at small scale | low | Defaults pin to a single phase ("morning") during measurement passes |
+| Visual regression from engine-substrate's BLACK-leaves bug still unfixed | confirmed | This cycle's BigRealmScene uses element-glow discs + ambient particles, NOT InstancedLeafField. The BLACK-leaves bug is deferred and doesn't gate this work |
 
 ## Provenance
 
-- Build doc: `grimoires/loa/specs/enhance-columnar-ecs-teaching-session.md` (the kickoff)
+- Predecessor cycle: `engine-substrate-2026-05-17` (PARTIAL close 2026-05-17)
 - PRD source: `grimoires/loa/specs/enhance-substrate-perf-and-engine.md`
-- Columnar dig: `grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md`
-- three.quarks dig: `grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md`
-- Operator pair-points (from session transcript 2026-05-17):
-  - Stage 1 grounded with operator-confirmed framing: hybrid Table+Sparse decision per fixture kind; "fixture" is the codebase term
-  - Path B chosen over full /simstim and direct-stages alternatives
-  - Sprint shape approved as drafted; commit + dispatch /run sprint-plan immediately
+- Session-17 handoff: visual substrate + Zone primitive + wuxing runtime (all uncommitted operator in-flight on this branch)
+- Operator pacing: kaironic + teaching, same as last cycle
+- Branch continuation: `feat/ecs-leaves-2026-05-17` (continues with new commits scoped via `feat(sprint-N-comp): …` to keep the cycle-2 lineage distinguishable from cycle-1's `feat(sprint-N): …`)
