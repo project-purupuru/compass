@@ -1,0 +1,18 @@
+{
+  "_test_purpose": "grounding_status=refuted but refuted_at missing · provenance trace broken · MUST REJECT",
+  "_expected_outcome": "invalid",
+  "_expected_constraint_violations": ["refuted-requires-timestamp"],
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000005",
+    "artifact_path": "grimoires/loa/context/taste-tokens/contested-honey-shade.md",
+    "tier": "silver",
+    "grounding_status": "refuted",
+    "blessed_by": "operator",
+    "operator_signed": true,
+    "asserted_at": "2026-05-16T15:50:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "_failure_mode": "refutation without timestamp · breaks negative-ledger provenance trace"
+    }
+  }
+}

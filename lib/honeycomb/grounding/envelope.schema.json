@@ -1,0 +1,101 @@
+{
+  "_provenance": {
+    "_source": "construct-effect-substrate/schemas/grounding-envelope.schema.json",
+    "_pattern": "hand-port-with-drift (cycle-2 doctrine)",
+    "_vendored_at": "2026-05-16",
+    "_drift_ci": "scripts/check-honeycomb-grounding-drift.sh (TBD · operator-wired)"
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.0xhoneyjar.com/construct-effect-substrate/1.0.0/grounding-envelope",
+  "additionalProperties": false,
+  "x-cross-field-validated": true,
+  "description": "Cross-cutting envelope that propagates with every artifact through the 7 ACVP components. Refines narrative 4-state framing into 2 orthogonal axes: tier (3-state promotion ladder) + grounding_status (3-state epistemic tristate per loa-hounfour discipline).",
+  "type": "object",
+  "required": [
+    "envelope_id",
+    "artifact_path",
+    "tier",
+    "grounding_status",
+    "asserted_at",
+    "contract_version"
+  ],
+  "properties": {
+    "envelope_id": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "artifact_path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["bronze", "silver", "gold"]
+    },
+    "grounding_status": {
+      "type": "string",
+      "enum": ["grounded", "refuted", "unverifiable"]
+    },
+    "linked_utcs": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["canvas_url", "quote_hash"],
+        "properties": {
+          "canvas_url": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "quote_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "confidence": {
+            "minimum": 0,
+            "maximum": 1,
+            "type": "number"
+          },
+          "learning_status": {
+            "type": "string",
+            "enum": [
+              "strongly-validated",
+              "directionally-correct",
+              "hypothesis-failed",
+              "smol-evidence",
+              "cant-make-a-conclusion"
+            ]
+          }
+        }
+      }
+    },
+    "blessed_by": {
+      "type": "string",
+      "enum": ["operator", "auto-derived", "construct-consensus"]
+    },
+    "operator_signed": {
+      "type": "boolean"
+    },
+    "asserted_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "refuted_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "refutation_reason": {
+      "type": "string"
+    },
+    "contract_version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {}
+      }
+    }
+  }
+}

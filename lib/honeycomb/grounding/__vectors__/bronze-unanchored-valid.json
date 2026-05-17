@@ -1,0 +1,16 @@
+{
+  "_test_purpose": "bronze unanchored agent generation · the default state · should VALIDATE",
+  "_expected_outcome": "valid",
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000001",
+    "artifact_path": "grimoires/loa/context/taste-tokens/wood-grove-warmth.md",
+    "tier": "bronze",
+    "grounding_status": "unverifiable",
+    "asserted_at": "2026-05-16T15:30:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "agent_source": "purupuru-codex",
+      "generation_context": "session-12-juice-pass-2026-05-14"
+    }
+  }
+}

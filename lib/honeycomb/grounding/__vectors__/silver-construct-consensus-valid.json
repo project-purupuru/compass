@@ -1,0 +1,22 @@
+{
+  "_test_purpose": "silver via construct-consensus quorum (>=2 voices) · valid alternative path · should VALIDATE",
+  "_expected_outcome": "valid",
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000006",
+    "artifact_path": "grimoires/loa/context/lore/puruhani-companion-doctrine.md",
+    "tier": "silver",
+    "grounding_status": "grounded",
+    "blessed_by": "construct-consensus",
+    "operator_signed": false,
+    "asserted_at": "2026-05-16T15:55:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "consensus_voices": [
+        "construct-purupuru-codex",
+        "construct-the-easel",
+        "construct-artisan"
+      ],
+      "consensus_context": "session-13-multi-construct-distillation"
+    }
+  }
+}
