@@ -1,5 +1,5 @@
 /**
- * lib/choreography — substrate for card-to-map juice + game-text moments.
+ * lib/choreography — IS timing/sequence math for card-to-map moments; NOT rendering, UI state, or content truth.
  *
  * Authored session 18 (2026-05-17) per operator direction toward STARDUST-
  * informed card-play choreography. Build doc:
