@@ -34,6 +34,9 @@ import { Color, Fog } from "three";
 import { useThree } from "@react-three/fiber";
 
 import { hexToWorld, type HexCoord } from "@/lib/hex";
+import { BIOMES, type BiomeIdT } from "@/lib/hex/biome";
+import { decoratePlot } from "@/lib/hex/decorator";
+import { type PlotT } from "@/lib/hex/plot";
 import { ELEMENT_META, ALL_ELEMENTS, type ElementIdT } from "@/lib/wuxing/element";
 import { resonanceMultiplier } from "@/lib/wuxing/resonance";
 import {
@@ -47,6 +50,7 @@ import type { BigRealmSceneConfigT } from "../VfxConfig";
 import { DustMotes } from "./DustMotes";
 import { Embers } from "./Embers";
 import { HexOutline } from "./HexOutline";
+import { HexPlot } from "./HexPlot";
 import { LeafSwirl } from "./LeafSwirl";
 import { Mist } from "./Mist";
 import { PerfReadout } from "./PerfReadout";
@@ -55,6 +59,21 @@ import { PuruhaniWalker } from "./PuruhaniWalker";
 import { RippleField } from "./RippleField";
 import { Sparks } from "./Sparks";
 import { ZoneMonument } from "./ZoneMonument";
+
+// ── Element → biome mapping ───────────────────────────────────────────────
+
+/**
+ * Each wuxing element gets a flavor of biome from the existing
+ * lib/hex/biome.ts catalog (no fire-specific biome exists yet; we map fire
+ * to rocky-clearing for the scale-test until a `volcanic` biome is added).
+ */
+const ELEMENT_BIOME: Record<ElementIdT, BiomeIdT> = {
+  wood: "glade",
+  fire: "rocky-clearing",
+  earth: "meadow",
+  metal: "shrine-yard",
+  water: "wetland",
+};
 
 // ── Grid generation ───────────────────────────────────────────────────────
 
@@ -363,6 +382,44 @@ export function BigRealmScenePreview({
     return voronoiAssign(coords, config.hexSize, config.scatterSeed);
   }, [config.gridCols, config.gridRows, config.hexSize, config.scatterSeed]);
 
+  // Build a fully-decorated PlotT per tile via the biome+decorator pipeline
+  // (same path HexScene uses). This is where the scale-test gets its real
+  // geometry weight — trees/bushes/rocks/mushrooms/wildflowers per tile.
+  // Per session-18 operator feedback: element-glow discs alone don't stress
+  // the substrate; the actual fixture content per tile does.
+  const plots = useMemo(() => {
+    if (!config.showTileContent) return [] as PlotT[];
+    return tiles.map((t) => {
+      const biomeId = ELEMENT_BIOME[t.element];
+      const biome = BIOMES[biomeId];
+      const fixtures = decoratePlot({
+        worldSeed: config.scatterSeed ^ (t.coord.q * 73856093) ^ (t.coord.r * 19349663),
+        coord: t.coord,
+        hexSize: config.hexSize,
+        biome,
+      });
+      const elevation =
+        biome.terrain === "water"
+          ? -0.18
+          : biome.terrain === "stone"
+            ? 0.12
+            : biome.terrain === "shrine"
+              ? 0.32
+              : biome.terrain === "grass" && biome.id === "glade"
+                ? 0.04
+                : 0;
+      const plot: PlotT = {
+        coord: t.coord,
+        terrain: biome.terrain,
+        elevation,
+        fixtures,
+        edges: ["flat", "flat", "flat", "flat", "flat", "flat"],
+        element: t.element,
+      };
+      return plot;
+    });
+  }, [config.showTileContent, tiles, config.hexSize, config.scatterSeed]);
+
   // Group tiles by element for shared ambients + outlines + monument placement.
   const tilesByElement = useMemo(() => {
     const buckets: Record<ElementIdT, TileSpec[]> = {
@@ -425,18 +482,35 @@ export function BigRealmScenePreview({
         gridSize={Math.max(config.gridCols, config.gridRows) * config.hexSize * 1.5}
       />
 
-      {/* Per-element glow discs (one mesh per tile — visual ground tint) */}
-      {ALL_ELEMENTS.map((element) => (
-        <ElementGlowField
-          key={`glow-${element}`}
-          tiles={tilesByElement[element]}
-          hexSize={config.hexSize}
-          intensity={
-            config.ambientBase * resonanceMultiplier(element, phase)
-          }
-          color={ELEMENT_META[element].canonicalHue}
-        />
-      ))}
+      {/* Per-tile full hex content (terrain cap + fixtures + outlines) —
+       *  this is the substrate's real workload at scale. Mirrors HexScene's
+       *  per-plot rendering pattern. Skip when showTileContent is OFF so
+       *  the operator can A/B substrate-only (just element discs + ambients)
+       *  vs full-content scenes. */}
+      {config.showTileContent &&
+        plots.map((plot) => (
+          <HexPlot
+            key={`plot-${plot.coord.q},${plot.coord.r}`}
+            plot={plot}
+            size={config.hexSize}
+            triggerKey={triggerKey}
+          />
+        ))}
+
+      {/* Per-element glow discs — kept as a subtle ground tint overlay so
+       *  the element-cluster pattern stays visible even with full content. */}
+      {!config.showTileContent &&
+        ALL_ELEMENTS.map((element) => (
+          <ElementGlowField
+            key={`glow-${element}`}
+            tiles={tilesByElement[element]}
+            hexSize={config.hexSize}
+            intensity={
+              config.ambientBase * resonanceMultiplier(element, phase)
+            }
+            color={ELEMENT_META[element].canonicalHue}
+          />
+        ))}
 
       {/* Optional outlines — heavy at scale; default OFF in config */}
       {config.showOutlines &&

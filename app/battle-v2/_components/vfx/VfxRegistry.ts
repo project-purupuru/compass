@@ -852,6 +852,9 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
       max: 1,
       step: 0.05,
     });
+    grid.addBinding(config as unknown as Record<string, unknown>, "showTileContent", {
+      label: "tile content (fixtures)",
+    });
 
     const atmos = pane.addFolder({ title: "atmosphere", expanded: false });
     atmos.addBinding(config as unknown as Record<string, unknown>, "useRealTime", {

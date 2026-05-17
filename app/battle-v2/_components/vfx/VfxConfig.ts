@@ -576,6 +576,14 @@ export const BigRealmSceneConfig = S.extend(
     showOutlines: S.Boolean,
     outlineOpacity: S.Number,
 
+    /**
+     * Render full hex-content per tile (cap geometry + fixtures via the
+     * biome+decorator pipeline) vs. just element-glow discs. ON surfaces
+     * the substrate's real workload at hundreds of tiles. OFF is the
+     * substrate-only A/B baseline.
+     */
+    showTileContent: S.Boolean,
+
     // Atmosphere
     useRealTime: S.Boolean,
     phaseOverride: TimeOfDayPhaseLiteral,
@@ -623,6 +631,7 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   scatterSeed: 0xb1612e41,
   showOutlines: false,
   outlineOpacity: 0.35,
+  showTileContent: true,
   useRealTime: true,
   phaseOverride: "morning",
   fogDensity: 1.0,
