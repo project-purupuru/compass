@@ -25,12 +25,15 @@ import {
   TreeFallConfig,
   WATER_SPLASH_DEFAULTS,
   WaterSplashConfig,
+  BIG_REALM_SCENE_DEFAULTS,
+  BigRealmSceneConfig,
   REALM_SCENE_DEFAULTS,
   RealmSceneConfig,
   ZONE_SCENE_DEFAULTS,
   ZoneSceneConfig,
   type HexSceneConfigT,
   type MiniSceneConfigT,
+  type BigRealmSceneConfigT,
   type RealmSceneConfigT,
   type TreeFallConfigT,
   type WaterSplashConfigT,
@@ -38,6 +41,7 @@ import {
 } from "./VfxConfig";
 import { HexScenePreview } from "./effects/HexScene";
 import { MiniScenePreview } from "./effects/MiniScene";
+import { BigRealmScenePreview } from "./effects/BigRealmScene";
 import { RealmScenePreview } from "./effects/RealmScene";
 import { TreeFallPreview } from "./effects/TreeFall";
 import { WaterSplashPreview } from "./effects/WaterSplash";
@@ -804,6 +808,163 @@ const REALM_SCENE_DEF: VfxEffectDefinition<RealmSceneConfigT> = {
   },
 };
 
+// ── big-realm-scene (Cycle hex-composition-scale-2026-05-17, Session 18) ──
+
+const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
+  id: "big-realm-scene",
+  label: "big-realm-scene",
+  sub: "N×N hex grid · Voronoi elements · scale-test target",
+  schema: BigRealmSceneConfig,
+  defaults: BIG_REALM_SCENE_DEFAULTS,
+  Preview: BigRealmScenePreview,
+  registerKnobs(pane, config) {
+    const grid = pane.addFolder({ title: "grid", expanded: true });
+    grid.addBinding(config as unknown as Record<string, unknown>, "gridCols", {
+      label: "cols",
+      min: 1,
+      max: 25,
+      step: 1,
+    });
+    grid.addBinding(config as unknown as Record<string, unknown>, "gridRows", {
+      label: "rows",
+      min: 1,
+      max: 25,
+      step: 1,
+    });
+    grid.addBinding(config as unknown as Record<string, unknown>, "hexSize", {
+      label: "hex size",
+      min: 0.6,
+      max: 3.0,
+      step: 0.05,
+    });
+    grid.addBinding(config as unknown as Record<string, unknown>, "scatterSeed", {
+      label: "seed",
+      min: 0,
+      max: 0xffffffff,
+      step: 1,
+    });
+    grid.addBinding(config as unknown as Record<string, unknown>, "showOutlines", {
+      label: "outlines",
+    });
+    grid.addBinding(config as unknown as Record<string, unknown>, "outlineOpacity", {
+      label: "outline α",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    });
+
+    const atmos = pane.addFolder({ title: "atmosphere", expanded: false });
+    atmos.addBinding(config as unknown as Record<string, unknown>, "useRealTime", {
+      label: "local clock",
+    });
+    addEnumBinding(
+      atmos,
+      config as unknown as Record<string, unknown>,
+      "phaseOverride",
+      "phase override",
+      [
+        { text: "morning", value: "morning" },
+        { text: "noon", value: "noon" },
+        { text: "afternoon", value: "afternoon" },
+        { text: "evening", value: "evening" },
+        { text: "night", value: "night" },
+      ],
+    );
+    atmos.addBinding(config as unknown as Record<string, unknown>, "fogDensity", {
+      label: "fog density",
+      min: 0.1,
+      max: 5.0,
+      step: 0.1,
+    });
+
+    const amb = pane.addFolder({ title: "ambients (shared per element)", expanded: true });
+    amb.addBinding(config as unknown as Record<string, unknown>, "showAmbients", {
+      label: "show ambients",
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "ambientBase", {
+      label: "ambient base",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "woodLeafCount", {
+      label: "wood leaves/tile",
+      min: 0,
+      max: 24,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "woodPollenCount", {
+      label: "wood pollen/tile",
+      min: 0,
+      max: 24,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "waterMistCount", {
+      label: "water mist/tile",
+      min: 0,
+      max: 12,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "waterRippleCount", {
+      label: "water ripple/tile",
+      min: 0,
+      max: 16,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "fireEmberCount", {
+      label: "fire embers/tile",
+      min: 0,
+      max: 32,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "earthDustCount", {
+      label: "earth dust/tile",
+      min: 0,
+      max: 24,
+      step: 1,
+    });
+    amb.addBinding(config as unknown as Record<string, unknown>, "metalSparkCount", {
+      label: "metal sparks/tile",
+      min: 0,
+      max: 24,
+      step: 1,
+    });
+
+    const walkers = pane.addFolder({ title: "walkers · operator dial", expanded: true });
+    walkers.addBinding(config as unknown as Record<string, unknown>, "showWalkers", {
+      label: "show walkers",
+    });
+    walkers.addBinding(config as unknown as Record<string, unknown>, "walkerCount", {
+      label: "walker count",
+      min: 0,
+      max: 100,
+      step: 1,
+    });
+    walkers.addBinding(config as unknown as Record<string, unknown>, "walkerScale", {
+      label: "walker scale",
+      min: 0.4,
+      max: 2.0,
+      step: 0.05,
+    });
+
+    const mon = pane.addFolder({ title: "monuments", expanded: false });
+    mon.addBinding(config as unknown as Record<string, unknown>, "showMonuments", {
+      label: "show monuments",
+    });
+    mon.addBinding(config as unknown as Record<string, unknown>, "monumentScale", {
+      label: "scale",
+      min: 0.4,
+      max: 2.5,
+      step: 0.05,
+    });
+
+    const debug = pane.addFolder({ title: "debug", expanded: true });
+    debug.addBinding(config as unknown as Record<string, unknown>, "debugPerf", {
+      label: "perf readout",
+    });
+  },
+};
+
 // ── Registry ───────────────────────────────────────────────────────────────
 
 /** Discriminated by `kind` on the underlying config. */
@@ -813,9 +974,11 @@ export type AnyVfxDefinition =
   | VfxEffectDefinition<MiniSceneConfigT>
   | VfxEffectDefinition<HexSceneConfigT>
   | VfxEffectDefinition<ZoneSceneConfigT>
-  | VfxEffectDefinition<RealmSceneConfigT>;
+  | VfxEffectDefinition<RealmSceneConfigT>
+  | VfxEffectDefinition<BigRealmSceneConfigT>;
 
 export const VFX_REGISTRY: readonly AnyVfxDefinition[] = [
+  BIG_REALM_SCENE_DEF,
   REALM_SCENE_DEF,
   ZONE_SCENE_DEF,
   HEX_SCENE_DEF,

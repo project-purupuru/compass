@@ -444,6 +444,8 @@ export const RealmSceneConfig = S.extend(
     mountainRadius: S.Number,
     mountainHeight: S.Number,
     showLandmark: S.Boolean,
+    /** Sheng-flow lines connecting adjacent generative-cycle elements. */
+    showShengFlow: S.Boolean,
 
     // ── Time-of-day ──────────────────────────────────────────────────────
     useRealTime: S.Boolean,
@@ -457,6 +459,13 @@ export const RealmSceneConfig = S.extend(
     zoneEmberCount: S.Number,
     zoneDustCount: S.Number,
     zoneSparkCount: S.Number,
+
+    // ── Puruhani walkers (latitude — world is inhabited) ─────────────────
+    showPuruhani: S.Boolean,
+    puruhaniScale: S.Number,
+    // ── Per-zone monuments (latitude — zones have identity) ──────────────
+    showMonuments: S.Boolean,
+    monumentScale: S.Number,
 
     // ── Debug ─────────────────────────────────────────────────────────────
     debugPerf: S.Boolean,
@@ -479,6 +488,7 @@ export const REALM_SCENE_DEFAULTS: RealmSceneConfigT = {
   mountainRadius: 36,
   mountainHeight: 8.5,
   showLandmark: true,
+  showShengFlow: true,
   useRealTime: true,
   phaseOverride: "morning",
   fogDensity: 1.0,
@@ -488,6 +498,10 @@ export const REALM_SCENE_DEFAULTS: RealmSceneConfigT = {
   zoneEmberCount: 35,
   zoneDustCount: 30,
   zoneSparkCount: 45,
+  showPuruhani: true,
+  puruhaniScale: 1.4,
+  showMonuments: true,
+  monumentScale: 1.0,
   debugPerf: false,
 };
 
@@ -536,4 +550,95 @@ export const WATER_SPLASH_DEFAULTS: WaterSplashConfigT = {
   foamOpacity: 0.65,
   waterColor: "#6ba8c9",
   foamColor: "#e8f4fa",
+};
+
+// ── Big-realm scene (Cycle hex-composition-scale-2026-05-17 / Session 18) ─
+
+/**
+ * BigRealmScene config — N×N hex grid composer with Voronoi-clustered
+ * element assignment + shared per-element ambient VFX layers. Scale-test
+ * target for the cycle (5×5 → 10×10 → 20×20). Operator-controlled walker
+ * count + monument toggle so the perf signal can be isolated per
+ * contribution.
+ */
+export const BigRealmSceneConfig = S.extend(
+  VfxEffectBase,
+  S.Struct({
+    kind: S.Literal("big-realm-scene"),
+
+    // Grid
+    gridCols: S.Number,
+    gridRows: S.Number,
+    hexSize: S.Number,
+    scatterSeed: S.Number,
+
+    // Outlines (heavy at scale — default OFF)
+    showOutlines: S.Boolean,
+    outlineOpacity: S.Number,
+
+    // Atmosphere
+    useRealTime: S.Boolean,
+    phaseOverride: TimeOfDayPhaseLiteral,
+    fogDensity: S.Number,
+
+    // Ambient master + per-element counts (multiplied by tile count internally)
+    showAmbients: S.Boolean,
+    ambientBase: S.Number,
+    /** Wood — per-tile counts. Multiplied by number of wood tiles. */
+    woodLeafCount: S.Number,
+    woodPollenCount: S.Number,
+    /** Water — per-tile counts. */
+    waterMistCount: S.Number,
+    waterRippleCount: S.Number,
+    /** Fire / Earth / Metal — per-tile counts. */
+    fireEmberCount: S.Number,
+    earthDustCount: S.Number,
+    metalSparkCount: S.Number,
+
+    // Walkers (operator-controlled count, per-walker useFrame for this cycle)
+    showWalkers: S.Boolean,
+    walkerCount: S.Number,
+    walkerScale: S.Number,
+
+    // Monuments (one per element at cluster center of mass)
+    showMonuments: S.Boolean,
+    monumentScale: S.Number,
+
+    // Debug
+    debugPerf: S.Boolean,
+  }),
+);
+
+export type BigRealmSceneConfigT = S.Schema.Type<typeof BigRealmSceneConfig>;
+
+export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
+  id: "big-realm-scene.default",
+  surface: "r3f",
+  duration: "infinite",
+  trigger: "manual",
+  kind: "big-realm-scene",
+  gridCols: 5,
+  gridRows: 5,
+  hexSize: 1.6,
+  scatterSeed: 0xb1612e41,
+  showOutlines: false,
+  outlineOpacity: 0.35,
+  useRealTime: true,
+  phaseOverride: "morning",
+  fogDensity: 1.0,
+  showAmbients: true,
+  ambientBase: 0.7,
+  woodLeafCount: 6,
+  woodPollenCount: 4,
+  waterMistCount: 2,
+  waterRippleCount: 3,
+  fireEmberCount: 8,
+  earthDustCount: 5,
+  metalSparkCount: 4,
+  showWalkers: true,
+  walkerCount: 5,
+  walkerScale: 1.0,
+  showMonuments: false,
+  monumentScale: 1.0,
+  debugPerf: true,
 };
