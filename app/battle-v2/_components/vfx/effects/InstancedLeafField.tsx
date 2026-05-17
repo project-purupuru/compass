@@ -222,15 +222,15 @@ export function InstancedLeafField({
        * branch creating a second InstancedMesh that shares
        * parent.instanceMatrix.
        *
-       * Thickness 2× INK weight (operator visual gate 2026-05-17):
-       * drei's outline shader applies `tNormal = instanceMatrix * tNormal`
-       * then normalizes in clip space; the per-instance scale's
-       * contribution to the normal direction's PROJECTED magnitude does
-       * not match the per-mesh Tree.tsx outline's apparent thickness,
-       * rendering at roughly half the perceived weight. Doubling the
-       * thickness uniform compensates for visual parity.
+       * Thickness 1.5× INK weight (operator visual gate iteration 2,
+       * 2026-05-17): drei's outline shader applies
+       * `tNormal = instanceMatrix * tNormal` then normalizes in clip
+       * space; instanced outlines render at slightly less than per-mesh
+       * outline thickness. 1× read "thinner by half" to operator at
+       * 10×10; 2× was "too thick" at 25×25; 1.5× is the compromise.
+       * Tune further if a single multiplier doesn't work at all scales.
        */}
-      <Outlines color={INK.color} thickness={INK.fine * 2} />
+      <Outlines color={INK.color} thickness={INK.fine * 1.5} />
     </instancedMesh>
   );
 }
