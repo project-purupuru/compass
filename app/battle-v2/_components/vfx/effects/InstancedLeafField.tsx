@@ -26,6 +26,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
+import { Outlines } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   BufferAttribute,
@@ -43,7 +44,7 @@ import {
   type SwayLeafCols,
 } from "@/lib/engine";
 
-import { DEFAULT_TOON_GRADIENT } from "../celVocab";
+import { DEFAULT_TOON_GRADIENT, INK } from "../celVocab";
 
 import type { LeafSpec } from "./leafExtractors";
 
@@ -211,6 +212,19 @@ export function InstancedLeafField({
         // acceptable for one frame.
         color="#ffffff"
       />
+      {/*
+       * Drei <Outlines> on InstancedMesh (cycle-3 sprint-1-fixture
+       * S1-T1 outline spike, 2026-05-17). The cycle-1 distillation
+       * claimed drei did not support InstancedMesh outlines — codex
+       * flatline a7a6d61722ba465c8 verified that's stale for the
+       * installed drei 10.7.7 at node_modules/@react-three/drei/core/
+       * Outlines.js, which has an explicit `parent.isInstancedMesh`
+       * branch creating a second InstancedMesh that shares
+       * parent.instanceMatrix. Outlines now render on every leaf
+       * instance for free — no custom inverted-hull shader needed.
+       * INK.fine is the lightest weight (matches the small leaf scale).
+       */}
+      <Outlines color={INK.color} thickness={INK.fine} />
     </instancedMesh>
   );
 }
