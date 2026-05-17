@@ -27,7 +27,13 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { useFrame } from "@react-three/fiber";
-import { Color, type InstancedMesh, Object3D } from "three";
+import {
+  BufferAttribute,
+  Color,
+  IcosahedronGeometry,
+  type InstancedMesh,
+  Object3D,
+} from "three";
 
 import {
   Archetype,
@@ -36,6 +42,8 @@ import {
   swayLeafSystem,
   type SwayLeafCols,
 } from "@/lib/engine";
+
+import { DEFAULT_TOON_GRADIENT } from "../celVocab";
 
 import type { LeafSpec } from "./leafExtractors";
 
@@ -62,6 +70,45 @@ export function InstancedLeafField({
   const meshRef = useRef<InstancedMesh | null>(null);
   const dummy = useMemo<Object3D>(() => new Object3D(), []);
   const tmpColor = useMemo(() => new Color(), []);
+
+  /*
+   * BLACK-leaves fix (cycle-3 sprint-1-fixture S1-T1, second attempt):
+   *
+   * The root cause is NOT the material's shader chunk — cycle-1's analysis
+   * was wrong on that. Three.js 0.184's color_vertex chunk runs:
+   *   vColor = vec4(1.0);
+   *   #ifdef USE_COLOR — vColor.rgb *= color;
+   *   #ifdef USE_INSTANCING_COLOR — vColor.rgb *= instanceColor.rgb;
+   *
+   * `vertexColors=true` on the material forces USE_COLOR to be defined,
+   * which makes the vertex shader declare `attribute vec3 color;` AND
+   * multiply `vColor.rgb *= color`. The IcosahedronGeometry primitive
+   * does NOT ship a `color` attribute, so WebGL's unbound-attribute
+   * default (vec3(0)) zeros vColor BEFORE the instanceColor multiplication
+   * ever runs. Result: every leaf renders pure black.
+   *
+   * The fix: bake a per-vertex `color` attribute on the icosphere with
+   * all-1 values, so `vColor.rgb *= color` becomes a no-op. The subsequent
+   * `vColor.rgb *= instanceColor.rgb` then carries the per-instance color
+   * through to the fragment shader's `diffuseColor.rgb *= vColor.rgb`.
+   *
+   * meshToonMaterial works correctly with this fix (cel-band gradient
+   * preserved on leaves — the cycle-1 craft signal is intact).
+   */
+  const geometry = useMemo(() => {
+    const geo = new IcosahedronGeometry(baseRadius, detail);
+    const vertexCount = geo.attributes.position.count;
+    const colors = new Float32Array(vertexCount * 3).fill(1);
+    geo.setAttribute("color", new BufferAttribute(colors, 3));
+    return geo;
+  }, [baseRadius, detail]);
+
+  // GPU memory cleanup when geometry deps change or component unmounts.
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
 
   // Build the substrate archetype + side arrays for static per-instance data.
   // The substrate only stores the dynamic columns (phase/amplitude/frequency/
@@ -144,34 +191,24 @@ export function InstancedLeafField({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, count]}
+      args={[geometry, undefined, count]}
       castShadow
       receiveShadow
       frustumCulled={false}
     >
-      <icosahedronGeometry args={[baseRadius, detail]} />
-      {/*
-       * meshLambertMaterial (cycle-3 sprint-1-fixture S1-T1): replaces the
-       * cycle-1 meshToonMaterial path. The toon material's shader did NOT
-       * include the `<instancing_color>` chunk that translates
-       * `InstancedMesh.instanceColor` into the `vColor` varying, so per-
-       * instance colors uploaded via `setColorAt()` rendered as pure black
-       * (white * vec3(0) = black). Lambert includes the chunk natively.
-       *
-       * Trade-off: leaves lose the 2-band toon gradient on this path.
-       * Operator visual gate (FR-1.2): if cel-band loss is unacceptable,
-       * pivot to option-a (onBeforeCompile chunk injection into
-       * meshToonMaterial) or option-c (custom ShaderMaterial) per cycle-1
-       * distillation §4-options. Other fixtures (Tree trunk/branches, Bush,
-       * Rock, etc.) continue using meshToonMaterial on their non-instanced
-       * paths; this swap is scoped to the leaf field only.
-       *
-       * `vertexColors` stays on — required to consume `instanceColor`.
-       * `color="#ffffff"` is the identity multiplier so per-instance color
-       * uploaded via setColorAt() is the final rendered color.
-       */}
-      <meshLambertMaterial
+      <meshToonMaterial
+        gradientMap={DEFAULT_TOON_GRADIENT}
+        // `vertexColors` enables the shader path that consumes the
+        // per-vertex `color` attribute AND `InstancedMesh.instanceColor`.
+        // The icosphere geometry above bakes all-1 colors so the per-vertex
+        // multiplication is a no-op; the per-instance multiplication then
+        // produces the final color. See the long comment above the
+        // `geometry` useMemo for the full chain.
         vertexColors
+        // Base color stays white (identity multiplier) so the per-instance
+        // color uploaded via setColorAt() is the final rendered color.
+        // First-frame fallback before useEffect uploads: white. Visually
+        // acceptable for one frame.
         color="#ffffff"
       />
     </instancedMesh>
