@@ -37,8 +37,6 @@ import {
   type SwayLeafCols,
 } from "@/lib/engine";
 
-import { DEFAULT_TOON_GRADIENT } from "../celVocab";
-
 import type { LeafSpec } from "./leafExtractors";
 
 const LEAF_COLUMN_SPECS: readonly ColumnSpec[] = [
@@ -152,17 +150,28 @@ export function InstancedLeafField({
       frustumCulled={false}
     >
       <icosahedronGeometry args={[baseRadius, detail]} />
-      <meshToonMaterial
-        gradientMap={DEFAULT_TOON_GRADIENT}
-        // `vertexColors` enables the shader path that consumes
-        // `InstancedMesh.instanceColor` — without it, every leaf renders
-        // in the material's base `color` and per-instance colors are
-        // silently ignored. Caught by adversarial review 2026-05-17.
+      {/*
+       * meshLambertMaterial (cycle-3 sprint-1-fixture S1-T1): replaces the
+       * cycle-1 meshToonMaterial path. The toon material's shader did NOT
+       * include the `<instancing_color>` chunk that translates
+       * `InstancedMesh.instanceColor` into the `vColor` varying, so per-
+       * instance colors uploaded via `setColorAt()` rendered as pure black
+       * (white * vec3(0) = black). Lambert includes the chunk natively.
+       *
+       * Trade-off: leaves lose the 2-band toon gradient on this path.
+       * Operator visual gate (FR-1.2): if cel-band loss is unacceptable,
+       * pivot to option-a (onBeforeCompile chunk injection into
+       * meshToonMaterial) or option-c (custom ShaderMaterial) per cycle-1
+       * distillation §4-options. Other fixtures (Tree trunk/branches, Bush,
+       * Rock, etc.) continue using meshToonMaterial on their non-instanced
+       * paths; this swap is scoped to the leaf field only.
+       *
+       * `vertexColors` stays on — required to consume `instanceColor`.
+       * `color="#ffffff"` is the identity multiplier so per-instance color
+       * uploaded via setColorAt() is the final rendered color.
+       */}
+      <meshLambertMaterial
         vertexColors
-        // Base color stays white (identity multiplier) so the per-instance
-        // color uploaded via setColorAt() is the final rendered color.
-        // First-frame fallback before useEffect uploads: white. Visually
-        // acceptable for one frame; flagged in distillation.
         color="#ffffff"
       />
     </instancedMesh>
