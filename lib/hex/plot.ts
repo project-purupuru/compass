@@ -127,8 +127,15 @@ export const Plot = S.Struct({
    * all plots with this binding and feeds them as the tile set. Allows a
    * single InstancedMesh layer to span many plots that may have different
    * primary `element` affinity but participate in the same ambient.
-   * Defaults to `[element]` when omitted (plot contributes only to its own
-   * element's pool). Added cycle hex-composition-scale-2026-05-17.
+   *
+   * Default behavior is consumer-side: when undefined, the composer should
+   * treat it as `element` ? `[element]` : `[]`. We don't bake the default
+   * into the schema because (a) Effect's `optional` returns `undefined`,
+   * not a runtime default value, and (b) leaving it explicit at consumer
+   * sites means the "this tile bound to wood for ambient purposes despite
+   * being a stone tile" case stays opt-in.
+   *
+   * Added cycle hex-composition-scale-2026-05-17.
    */
   ambientBindings: S.optional(S.Array(ElementId)),
 });
