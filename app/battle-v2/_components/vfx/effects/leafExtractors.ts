@@ -60,11 +60,6 @@ const _m = new Matrix4();
 const _v = new Vector3();
 const _euler = new Euler();
 
-/** Convert a Vector3 to a tuple. */
-function v3(v: Vector3): [number, number, number] {
-  return [v.x, v.y, v.z];
-}
-
 // ── Tree leaves ────────────────────────────────────────────────────────────
 
 interface TreeExtractorProps {
@@ -194,11 +189,7 @@ export function mushroomLeafSpecs(p: MushroomExtractorProps): LeafSpec[] {
 
   return [
     {
-      worldPosition: [
-        p.worldPosition[0],
-        p.worldPosition[1] + stemHeight,
-        p.worldPosition[2],
-      ],
+      worldPosition: [p.worldPosition[0], p.worldPosition[1] + stemHeight, p.worldPosition[2]],
       scale: [capRadius, capRadius * 0.6, capRadius], // flatten Y per the cap group
       color,
       swayPhase,
@@ -286,11 +277,7 @@ export function rockMossLeafSpecs(p: RockMossExtractorProps): LeafSpec[] {
 
   // Moss gate matches Rock.tsx:117-122.
   const showMoss =
-    p.moss != null
-      ? p.moss
-      : isPebble
-        ? false
-        : mulberry32(p.seed + 17)() < 0.32;
+    p.moss !== undefined ? p.moss : isPebble ? false : mulberry32(p.seed + 17)() < 0.32;
 
   if (!showMoss) return [];
 
@@ -300,18 +287,10 @@ export function rockMossLeafSpecs(p: RockMossExtractorProps): LeafSpec[] {
   const swayPhase = phaseFromSeed(p.seed + 47);
 
   // Primary moss puff (LeafPuff origin).
-  const primaryLocal: [number, number, number] = [
-    eff * 0.12,
-    yOffset + mossY,
-    eff * 0.06,
-  ];
+  const primaryLocal: [number, number, number] = [eff * 0.12, yOffset + mossY, eff * 0.06];
 
   // Secondary puff at LeafPuff-local offset.
-  const secondaryOffset: [number, number, number] = [
-    eff * 0.25,
-    eff * 0.1,
-    eff * -0.15,
-  ];
+  const secondaryOffset: [number, number, number] = [eff * 0.25, eff * 0.1, eff * -0.15];
 
   const specs: LeafSpec[] = [
     {
@@ -362,10 +341,7 @@ interface FixtureExtractParams {
  * resolves the world position of each fixture (worldX + offset.x, elev,
  * worldZ + offset.y), then calls this dispatch.
  */
-export function fixtureLeafSpecs(
-  kind: FixtureKindT,
-  params: FixtureExtractParams,
-): LeafSpec[] {
+export function fixtureLeafSpecs(kind: FixtureKindT, params: FixtureExtractParams): LeafSpec[] {
   switch (kind) {
     case "tree":
       return treeLeafSpecs({
@@ -394,11 +370,7 @@ export function fixtureLeafSpecs(
         scale: params.scale,
         seed: params.seed,
         shape:
-          params.variant === "slab"
-            ? "slab"
-            : params.variant === "pebble"
-              ? "pebble"
-              : "boulder",
+          params.variant === "slab" ? "slab" : params.variant === "pebble" ? "pebble" : "boulder",
       });
     // Bush has internal sub-puffs (not LeafPuff) + its own useFrame — out of scope
     // this cycle per build doc.

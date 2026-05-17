@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  timeOfDayFromDate,
-  type TimeOfDayPhase,
-} from "@/lib/wuxing/timeOfDay";
+import { timeOfDayFromDate, type TimeOfDayPhase } from "@/lib/wuxing/timeOfDay";
 
 export interface ScenePhaseConfig {
   readonly useRealTime: boolean;

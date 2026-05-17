@@ -21,10 +21,7 @@ const RARITY_BY_DEFINITION_CARDTYPE: Record<DefinitionCardType, LayerRarity> = {
  * Harness cardType -> honeycomb layer-system CardType. CardStack's character
  * layer uses the honeycomb taxonomy, while the harness taxonomy is role-based.
  */
-const LAYER_CARDTYPE_BY_DEFINITION_CARDTYPE: Record<
-  DefinitionCardType,
-  LayerCardType
-> = {
+const LAYER_CARDTYPE_BY_DEFINITION_CARDTYPE: Record<DefinitionCardType, LayerCardType> = {
   activation: "jani",
   daemon: "jani",
   event: "jani",

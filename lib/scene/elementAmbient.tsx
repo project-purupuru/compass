@@ -41,9 +41,7 @@ interface ElementAmbientConfig {
   readonly spark?: ParticleConfig;
 }
 
-export type ElementAmbientProfile = Partial<
-  Record<ElementIdT, ElementAmbientConfig>
->;
+export type ElementAmbientProfile = Partial<Record<ElementIdT, ElementAmbientConfig>>;
 
 export interface ElementAmbientVfxProps {
   readonly element: ElementIdT;
@@ -188,18 +186,13 @@ function ElementGlow({
 }) {
   if (!config) return null;
 
-  const opacity =
-    config.opacityBase + config.opacityScale * Math.max(0, Math.min(1, intensity));
+  const opacity = config.opacityBase + config.opacityScale * Math.max(0, Math.min(1, intensity));
   return (
     <>
       {tiles.map((coord, i) => {
         const [x, z] = hexToWorld(coord, hexSize);
         return (
-          <mesh
-            key={`glow-${i}`}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[x, 0.025, z]}
-          >
+          <mesh key={`glow-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.025, z]}>
             <circleGeometry args={[hexSize * 0.42, config.segments ?? 28]} />
             <meshBasicMaterial
               color={config.color}

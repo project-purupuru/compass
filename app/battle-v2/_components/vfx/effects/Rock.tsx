@@ -60,12 +60,13 @@ export function Rock({
 
   // Primary rock geometry.
   const geometry = useMemo(
-    () => buildRockGeometry({
-      shape: "boulder",
-      seed,
-      upBias,
-      jitter: isPebble ? 0.1 : 0.18,
-    }),
+    () =>
+      buildRockGeometry({
+        shape: "boulder",
+        seed,
+        upBias,
+        jitter: isPebble ? 0.1 : 0.18,
+      }),
     [seed, upBias, isPebble],
   );
 
@@ -93,11 +94,11 @@ export function Rock({
           upBias: 0.12,
           jitter: 0.16,
         }),
-        position: [
-          Math.cos(angle) * dist,
-          chunkScale * 0.3,
-          Math.sin(angle) * dist,
-        ] as [number, number, number],
+        position: [Math.cos(angle) * dist, chunkScale * 0.3, Math.sin(angle) * dist] as [
+          number,
+          number,
+          number,
+        ],
         scale: chunkScale,
         seed: seed + 333 * (idx + 1),
       };
@@ -108,9 +109,7 @@ export function Rock({
   const hue = useMemo(() => {
     const rand = mulberry32(seed + 2);
     if (rand() < 0.2) {
-      return PALETTE.stoneLichen[
-        Math.floor(rand() * PALETTE.stoneLichen.length)
-      ];
+      return PALETTE.stoneLichen[Math.floor(rand() * PALETTE.stoneLichen.length)];
     }
     return PALETTE.stone[Math.floor(rand() * PALETTE.stone.length)];
   }, [seed]);
@@ -123,7 +122,7 @@ export function Rock({
   }, [seed, hue]);
 
   const showMoss = useMemo(() => {
-    if (moss != null) return moss;
+    if (moss !== undefined) return moss;
     if (isPebble) return false;
     const rand = mulberry32(seed + 17);
     return rand() < 0.32;
@@ -143,12 +142,7 @@ export function Rock({
   return (
     <group position={[position[0], position[1] + yOffset, position[2]]}>
       {/* Primary rock. */}
-      <mesh
-        geometry={geometry}
-        scale={primaryScale}
-        castShadow
-        receiveShadow
-      >
+      <mesh geometry={geometry} scale={primaryScale} castShadow receiveShadow>
         <meshToonMaterial color={hue} gradientMap={DEFAULT_TOON_GRADIENT} />
         <Outlines color={INK.color} thickness={isPebble ? INK.fine : INK.heavy} />
       </mesh>
@@ -176,7 +170,7 @@ export function Rock({
         <LeafPuff
           position={[
             effectiveScale * 0.12,
-            (isSlab ? effectiveScale * 0.5 : effectiveScale * 0.92),
+            isSlab ? effectiveScale * 0.5 : effectiveScale * 0.92,
             effectiveScale * 0.06,
           ]}
           color={mossHue}

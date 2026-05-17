@@ -64,14 +64,17 @@ export function LeafPuff({
   const groupRef = useRef<Group | null>(null);
 
   useFrame(({ clock }) => {
-    if (swaySeed == null) return;
+    if (swaySeed === undefined) return;
     const g = groupRef.current;
     if (!g) return;
-    g.rotation.y =
-      swayAngle(clock.elapsedTime, swaySeed, swayAmplitude, swayFrequency);
+    g.rotation.y = swayAngle(clock.elapsedTime, swaySeed, swayAmplitude, swayFrequency);
     // Also a tiny pitch tilt for organic feel — half amplitude, double frequency.
-    g.rotation.z =
-      swayAngle(clock.elapsedTime, swaySeed + 7, swayAmplitude * 0.5, swayFrequency * 1.3);
+    g.rotation.z = swayAngle(
+      clock.elapsedTime,
+      swaySeed + 7,
+      swayAmplitude * 0.5,
+      swayFrequency * 1.3,
+    );
   });
 
   return (
@@ -85,12 +88,7 @@ export function LeafPuff({
 
       {/* Optional secondary puff for silhouette interest. */}
       {secondary && (
-        <mesh
-          position={secondary.offset}
-          scale={secondary.scale}
-          castShadow
-          receiveShadow
-        >
+        <mesh position={secondary.offset} scale={secondary.scale} castShadow receiveShadow>
           <icosahedronGeometry args={[radius, detail]} />
           <meshToonMaterial color={color} gradientMap={DEFAULT_TOON_GRADIENT} />
           <Outlines color={INK.color} thickness={Math.max(1, inkThickness - 1)} />

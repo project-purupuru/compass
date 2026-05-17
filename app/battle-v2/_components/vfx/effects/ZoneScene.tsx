@@ -28,20 +28,11 @@ import { useFrame } from "@react-three/fiber";
 
 import { makeZone, type ZoneT } from "@/lib/hex/zone";
 import { SceneAtmosphere } from "@/lib/scene/atmosphere";
-import {
-  ElementAmbientVfx,
-  type ElementAmbientProfile,
-} from "@/lib/scene/elementAmbient";
+import { ElementAmbientVfx, type ElementAmbientProfile } from "@/lib/scene/elementAmbient";
 import { useScenePhase } from "@/lib/scene/useScenePhase";
-import {
-  ELEMENT_META,
-  type ElementIdT,
-} from "@/lib/wuxing/element";
+import { ELEMENT_META, type ElementIdT } from "@/lib/wuxing/element";
 import { resonanceMultiplier } from "@/lib/wuxing/resonance";
-import {
-  PHASE_PALETTE,
-  type TimeOfDayPhase,
-} from "@/lib/wuxing/timeOfDay";
+import { PHASE_PALETTE, type TimeOfDayPhase } from "@/lib/wuxing/timeOfDay";
 
 import type { ZoneSceneConfigT } from "../VfxConfig";
 import { HexOutline } from "./HexOutline";
@@ -108,7 +99,7 @@ function useTriggerRamp(
   }, [counter]);
 
   useFrame(() => {
-    if (startedAt.current == null) return;
+    if (startedAt.current === null) return;
     const elapsed = performance.now() / 1000 - startedAt.current;
     const total = upSec + decaySec;
     if (elapsed > total) {
@@ -119,7 +110,7 @@ function useTriggerRamp(
     setT(elapsed);
   });
 
-  if (startedAt.current == null) return baseline;
+  if (startedAt.current === null) return baseline;
   if (t <= upSec) {
     // Ramp up: baseline → 1.0 linearly over upSec.
     const k = t / Math.max(upSec, 1e-3);
@@ -160,18 +151,9 @@ function SideMount({
   phase: TimeOfDayPhase;
   config: ZoneSceneConfigT;
 }) {
-  const baseline =
-    config.ambientBase * resonanceMultiplier(side.element, phase);
-  const counter =
-    side.id === "player"
-      ? config.playerRampCounter
-      : config.opponentRampCounter;
-  const intensity = useTriggerRamp(
-    counter,
-    baseline,
-    config.rampUpSec,
-    config.rampDecaySec,
-  );
+  const baseline = config.ambientBase * resonanceMultiplier(side.element, phase);
+  const counter = side.id === "player" ? config.playerRampCounter : config.opponentRampCounter;
+  const intensity = useTriggerRamp(counter, baseline, config.rampUpSec, config.rampDecaySec);
   return (
     <group position={[side.anchor[0], 0, side.anchor[1]]}>
       <SideOutline
@@ -206,8 +188,7 @@ function ZoneAmbientVfx({
 }) {
   if (intensity <= 0.01) return null;
   const seedBase = zone.coords.length;
-  const woodPalette =
-    WOOD_LEAF_PALETTE[config.woodFlavor] ?? WOOD_LEAF_PALETTE.green;
+  const woodPalette = WOOD_LEAF_PALETTE[config.woodFlavor] ?? WOOD_LEAF_PALETTE.green;
   const profile: ElementAmbientProfile = {
     wood: {
       leaf: {
@@ -267,7 +248,6 @@ function ZoneAmbientVfx({
   );
 }
 
-
 function SideOutline({
   side,
   hexSize,
@@ -312,10 +292,7 @@ function SideOutline({
 
 // ── Composer ───────────────────────────────────────────────────────────────
 
-export function ZoneScenePreview({
-  config,
-  triggerKey,
-}: ZoneScenePreviewProps) {
+export function ZoneScenePreview({ config, triggerKey }: ZoneScenePreviewProps) {
   // triggerKey reserved for Stage D ramp re-fire — Stage A: just rebuild zones.
   void triggerKey;
 

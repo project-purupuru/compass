@@ -5,10 +5,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { Color, Fog } from "three";
 
-import {
-  PHASE_PALETTE,
-  type TimeOfDayPhase,
-} from "@/lib/wuxing/timeOfDay";
+import { PHASE_PALETTE, type TimeOfDayPhase } from "@/lib/wuxing/timeOfDay";
 
 type Vec3 = readonly [number, number, number];
 
@@ -47,10 +44,7 @@ export function SceneAtmosphere({
 
   return (
     <>
-      <ambientLight
-        intensity={palette.ambientIntensity}
-        color={palette.ambient}
-      />
+      <ambientLight intensity={palette.ambientIntensity} color={palette.ambient} />
       <directionalLight
         position={keyPosition}
         intensity={palette.directionalIntensity}
