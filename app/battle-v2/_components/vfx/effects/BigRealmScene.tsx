@@ -28,42 +28,39 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { Color, Fog } from "three";
-import { useThree } from "@react-three/fiber";
+import { Color } from "three";
 
 import { hexToWorld, type HexCoord } from "@/lib/hex";
 import { BIOMES, type BiomeIdT } from "@/lib/hex/biome";
 import { decoratePlot } from "@/lib/hex/decorator";
 import { type FixtureRefT, type PlotT } from "@/lib/hex/plot";
+import { SceneAtmosphere } from "@/lib/scene/atmosphere";
+import {
+  ElementAmbientVfx,
+  type ElementAmbientProfile,
+} from "@/lib/scene/elementAmbient";
+import { useScenePhase } from "@/lib/scene/useScenePhase";
 
 type FixtureKindT = FixtureRefT["kind"];
 import { ELEMENT_META, ALL_ELEMENTS, type ElementIdT } from "@/lib/wuxing/element";
 import { resonanceMultiplier } from "@/lib/wuxing/resonance";
 import {
   PHASE_PALETTE,
-  timeOfDayFromDate,
   type TimeOfDayPhase,
 } from "@/lib/wuxing/timeOfDay";
 
 import type { BigRealmSceneConfigT } from "../VfxConfig";
 
-import { DustMotes } from "./DustMotes";
-import { Embers } from "./Embers";
 import { gatherLeavesFromPlots } from "./leafExtractors";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
 import { InstancedLeafField } from "./InstancedLeafField";
 import { InstancedTreeField } from "./InstancedTreeField";
 import { treeSpecsFromPlots } from "./fixtureExtractors";
-import { LeafSwirl } from "./LeafSwirl";
-import { Mist } from "./Mist";
 import { PerfReadout } from "./PerfReadout";
-import { PollenMotes } from "./PollenMotes";
 import { PuruhaniWalker } from "./PuruhaniWalker";
-import { RippleField } from "./RippleField";
-import { Sparks } from "./Sparks";
 import { ZoneMonument } from "./ZoneMonument";
 
 // ── Element → biome mapping ───────────────────────────────────────────────
@@ -164,38 +161,6 @@ function voronoiAssign(
   });
 }
 
-// ── Atmosphere driver (same shape as RealmScene) ──────────────────────────
-
-function BigRealmAtmosphere({
-  phase,
-  fogDensity,
-}: {
-  phase: TimeOfDayPhase;
-  fogDensity: number;
-}) {
-  const { scene } = useThree();
-  const palette = PHASE_PALETTE[phase];
-  useEffect(() => {
-    scene.background = new Color(palette.skyBottom);
-    scene.fog = new Fog(palette.fog, 24, 120 / Math.max(fogDensity, 0.001));
-    return () => {
-      scene.background = null;
-      scene.fog = null;
-    };
-  }, [scene, palette.skyBottom, palette.fog, fogDensity]);
-
-  return (
-    <>
-      <ambientLight intensity={palette.ambientIntensity} color={palette.ambient} />
-      <directionalLight
-        position={[-12, 16, 8]}
-        intensity={palette.directionalIntensity}
-        color={palette.directional}
-      />
-    </>
-  );
-}
-
 // ── Per-element shared ambient layer ──────────────────────────────────────
 
 function SharedAmbientForElement({
@@ -213,86 +178,64 @@ function SharedAmbientForElement({
 }) {
   if (tiles.length === 0) return null;
   const seedBase = config.scatterSeed ^ element.length;
+  const tileCount = tiles.length;
+  const profile: ElementAmbientProfile = {
+    wood: {
+      leaf: {
+        count: config.woodLeafCount * tileCount,
+        palette: ["#6fae3e", "#82bd52", "#5a9836", "#9bc77a"],
+        seed: 0x1eaf ^ seedBase,
+      },
+      pollen: {
+        count: config.woodPollenCount * tileCount,
+        color: "#e8c87a",
+        seed: 0xd011e ^ seedBase,
+      },
+    },
+    water: {
+      mist: {
+        count: config.waterMistCount * tileCount,
+        color: "#7ab8b8",
+        seed: 0xa1c5 ^ seedBase,
+      },
+      ripple: {
+        count: config.waterRippleCount * tileCount,
+        color: "#6fd6c0",
+        seed: 0x12ee ^ seedBase,
+      },
+    },
+    fire: {
+      ember: {
+        count: config.fireEmberCount * tileCount,
+        color: "#ff7a3a",
+        seed: 0xf12e ^ seedBase,
+      },
+    },
+    earth: {
+      dust: {
+        count: config.earthDustCount * tileCount,
+        color: "#c09060",
+        seed: 0xea71 ^ seedBase,
+      },
+    },
+    metal: {
+      spark: {
+        count: config.metalSparkCount * tileCount,
+        color: "#f0f4ff",
+        seed: 0x5121 ^ seedBase,
+      },
+    },
+  };
 
-  switch (element) {
-    case "wood":
-      return (
-        <>
-          <LeafSwirl
-            tiles={tiles}
-            hexSize={hexSize}
-            count={Math.max(0, Math.round(config.woodLeafCount * tiles.length))}
-            palette={["#6fae3e", "#82bd52", "#5a9836", "#9bc77a"]}
-            intensity={intensity}
-            seed={0x1eaf ^ seedBase}
-          />
-          <PollenMotes
-            tiles={tiles}
-            hexSize={hexSize}
-            count={Math.max(0, Math.round(config.woodPollenCount * tiles.length))}
-            color="#e8c87a"
-            intensity={intensity}
-            seed={0xd011e ^ seedBase}
-          />
-        </>
-      );
-    case "water":
-      return (
-        <>
-          <Mist
-            tiles={tiles}
-            hexSize={hexSize}
-            count={Math.max(0, Math.round(config.waterMistCount * tiles.length))}
-            color="#7ab8b8"
-            intensity={intensity}
-            seed={0xa1c5 ^ seedBase}
-          />
-          <RippleField
-            tiles={tiles}
-            hexSize={hexSize}
-            count={Math.max(0, Math.round(config.waterRippleCount * tiles.length))}
-            color="#6fd6c0"
-            intensity={intensity}
-            seed={0x12ee ^ seedBase}
-          />
-        </>
-      );
-    case "fire":
-      return (
-        <Embers
-          tiles={tiles}
-          hexSize={hexSize}
-          count={Math.max(0, Math.round(config.fireEmberCount * tiles.length))}
-          color="#ff7a3a"
-          intensity={intensity}
-          seed={0xf12e ^ seedBase}
-        />
-      );
-    case "earth":
-      return (
-        <DustMotes
-          tiles={tiles}
-          hexSize={hexSize}
-          count={Math.max(0, Math.round(config.earthDustCount * tiles.length))}
-          color="#c09060"
-          intensity={intensity}
-          seed={0xea71 ^ seedBase}
-        />
-      );
-    case "metal":
-      return (
-        <Sparks
-          tiles={tiles}
-          hexSize={hexSize}
-          count={Math.max(0, Math.round(config.metalSparkCount * tiles.length))}
-          color="#f0f4ff"
-          intensity={intensity}
-          seed={0x5121 ^ seedBase}
-        />
-      );
-    default:
-      return null;
-  }
+  return (
+    <ElementAmbientVfx
+      element={element}
+      tiles={tiles}
+      hexSize={hexSize}
+      intensity={intensity}
+      profile={profile}
+    />
+  );
 }
 
 // ── Element glow disc per tile ────────────────────────────────────────────
@@ -344,25 +287,6 @@ function GroundPlane({ phase, gridSize }: { phase: TimeOfDayPhase; gridSize: num
       <meshStandardMaterial color={tint} roughness={0.95} metalness={0} />
     </mesh>
   );
-}
-
-// ── Phase selection (mirror of RealmScene's useScenePhase) ────────────────
-
-function useScenePhase(config: BigRealmSceneConfigT): TimeOfDayPhase {
-  const [phase, setPhase] = useState<TimeOfDayPhase>(() =>
-    config.useRealTime ? timeOfDayFromDate(new Date()).phase : config.phaseOverride,
-  );
-  useEffect(() => {
-    if (!config.useRealTime) {
-      setPhase(config.phaseOverride);
-      return;
-    }
-    const tick = () => setPhase(timeOfDayFromDate(new Date()).phase);
-    tick();
-    const id = window.setInterval(tick, 60_000);
-    return () => window.clearInterval(id);
-  }, [config.useRealTime, config.phaseOverride]);
-  return phase;
 }
 
 // ── Composer ───────────────────────────────────────────────────────────────
@@ -523,7 +447,13 @@ export function BigRealmScenePreview({
 
   return (
     <group>
-      <BigRealmAtmosphere phase={phase} fogDensity={config.fogDensity} />
+      <SceneAtmosphere
+        phase={phase}
+        fogDensity={config.fogDensity}
+        fogNear={24}
+        fogFar={120}
+        keyPosition={[-12, 16, 8]}
+      />
       <GroundPlane
         phase={phase}
         gridSize={Math.max(config.gridCols, config.gridRows) * config.hexSize * 1.5}
