@@ -818,6 +818,17 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
   defaults: BIG_REALM_SCENE_DEFAULTS,
   Preview: BigRealmScenePreview,
   registerKnobs(pane, config) {
+    // Defensive: HMR preserves useRef across hot-reloads, so when this
+    // schema grows new fields the operator's existing ref still has the
+    // OLD shape. Backfill defaults at registerKnobs time so tweakpane's
+    // addBinding doesn't throw "No matching controller" on missing keys.
+    // Operator-caught regression class (session-18 2026-05-17).
+    const cfg = config as unknown as Record<string, unknown>;
+    const defaults = BIG_REALM_SCENE_DEFAULTS as unknown as Record<string, unknown>;
+    for (const key of Object.keys(defaults)) {
+      if (cfg[key] === undefined) cfg[key] = defaults[key];
+    }
+
     const grid = pane.addFolder({ title: "grid", expanded: true });
     grid.addBinding(config as unknown as Record<string, unknown>, "gridCols", {
       label: "cols",
