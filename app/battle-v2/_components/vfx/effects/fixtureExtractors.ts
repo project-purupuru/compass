@@ -22,6 +22,9 @@
 
 import type { FixtureRefT, PlotT } from "@/lib/hex/plot";
 
+import { PALETTE } from "../../world/palette";
+
+import { mulberry32 } from "../../world/Foliage";
 import { buildBranches } from "./Tree";
 
 // ── Shared types ───────────────────────────────────────────────────────────
@@ -177,36 +180,189 @@ export function treeSpecsFromPlots(
   return { trunks, branches };
 }
 
+// ── Rock ───────────────────────────────────────────────────────────────────
+
+export type RockShape = "boulder" | "slab" | "pebble";
+
+/**
+ * One row of RockArchetype. Carries world-space position (with shape-specific
+ * yOffset baked in), Y-rotation, non-uniform XYZ scale (handles slab squish),
+ * shape tag (selects geometry pool in renderer), and per-instance hex hue.
+ *
+ * Used for BOTH primary rocks and their chunks (decorative companions) —
+ * see fixture-ecs-instancing-2026-05-17 SDD §3.4 + rock-archetype.ts header
+ * for the one-archetype-not-two design rationale.
+ *
+ * Mirrors Rock.tsx:
+ *   <group position={[px, py + yOffset, pz]}>
+ *     <mesh geometry={...} scale={primaryScale}>...</mesh>
+ *     {chunks.map(c => <mesh ... scale={cs}>...</mesh>)}
+ *   </group>
+ *
+ * Where yOffset, primaryScale, chunkScale, and hue all derive from Rock.tsx
+ * formulas (replicated below in rockSpecsFromPlots).
+ */
+export interface RockSpec {
+  readonly worldPosition: readonly [number, number, number];
+  readonly rotY: number;
+  /** Non-uniform XYZ scale. Boulder + pebble = uniform; slab = squashed. */
+  readonly scale: readonly [number, number, number];
+  /** Geometry pool selector. Boulder + slab share boulder pool; pebble uses pebble pool. */
+  readonly shape: RockShape;
+  /** Per-instance hex color string (e.g. "#9aa0a8"). Renderer converts via Color.set(). */
+  readonly hue: string;
+}
+
+/**
+ * Walk plots' fixtures, produce RockSpec[] for every fixture of kind "rock".
+ *
+ * Returns ALL rock-kind instances (primaries + chunks) in one flat array —
+ * the renderer (InstancedRockField) groups by shape at render time to
+ * dispatch to the correct geometry pool's InstancedMesh.
+ *
+ * Mirrors Rock.tsx EXACTLY for visual parity:
+ *   - effectiveScale = isPebble ? scale * 0.45 : scale
+ *   - yOffset        = effectiveScale * (isPebble ? 0.18 : isSlab ? 0.22 : 0.4)
+ *   - primaryScale   = depends on shape (see Rock.tsx:137-143)
+ *   - hue            = pick from PALETTE.stone (20% chance PALETTE.stoneLichen)
+ *   - chunks         = 1-2 per non-pebble rock, smaller scale, offset position
+ */
+export function rockSpecsFromPlots(
+  plots: ReadonlyArray<PlotT>,
+  plotWorldPositions: ReadonlyArray<readonly [number, number]>,
+): RockSpec[] {
+  if (plots.length !== plotWorldPositions.length) {
+    throw new Error(
+      `rockSpecsFromPlots: plot count ${plots.length} !== positions count ${plotWorldPositions.length}`,
+    );
+  }
+
+  const out: RockSpec[] = [];
+
+  for (let p = 0; p < plots.length; p++) {
+    const plot = plots[p];
+    const [worldX, worldZ] = plotWorldPositions[p];
+    const elev = plot.elevation;
+
+    for (const fix of plot.fixtures) {
+      if (fix.kind !== "rock") continue;
+
+      // Rock base in world: plot world + fixture offset, sits on cap.
+      const px = worldX + fix.offset[0];
+      const py = elev;
+      const pz = worldZ + fix.offset[1];
+      const scale = fix.scale;
+
+      // Shape from variant tag (Rock.tsx: variant "slab" | "pebble" | else "boulder").
+      const shape: RockShape =
+        fix.variant === "slab"
+          ? "slab"
+          : fix.variant === "pebble"
+            ? "pebble"
+            : "boulder";
+
+      const isPebble = shape === "pebble";
+      const isSlab = shape === "slab";
+      const effectiveScale = isPebble ? scale * 0.45 : scale;
+
+      // yOffset matches Rock.tsx:135.
+      const yOffset = effectiveScale * (isPebble ? 0.18 : isSlab ? 0.22 : 0.4);
+
+      // primaryScale matches Rock.tsx:137-143.
+      const primaryScale: readonly [number, number, number] = isPebble
+        ? [effectiveScale, effectiveScale * 0.4, effectiveScale]
+        : isSlab
+          ? [effectiveScale * 1.25, effectiveScale * 0.55, effectiveScale * 1.15]
+          : [effectiveScale, effectiveScale, effectiveScale];
+
+      // Hue: 20% chance lichen, 80% chance stone. Matches Rock.tsx:108-116.
+      const hueRand = mulberry32(fix.seed + 2);
+      const hue =
+        hueRand() < 0.2
+          ? PALETTE.stoneLichen[
+              Math.floor(hueRand() * PALETTE.stoneLichen.length)
+            ]!
+          : PALETTE.stone[Math.floor(hueRand() * PALETTE.stone.length)]!;
+
+      out.push({
+        worldPosition: [px, py + yOffset, pz],
+        rotY: 0, // visual parity with Rock.tsx (no per-rock rotation)
+        scale: primaryScale,
+        shape,
+        hue,
+      });
+
+      // Chunks: 1-2 per non-pebble rock. Matches Rock.tsx:74-105.
+      if (!isPebble) {
+        const chunkCountRand = mulberry32(fix.seed + 222);
+        const chunkCount = 1 + Math.floor(chunkCountRand() * 2); // 1 or 2
+
+        const chunkOffsetRand = mulberry32(fix.seed + 4444);
+
+        // Chunk hue: slightly different from primary (Rock.tsx:118-123).
+        const chunkHueRand = mulberry32(fix.seed + 333);
+        const altStones = PALETTE.stone.filter((s) => s !== hue);
+        const chunkHue =
+          altStones[Math.floor(chunkHueRand() * altStones.length)] ?? hue;
+
+        for (let i = 0; i < chunkCount; i++) {
+          const angle = chunkOffsetRand() * Math.PI * 2;
+          const dist = effectiveScale * (0.55 + chunkOffsetRand() * 0.25);
+          const chunkScale =
+            effectiveScale * (0.22 + chunkOffsetRand() * 0.18);
+
+          out.push({
+            // chunk world position: primary position (with yOffset) + chunk offset.
+            worldPosition: [
+              px + Math.cos(angle) * dist,
+              py + yOffset + chunkScale * 0.3,
+              pz + Math.sin(angle) * dist,
+            ],
+            rotY: 0,
+            scale: [chunkScale, chunkScale, chunkScale],
+            shape: "boulder", // chunks always use boulder geometry pool
+            hue: chunkHue,
+          });
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 // ── Future extractors (S2 scope, defined here for forward-reference) ──────
 
 /**
- * Placeholder type — bushSpecsFromPlots lands in S2-T1. Defined here so
- * fixture-dispatch type signatures in callers can reference it pre-impl.
+ * Placeholder type — bushSpecsFromPlots lands in S2-T2.
+ *
+ * Per cycle-3 scope decision 2026-05-17: only Rock + Bush ship instancing
+ * (the architecturally novel cases). Mushroom + Wildflower stay per-React
+ * because they're pattern-repetition with Tree (single cylinder stem +
+ * leaf-puff cap continuing through leaf field).
  */
 export type BushSpec = never;
-export type RockSpec = never;
-export type MushroomStemSpec = never;
-export type WildflowerStemSpec = never;
 
 // ── Fixture-kind dispatch utility (forward-looking) ────────────────────────
 
 /**
  * Type-safe check for whether a fixture kind has an extractor in this module
  * (vs. continuing through the per-React HexPlot dispatch). Returns false for
- * kinds without instanced support yet (bush/rock/mushroom/wildflower land in
- * S2; others like grass-field, structure, character stay per-React always).
+ * kinds without instanced support; cycle-3 ships extractors for tree + rock
+ * + bush (S2-T2 pending). Mushroom, wildflower, grass-field, structure,
+ * character, fallen-log all stay per-React.
  *
- * Composable: future S2-T1..T4 commits add cases here as each archetype
- * lands. The cycle-3 SuppressFixtures Set passed to HexPlot drives the
- * other side of this dispatch (HexPlot skips dispatch for kinds in the Set).
+ * The cycle-3 SuppressFixtures Set passed to HexPlot drives the other side
+ * of this dispatch (HexPlot skips dispatch for kinds in the Set).
  */
 export function fixtureKindHasInstancedExtractor(
   kind: FixtureKindT,
 ): boolean {
   switch (kind) {
     case "tree":
+    case "rock":
       return true;
-    // S2 will add: case "bush", "rock", "mushroom", "wildflower"
+    // S2-T2 will add: case "bush"
     default:
       return false;
   }

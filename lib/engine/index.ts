@@ -30,3 +30,10 @@ export { TREE_TRUNK_COLUMN_SPECS } from "./ecs/tree-trunk-archetype";
 export type { TreeTrunkCols } from "./ecs/tree-trunk-archetype";
 export { TREE_BRANCH_COLUMN_SPECS } from "./ecs/tree-branch-archetype";
 export type { TreeBranchCols } from "./ecs/tree-branch-archetype";
+export {
+  ROCK_COLUMN_SPECS,
+  ROCK_SHAPE_BOULDER,
+  ROCK_SHAPE_SLAB,
+  ROCK_SHAPE_PEBBLE,
+} from "./ecs/rock-archetype";
+export type { RockCols } from "./ecs/rock-archetype";

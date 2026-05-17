@@ -1005,6 +1005,18 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
         label: "instanced trees",
       },
     );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedRocks",
+      {
+        // Cycle-3 fixture-ecs-instancing S2-T1 test surface. ON: aggregate
+        // all "rock" fixtures (primaries + chunks) into ONE
+        // InstancedRockField (2 InstancedMeshes: boulder pool + pebble
+        // pool, each with drei <Outlines> + per-instance hue). HexPlot
+        // receives suppressFixtures with "rock" added.
+        label: "instanced rocks",
+      },
+    );
   },
 };
 

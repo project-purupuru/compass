@@ -700,6 +700,20 @@ export const BigRealmSceneConfig = S.extend(
      * archetype, sets the pattern for Bush/Rock/Mushroom/Wildflower in S2).
      */
     useInstancedTrees: S.Boolean,
+
+    /**
+     * Aggregate ALL rock fixtures (including their chunk companions) into
+     * ONE InstancedRockField (RockArchetype + 2 InstancedMeshes — boulder
+     * pool + pebble pool). Per-instance hue varies via setColorAt(); per-
+     * instance non-uniform scale handles slab squish (1.25, 0.55, 1.15).
+     *
+     * Moss puffs on rocks continue to flow through the cycle-1 leaf path
+     * (rockMossLeafSpecs in leafExtractors.ts) — unchanged by this toggle.
+     *
+     * Added cycle fixture-ecs-instancing-2026-05-17 (S2-T1 — second
+     * architecturally novel archetype after Tree, before Bush).
+     */
+    useInstancedRocks: S.Boolean,
   }),
 );
 
@@ -738,4 +752,5 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   debugPerf: true,
   useInstancedLeaves: false,
   useInstancedTrees: false,
+  useInstancedRocks: false,
 };

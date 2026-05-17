@@ -57,8 +57,9 @@ import { gatherLeavesFromPlots } from "./leafExtractors";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
 import { InstancedLeafField } from "./InstancedLeafField";
+import { InstancedRockField } from "./InstancedRockField";
 import { InstancedTreeField } from "./InstancedTreeField";
-import { treeSpecsFromPlots } from "./fixtureExtractors";
+import { rockSpecsFromPlots, treeSpecsFromPlots } from "./fixtureExtractors";
 import { PerfReadout } from "./PerfReadout";
 import { PuruhaniWalker } from "./PuruhaniWalker";
 import { ZoneMonument } from "./ZoneMonument";
@@ -421,8 +422,9 @@ export function BigRealmScenePreview({
   const suppressFixtures = useMemo<ReadonlySet<FixtureKindT>>(() => {
     const set = new Set<FixtureKindT>();
     if (config.useInstancedTrees) set.add("tree");
+    if (config.useInstancedRocks) set.add("rock");
     return set;
-  }, [config.useInstancedTrees]);
+  }, [config.useInstancedTrees, config.useInstancedRocks]);
 
   // Leaf specs — gather only when useInstancedLeaves is ON, otherwise pass
   // an empty array (cheap). The InstancedLeafField conditional below skips
@@ -443,6 +445,18 @@ export function BigRealmScenePreview({
         ? treeSpecsFromPlots(plots, plotWorldPositions)
         : { trunks: [], branches: [] },
     [config.useInstancedTrees, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Rock specs (primaries + chunks) — gather only when useInstancedRocks ON.
+  // S2-T1: second cycle-3 archetype. RockArchetype handles boulder/slab/
+  // pebble shapes + 1-2 chunks per non-pebble rock, all in one flat
+  // RockSpec[] array (the renderer dispatches by shape).
+  const rockSpecs = useMemo(
+    () =>
+      config.useInstancedRocks && config.showTileContent
+        ? rockSpecsFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedRocks, config.showTileContent, plots, plotWorldPositions],
   );
 
   return (
@@ -497,6 +511,18 @@ export function BigRealmScenePreview({
        *  sets the pattern for S2 Bush/Rock/Mushroom/Wildflower fields. */}
       {config.useInstancedTrees && config.showTileContent && (treeSpecs.trunks.length > 0 || treeSpecs.branches.length > 0) && (
         <InstancedTreeField specs={treeSpecs} />
+      )}
+
+      {/* Cycle-3 fixture-ecs-instancing S2-T1 — aggregate all "rock" fixtures
+       *  (primaries + chunks) across the grid into ONE InstancedRockField
+       *  with 2 InstancedMeshes (boulder pool + pebble pool, each with drei
+       *  <Outlines> + per-instance hue). HexPlot skips its <Rock> JSX
+       *  dispatch when "rock" ∈ suppressFixtures. Second cycle-3 archetype
+       *  renderer; first one with per-instance color + non-uniform XYZ
+       *  scale (slab squish). Moss puffs on rocks continue through the
+       *  cycle-1 leaf field via rockMossLeafSpecs (unchanged). */}
+      {config.useInstancedRocks && config.showTileContent && rockSpecs.length > 0 && (
+        <InstancedRockField specs={rockSpecs} />
       )}
 
       {/* Per-element glow discs — kept as a subtle ground tint overlay so
