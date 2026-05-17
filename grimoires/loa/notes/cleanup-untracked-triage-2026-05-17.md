@@ -109,3 +109,11 @@ These are Loa/K-hole research, kickoff, spec, or distillation artifacts. They sh
 - None classified as archive-worthy from path/content triage alone.
 
 The separate orphan hunt target must make any archive decision from import evidence, then move real orphans to `__archive__/` with a tombstone note instead of deleting tests or source.
+
+## Live-drift addendum
+
+After the target-1 triage commit, the live operator lane added additional untracked files. Current-status addendum:
+
+- `app/battle-v2/_components/vfx/effects/InstancedRockField.tsx` — commit-worthy, operator/engine-instancing lane; not staged by janitor pass.
+- `app/battle-v2/_components/vfx/effects/fixtureGeometryVariants.ts` — commit-worthy, operator/engine-instancing lane; not staged by janitor pass.
+- `lib/engine/ecs/rock-archetype.ts` — protected `lib/engine/` lane; deferred to `grimoires/loa/notes/cleanup-defer-lib-engine.md`.
