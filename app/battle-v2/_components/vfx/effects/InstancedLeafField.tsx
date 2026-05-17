@@ -154,11 +154,16 @@ export function InstancedLeafField({
       <icosahedronGeometry args={[baseRadius, detail]} />
       <meshToonMaterial
         gradientMap={DEFAULT_TOON_GRADIENT}
-        // Per-instance color flows via mesh.instanceColor (uploaded in the
-        // useEffect above). Setting `color` here as a fallback prevents the
-        // default white flash on the first frame before instance colors
-        // upload.
-        color="#a8c47a"
+        // `vertexColors` enables the shader path that consumes
+        // `InstancedMesh.instanceColor` — without it, every leaf renders
+        // in the material's base `color` and per-instance colors are
+        // silently ignored. Caught by adversarial review 2026-05-17.
+        vertexColors
+        // Base color stays white (identity multiplier) so the per-instance
+        // color uploaded via setColorAt() is the final rendered color.
+        // First-frame fallback before useEffect uploads: white. Visually
+        // acceptable for one frame; flagged in distillation.
+        color="#ffffff"
       />
     </instancedMesh>
   );
