@@ -20,3 +20,13 @@ export { World } from "./ecs/world";
 export type { System } from "./ecs/system";
 export { swayLeafSystem } from "./animation/sway-system";
 export type { SwayLeafCols } from "./animation/sway-system";
+
+// Cycle-3 fixture-ecs-instancing-2026-05-17 archetypes.
+// Static column layouts (no per-frame system needed; renderer composes
+// per-instance matrices in useEffect, not useFrame). See SDD §3 for the
+// per-archetype design and §7 for the extractor → archetype → InstancedMesh
+// data-flow contract.
+export { TREE_TRUNK_COLUMN_SPECS } from "./ecs/tree-trunk-archetype";
+export type { TreeTrunkCols } from "./ecs/tree-trunk-archetype";
+export { TREE_BRANCH_COLUMN_SPECS } from "./ecs/tree-branch-archetype";
+export type { TreeBranchCols } from "./ecs/tree-branch-archetype";
