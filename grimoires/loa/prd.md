@@ -1,148 +1,224 @@
 ---
-status: draft-r0
-type: prd
-cycle: battle-foundations-2026-05-12
-mode: stabilize + game-design-primitive
-branch: feat/hb-s7-devpanel-audit
-predecessor_cycle: card-game-in-compass-2026-05-12 (shipped 2026-05-12)
-input_brief: in-conversation Tier 1 + Tier 2-combo proposal
-flatline_review: pending (Phase 2)
-created: 2026-05-12
+session: 14-followup
+date: 2026-05-17
+type: PRD (substrate-tier, Lane 1)
+topic: perf-substrate-platform-agnostic-engine
+status: candidate-for-operator-review
+mode: ARCH (OSTROM) + craft lens (ALEXANDER)
+depends_on:
+  - effect-substrate construct cycle-4 doctrine — peer-substrates-different-shapes, grounding-ladder, hakkutsu-as-divining-rod
+  - dig-2026-05-17-three-quarks-vfx — verdict: roll bespoke particle, do NOT adopt three.quarks
+  - dig-2026-05-17-columnar-ecs (in flight)
+operator_quotes:
+  - "render thousands of objects with no issue and very little lag. right now even with a MacBook M4 it does seem to lag and overheat"
+  - "stay agnostic to the actual render platform so we don't tie our designs with specific render and physics plugins"
+  - "ThreeJS WebGPU and Rapier are now choices. If you wanna roll your own, or use WebGL, you can build your own renderer / physics plugin"
+  - "people to be able to run this on a very shitty PC and bad Wi-Fi and seamlessly"
+references:
+  - https://github.com/Alchemist0823/three.quarks
+  - Matthew Collison @MrCollison — Trizen ECS + columnar stores
+  - El Capitan convo — Five Oracles (CORONA/TREMOR/BREATH/DELUGE)
 ---
 
-# Battle Foundations — Stop Flying Blind, Surface the Game
+# Substrate Perf + Platform-Agnostic Engine (PRD)
+
+> Substrate-tier work. Lane 1 of the session-14-followup (paired with Lane 2 = VFX iteration). The operator's tweet-of-Trizen-ECS + the M4-overheating + the "render-platform-agnostic" ask all point at the same thing: **the React-component-per-fixture pattern doesn't scale**, and the substrate needs an ECS-shaped layer for thousands-of-entities scope.
+>
+> The peer-substrates doctrine (cycle-4 of effect-substrate) already names this: "Thousands-of-entities scale (cards-as-particles · AI sims) → ECS (DOTS/SoA)." This PRD specifies that substrate.
 
 ## Problem
 
-The Honeycomb battle ships end-to-end (substrate + UI port complete this morning). It is functionally correct: pick element → arrange 5 → lock-in → staggered clash → result. But every time we touch it, we lose a half-day to one of three failure modes:
+1. **M4 overheating in `/battle-v2/vfx-lab`** — operator-reported (2026-05-17). Likely caused by ~50-100 individual `useFrame` listeners (one per leaf cluster + water + characters + clouds + mist + cliff anim + bears + etc.) each running every frame. Each registration is React-reconciler overhead + closure-per-callback CPU cost. Death by a thousand cuts.
 
-1. **Asset paths drift silently.** We discovered `jani-trading-card-earth.png` was 403 in the browser, not at build time. We discovered the face-down image path was wrong by *looking at a screenshot*. The CDN bucket has 24 declared paths, 1 is broken, and we found it by accident.
+2. **No platform-agnostic engine boundary.** Current code is tightly coupled to:
+   - `@react-three/fiber` (renderer + scene + animation loop)
+   - `three` directly for geometry/materials
+   - No physics layer at all (planned: optional Rapier)
+   - Future Three.js → WebGPU migration, or a roll-your-own renderer for non-web platforms, would require touching every primitive.
 
-2. **State machine evolves blind.** `MatchSnapshot` now carries 24 fields. The `runRound` fiber publishes 8 ticks per round. We have zero tests on the reducer and zero way to scrub through phases without playing the game end-to-end. The "tap to swap" regression (forgot the `update()` helper) shipped to the user.
+3. **No batching/instancing for repeated geometry.** Each leaf puff is its own draw call. At hex-scene scale: ~80 leaves × 2 outline meshes each = ~160 draw calls JUST for foliage. Browser GPU spends most time on draw-call overhead, not actual triangle work.
 
-3. **No through-line from "card game" to "Purupuru."** The game plays, but it doesn't teach. A new player completes a Shēng Chain by accident and nothing names it. The closest comp (Balatro) earns its replay value by *naming the combo the first time you make it*. Purupuru has 4 combos and 0 discovery hooks.
+4. **VFX library decision pending.** Operator wants environmental effects (rain, thunder, earthquake displacement, trees-falling) that span multiple hex tiles AND run smoothly on bad hardware. K-hole dig (2026-05-17-three-quarks-vfx) verdict: **three.quarks does NOT compose with our cel-shaded register at 100k+ scale**. Need bespoke primitive.
 
-These are NOT framework problems. They are missing primitives that every 0.0001% indie dev ships before they ship gameplay polish.
+5. **Multi-source data ingestion ahead.** El Capitan convo names Five Oracles (CORONA solar flares, TREMOR seismic, BREATH air quality, DELUGE weather, future Wildfire). When integrated, each will inject async signals that affect game state. Substrate must accept N concurrent event sources cleanly.
 
 ## Goals
 
-| Goal | Verified by |
-|---|---|
-| G1. Asset paths fail at **build time**, never at runtime. | `pnpm assets:check` returns non-zero on a 4xx, CI runs it pre-merge. |
-| G2. Battle is **testable as a pure reducer** without React, Effect, or DOM. | `match.reducer.test.ts` walks `(snapshot, command) → snapshot` deterministically, ≥20 transition tests. |
-| G3. Battle is **scrubable in-browser** via a dev HUD. | `/battle?dev=1` shows current phase, snapshot JSON, and lets you force-set phase / advance clash step / inject lineup. |
-| G4. Battle has **visual regression coverage** at 3 key phases. | Playwright captures snapshots of arrange / clashing / result and a `--check` mode fails on diff. |
-| G5. Combo discovery has a **first-time ceremony.** | First time the player composes each of {Shēng Chain, Setup Strike, Elemental Surge, Weather Blessing}, the UI pauses ~600ms, names it, breathes, persists "seen" to localStorage. |
+| # | Goal | Measurement |
+|---|------|-------------|
+| G1 | Render 1,000+ active entities at 60fps on M4 | Perf readout (already added 2026-05-17) — `FPS ≥ 60` at 1k fixture scene |
+| G2 | Drop draw calls 10x for repeated geometry (leaves, grass tufts, fixtures) | DRAW count visible in perf readout — target ≤ 30 for current hex-scene |
+| G3 | Renderer + physics behind plugin interface | `lib/engine/render-plugin.ts` + `lib/engine/physics-plugin.ts` boundary; current Three.js implementation just one impl |
+| G4 | Particle VFX primitive that fits cel register | Rain works, runs at 60fps with 10k droplets, composes with `meshToonMaterial` |
+| G5 | Substrate accepts multi-source async events | `lib/engine/event-bus.ts` w/ typed channels for each oracle |
 
-## Non-goals
+## Non-goals (Barth)
 
-- Three.js anything. (Explicitly deferred two cycles per session decision.)
-- Real cosmic weather wiring. (Mock daily seed continues to work.)
-- AI opponent personality. (Stub opponent stays; per-element AI is for the next cycle.)
-- Card detail "petal" view. (Already scaffolded, not refined this cycle.)
-- Multi-round battle balance. (Mechanics are world-purupuru-canonical, not tweaked here.)
-- Performance optimization. (Hackathon clock; this cycle is correctness + iteration speed.)
+- NO WebGPU migration this cycle. Three.js stays the default renderer. Plugin boundary just makes future migration trivial.
+- NO multiplayer this cycle. The event-bus shape anticipates it (typed channels can route across network), but no actual network code.
+- NO three.quarks adoption. Bespoke primitive only.
+- NO scope creep into honeycomb-substrate's existing Effect.PubSub. ECS is a PEER substrate per the doctrine; not a replacement.
+- NO rewrite of existing battle-v2 world. The engine substrate is additive — existing routes keep working; new lab routes adopt the new primitives.
 
-## Users + stakeholders
+## Architecture
 
-- **Primary**: the operator (zksoju) — needs faster /battle iteration.
-- **Implicit**: future Claude sessions — the dev HUD and reducer tests are the safety net that lets a future session land changes without breaking the substrate.
-- **Downstream**: hackathon demo audience (ships 2026-05-11, already past — extended demo window). The combo discovery ledger is the thing that makes the game feel like Purupuru-not-just-a-card-game when someone plays it for the first time.
+### Two substrates, peer-shaped (per cycle-4 doctrine)
 
-## Functional requirements
+```
+lib/honeycomb/            lib/engine/                lib/purupuru/
+└─ Effect.PubSub          └─ SoA columnar ECS        └─ EventEmitter + pure resolver
+    fiber-aware                typed arrays                grep-testable boundary
+    async game state           thousands of entities       sim/presentation discipline
+```
 
-### FR-1: Asset manifest as typed module
-- Move every CDN URL out of inline strings and into `lib/assets/manifest.ts`.
-- Each entry is a typed record: `{ id, url, fallbackChain, dimensions?, contentType }`.
-- Build-time validator script `scripts/check-assets.mjs` HEADs every URL, prints status per asset, exits non-zero on any 4xx/5xx.
-- npm script `pnpm assets:check`. Wired into pre-commit and CI.
-- Manifest export `cardArtChain(cardType, element)` returns the ordered fallback array (replaces ad-hoc helper in `lib/cdn.ts`).
+Each holds the substrate role (Reality + Contracts + Schemas + State Machines + Events + Hashes + Tests). Different shapes for different scopes. **Not one subsumes the other.** Per peer-substrates-different-shapes.md.
 
-### FR-2: Dev HUD
-- New route segment `/battle?dev=1` mounts `<DevPanel />` (already partially scaffolded in `app/battle/_inspect/DevConsole.tsx`).
-- Panel shows: current phase · last 5 events · selected card · full snapshot JSON (collapsible).
-- Action buttons: `→ arrange` / `→ clashing` / `→ result` / `replay clash step` / `inject lineup [debug seed]`.
-- Hotkey: backtick toggles visibility. Hidden by default. Persisted to localStorage.
+### lib/engine — the new piece
 
-### FR-3: Reducer test harness
-- New file `lib/honeycomb/match.reducer.test.ts`.
-- Extract a `reduce(snapshot, command) → snapshot` pure function from `match.live.ts` — the substrate logic without Effect/fiber wrapping.
-- Tests cover: phase transitions (12 valid pairs), tap-position state machine (3 cases: empty, same, swap), swap-positions (3 cases: valid/oob/equal), lock-in commitment, garden grace persistence, caretaker A shield activation.
-- Target: 20+ assertions, runs in <500ms via vitest.
+```
+lib/engine/
+├─ index.ts                — re-exports
+├─ ecs/
+│  ├─ archetype.ts         — archetype storage (entities with the same component shape)
+│  ├─ component.ts         — typed component definitions (Position, Velocity, Sway, etc.)
+│  ├─ query.ts             — iterate over archetypes matching a component set
+│  ├─ world.ts             — World container; create/destroy entities; tick systems
+│  └─ system.ts            — System type + scheduler
+├─ render-plugin/
+│  ├─ port.ts              — renderer interface (begin/end frame, mount/unmount mesh, etc.)
+│  ├─ three.ts             — Three.js implementation
+│  └─ types.ts             — RenderHandle, MeshDescriptor, etc.
+├─ physics-plugin/
+│  ├─ port.ts              — physics interface (step, raycast, body, joint, etc.)
+│  ├─ none.ts              — no-op stub (current default)
+│  └─ rapier.ts            — Rapier implementation (later, optional)
+├─ animation/
+│  ├─ sway-system.ts       — SINGLE useFrame loop for all swayable entities
+│  ├─ wave-system.ts       — water surface vertex animation (centralized)
+│  └─ types.ts
+├─ event-bus/
+│  ├─ port.ts              — typed channel interface
+│  ├─ live.ts              — in-process channel
+│  └─ remote.ts            — placeholder for network channel (multiplayer)
+└─ instanced/
+   ├─ instanced-leaves.tsx — InstancedMesh + per-instance matrix from ECS
+   ├─ instanced-rocks.tsx  — same pattern for rocks
+   └─ instanced-grass.tsx  — same pattern for grass tufts
+```
 
-### FR-4: Visual regression bench
-- New file `tests/visual/battle.spec.ts` (Playwright).
-- Three named snapshots: `arrange-default`, `clashing-impact`, `result-player-wins`.
-- Each test: navigate `/battle?dev=1&seed=fixed-seed-123`, force-set phase via DevPanel, screenshot, compare to baseline.
-- Baseline lives in `tests/visual/__snapshots__/`. Commit baselines.
-- npm script `pnpm test:visual`. Run pre-push.
+### The columnar/archetype insight (Trizen / Bevy / EnTT / ClickHouse)
 
-### FR-5: Combo discovery ledger
-- New module `lib/honeycomb/discovery.ts`. Tracks first-time discovery per `ComboKind` × per-element-resonance.
-- Persisted to localStorage under `puru-combo-discoveries-v1`.
-- New `MatchEvent` variant `combo-discovered` with `{ kind, name, isFirstTime }`.
-- Match.live publishes this event whenever `detectCombos` finds a combo not previously seen.
-- UI: new component `<ComboDiscoveryToast />` mounts in BattleScene, subscribes to `combo-discovered` events with `isFirstTime: true`. On fire: pauses ~600ms (sets a visual `data-paused` attr on `.arena`), renders a center-screen tile with combo icon + name + tooltip, breathes, fades.
-- After first discovery, combo still highlights in the existing CombosPanel but no ceremony.
+Current React pattern (anti-pattern at scale):
+```tsx
+{leaves.map((leaf) => (
+  <LeafPuff key={leaf.id} {...leaf} swaySeed={leaf.id} />  // each → useFrame, mesh, outline
+))}
+```
 
-## Acceptance criteria
+ECS pattern (target):
+```ts
+// One archetype: SwayableLeaf = { Position, Color, Radius, SwayParams }
+const swayables = world.query(SwayableLeaf);
 
-| ID | Criterion | Verification |
-|---|---|---|
-| AC-1 | `pnpm assets:check` exits 0 on a green bucket. | CI run on PR. |
-| AC-2 | `pnpm assets:check` exits non-zero if I add a fake URL. | Adversarial test: add `cdn("fake/missing.png")` to manifest, expect failure. |
-| AC-3 | `pnpm test:unit` passes ≥20 reducer assertions. | `vitest` summary. |
-| AC-4 | Tap-to-swap regression is caught by reducer tests. | Restore the `Ref.update` bug locally; tests fail. |
-| AC-5 | `/battle?dev=1` panel toggles via backtick. | Manual: press backtick, panel appears. |
-| AC-6 | Dev panel "force-set phase: clashing" advances the snapshot. | Manual: click button, see phase change in snapshot JSON. |
-| AC-7 | `pnpm test:visual` passes against committed baselines on a fixed seed. | Playwright run. |
-| AC-8 | First Shēng Chain made by a fresh player triggers ComboDiscoveryToast for ~2s. | Manual: clear localStorage, play, arrange a chain, lock-in, observe toast. |
-| AC-9 | Second Shēng Chain in same session does NOT trigger the ceremony. | Same flow, second time. |
-| AC-10 | All 4 combo kinds have unique discovery names + icons. | `discovery.ts` definitions reviewed. |
-| AC-11 | Discovery state persists across reload. | Manual: lock-in, reload, observe discovery is "seen." |
-| AC-12 | The current battle UI does not regress against committed Playwright baselines. | `pnpm test:visual` green. |
-| AC-13 | TypeScript exits 0; oxlint exits 0. | CI. |
+// One system: updates ALL swayable entities in a tight loop
+function swaySystem(world, dt, t) {
+  const arch = world.archetype(SwayableLeaf);
+  const positions = arch.componentArray("Position"); // Float32Array, packed
+  const sway = arch.componentArray("SwayParams");    // Float32Array
+  for (let i = 0; i < arch.length; i++) {
+    const phase = sway[i * 3];     // amplitude, frequency, phase packed
+    // ... update positions[i] directly
+  }
+}
 
-## Non-functional requirements
+// Renderer reads positions FROM the archetype directly into an InstancedMesh.
+// Three.js gets a single typed-array update per frame; one draw call total.
+```
 
-- **NFR-1**: ComboDiscoveryToast respects `prefers-reduced-motion` (no breathe animation, no pause delay).
-- **NFR-2**: Dev panel never ships to production (`process.env.NODE_ENV === "production"` short-circuits).
-- **NFR-3**: Asset manifest fits in a single file under 300 lines (forced honesty about URL count).
-- **NFR-4**: Reducer tests deterministic — no `Math.random()`, no `Date.now()` without a seeded clock.
-- **NFR-5**: Visual baselines tolerant of ±2px / ±5% pixel diff (Playwright `maxDiffPixels`).
+**Why this is fast**:
+- Typed arrays (SoA) = CPU cache hits while iterating
+- One useFrame = one React reconcile per frame, not N
+- One InstancedMesh = one draw call, not N
+- Adding/removing entities = `archetype.add/swap-remove` (O(1)), not React tree edits
 
-## Risks + dependencies
+The "archetype bundling" is exactly Matthew Collison's tweet: entities with the same component shape pack together → SQL-like queries on columns become trivial → ClickHouse-of-game-state.
 
-| Risk | Severity | Mitigation |
-|---|---|---|
-| Playwright install on this machine | low | `pnpm dlx playwright install --with-deps` if not present |
-| Bridgebuilder Phase 3.5 review surfaces a major REFRAME on the reducer design | medium | Accept-minor or accept-major both fine; not a blocker |
-| `match.live.ts` is a monolith — extracting a pure reducer means refactoring the in-progress fiber | medium | Extract incrementally: `reduce()` handles deterministic transitions; fiber-driven async clash reveal stays in `runRound()` |
-| ComboDiscoveryToast pausing the arena breaks the in-flight clash reveal fiber | medium | Toast only fires during `arrange` or `between-rounds`, never during `clashing` |
-| Asset bucket changes upstream | low | Validator is run pre-merge, not post-merge. Drift caught in PR. |
+### Plugin shape (operator-pinned: stay platform-agnostic)
 
-## Decisions (open at PRD draft)
+```ts
+// lib/engine/render-plugin/port.ts
+export interface RenderPlugin {
+  initialize(canvas: HTMLCanvasElement, opts: RenderOpts): Promise<void>;
+  mountInstancedGroup(descriptor: InstancedGroupDescriptor): RenderHandle;
+  updateInstance(handle: RenderHandle, index: number, matrix: Matrix4): void;
+  beginFrame(camera: CameraState): void;
+  endFrame(): void;
+  dispose(): void;
+}
+```
 
-- **D1**: Are reducer tests vitest or bats? → **vitest** (TypeScript-native; bats is for shell scripts).
-- **D2**: Does the dev panel sit beside DevConsole or replace it? → **extend DevConsole** — it's already there with KaironicPanel and SubstrateInspector; add a PhaseScrubber and SnapshotJsonView.
-- **D3**: Where does discovery state live? → localStorage (no backend), keyed `puru-combo-discoveries-v1`.
-- **D4**: Toast position? → center-screen overlay, z-index above arena, dismissible by click or auto-fade after 2.4s.
-- **D5**: Reducer extraction scope — full extraction of match.live.ts logic, or just the tap/swap/lock-in commands that are deterministic? → **deterministic-only** for this cycle. Async clash reveal stays in fiber; reducer covers everything that runs synchronously.
+Two implementations to ship:
+- `render-plugin/three.ts` (default, current)
+- `render-plugin/types.ts` only (no impl) — proves the interface is real
 
-## What this cycle does NOT touch
+WebGPU + WebGL alternates land later. Same for physics (Rapier optional).
 
-- The clash mechanics math (combo bonuses, type power, conditions) — already canon-aligned.
-- Card art compositing pipeline.
-- The substrate doctrine (`construct-effect-substrate`).
-- Loa framework regressions filed earlier today (#863).
+### VFX particle primitives (Lane 2 substrate)
 
-## Success state
+Per dig-2026-05-17-three-quarks-vfx convergence:
+- NOT three.quarks (top-down material ownership fights our bottom-up toon shaders at scale)
+- Bespoke per-effect primitives that compose with `meshToonMaterial`
+- Each primitive = one ECS archetype + one InstancedMesh + one update system
 
-After this cycle, a future Claude session can:
+First primitive: **Rain**. Defined per-tile (operator: "weather can affect multiple squares, maybe 4-7 hexes"). Drop matrices live in the ECS, animated by one system, rendered as one InstancedMesh.
 
-1. Open `/battle?dev=1`, hit backtick, jump straight to `phase: result` to test the result screen — without playing 3 rounds first.
-2. Run `pnpm test:unit && pnpm test:visual && pnpm assets:check` and trust the green.
-3. Read the reducer tests as the canonical "what does the battle do" spec.
-4. Watch a friend play /battle for the first time and see them gasp when they discover Setup Strike, because the toast names it for them.
+## Sequencing (proposed)
 
-The first three are infrastructure. The fourth is what makes Purupuru not just a card game.
+| # | Step | Scope | Validates |
+|---|------|-------|-----------|
+| 1 | Perf readout in lab (DONE 2026-05-17) | Tiny | Baseline measurement |
+| 2 | **Lane 2 quick win** — Rain primitive bespoke (rough first cut) | Small | Particle pattern + per-tile confinement work |
+| 3 | **Lane 1 quick win** — Instanced leaves (single InstancedMesh, single useFrame for sway) | Medium | Draw-call drop measurable; sets pattern for grass + rocks |
+| 4 | Lane 1 — `lib/engine/ecs/*` scaffold (archetype, world, system) | Medium | ECS core; standalone tests |
+| 5 | Lane 1 — render-plugin port + Three.js impl | Medium | Plugin boundary proven |
+| 6 | Lane 1 — event-bus port + in-process impl | Small | Ready for oracle ingestion |
+| 7 | Lane 1 — physics-plugin port + no-op impl + optional Rapier | Medium | Physics-optional contract |
+| 8 | Lane 2 — Thunder, Earthquake, displacement-on-tree-fall primitives | Medium | VFX vocabulary expansion |
+| 9 | Lane 2 — Oracle ingestion (CORONA/TREMOR/BREATH/DELUGE) wired to event-bus | Medium | Real-world weather → game |
+
+Each step ships independently. Lane 1 + Lane 2 can interleave.
+
+## Open creative questions (operator pair-point)
+
+1. **ECS substrate name** — `lib/engine`, `lib/honeycomb-ecs`, `lib/loom`? Naming determines mental model.
+2. **Rapier as default-OFF or default-ON?** Affects bundle size + cold-start. Default-OFF unless physics required.
+3. **WebGPU adoption priority** — defer entirely or do a small spike now to validate the plugin port shape?
+4. **Multiplayer event substrate** — same bus shape OR separate `lib/network`? (Per peer-substrates doctrine: scope-driven.)
+5. **Oracle wiring** — pull each oracle's MCP endpoint from a registry in `.loa.config.yaml`, or hardcode in the event-bus?
+6. **Engine substrate testing** — vitest pure-function (no Effect coupling)? Or Effect-tier for fiber lifecycle? Probably the former, mirroring lib/purupuru's discipline.
+
+## Promotion ladder
+
+This PRD is `candidate-for-operator-review`. On operator approval:
+1. Cycle ID assigned (e.g., compass-cycle-2-engine-substrate)
+2. SDD via `/architect`
+3. Sprint plan via `/sprint-plan`
+4. Execution via `/run sprint-plan` with Flatline + Bridgebuilder gates
+
+Sub-step short-circuits are fine for the L2 lane (operator-paced VFX iteration). L1 substrate work should ride the full Loa workflow.
+
+## Convergence target
+
+**Render 1,000 hex-scene fixtures at 60fps on M4 with all current visual effects intact, plus a rain primitive on 4 hexes, plus a perf readout showing < 30 draw calls.** When that lands, the engine substrate has proven itself. Everything else (multi-oracle, multiplayer, WebGPU) is additive.
+
+## Provenance
+
+- Operator quotes (Lane 1 + Lane 2 framing): session-14-followup message 2026-05-17
+- Matthew Collison tweet on Trizen ECS + columnar stores: 2026-05-17
+- El Capitan convo on Five Oracles: 2026-05-15
+- K-hole dig three.quarks: `grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md`
+- K-hole dig columnar ECS: `grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md` (in flight)
+- Doctrine references:
+  - `construct-effect-substrate/patterns/peer-substrates-different-shapes.md` (cycle-4)
+  - `construct-effect-substrate/patterns/grounding-ladder-as-substrate-primitive.md` (cycle-4)
+  - `construct-effect-substrate/patterns/hakkutsu-as-divining-rod.md` (cycle-4)

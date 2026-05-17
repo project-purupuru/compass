@@ -1,214 +1,167 @@
 ---
 status: draft-r0
 type: sprint-plan
-cycle: battle-foundations-2026-05-12
-mode: stabilize + game-design-primitive
-branch: feat/hb-s7-devpanel-audit
+cycle: engine-substrate-2026-05-17
+session: 16
+mode: ARCH (OSTROM) + craft lens (ALEXANDER) + k-hole-as-teacher
+branch: feat/ecs-leaves-2026-05-17
 prd: grimoires/loa/prd.md
 sdd: grimoires/loa/sdd.md
-flatline_review: degraded-no-findings (both rounds, loa#759 regression)
-created: 2026-05-12
+prd_source: grimoires/loa/specs/enhance-substrate-perf-and-engine.md
+kickoff: grimoires/loa/specs/enhance-columnar-ecs-teaching-session.md
+digs:
+  - grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md
+  - grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md
+convergence_target: "hex-scene leaves render through ONE InstancedMesh driven by ONE useFrame; useInstancedLeaves toggle A/Bs the path; ≥10× draw-call drop, FPS unchanged or better, visual parity at static frame"
+run_id: 2026-05-17-9a4d3d
+created: 2026-05-17
 ---
 
-# Battle Foundations — Sprint Plan
+# Engine Substrate — Cycle 2 — Leaves Proof Sprint Plan
 
-Six sprints. ~1700 lines of new code, ~150 lines net change to live UI. Designed for single-PR consolidated landing via `/run sprint-plan`.
+Three sprints. ~350 LOC of new code, additive only — no deletion of existing
+fixture render paths. The new `useInstancedLeaves` toggle in HexSceneConfig
+gates the alternate render path, so operator A/Bs by flipping it in PostPane.
+
+This sprint plan is the proof-tier slice of the larger engine-substrate PRD
+(`grimoires/loa/specs/enhance-substrate-perf-and-engine.md`). Subsequent
+cycles will handle the render-plugin port (PRD step 5), event-bus (step 6),
+physics-plugin (step 7), VFX vocabulary expansion (step 8), and oracle
+ingestion (step 9). This cycle proves the ECS + InstancedMesh pattern works
+in our cel-shaded register before extending it.
 
 ## Dependency graph
 
 ```
-S0 (scaffold)
- ├─ S1 (asset manifest) ─────────┐
- ├─ S2 (reducer extract)─┬───────┼─→ S6 (integration + CI)
- ├─ S3 (dev panel) ──────┼──┐    │
- │                       │  └────┴─→ S5 (visual regression)
- └─                      └──→ S4 (combo discovery)
+  S1 (ECS substrate) ──→ S2 (renderer + integration) ──→ S3 (verify + distill)
+
+  - S1 ships standalone, fully unit-tested. lib/engine/ becomes consumable.
+  - S2 consumes S1; adds the toggle + per-fixture suppression; manual smoke confirms visual parity.
+  - S3 captures the A/B PerfReadout measurement + writes Stage-5 distillation.
 ```
 
-- S1, S2, S3 are independent → parallelizable.
-- S4 depends on S2 (reducer hosts discovery check).
-- S5 depends on S3 (visual tests use dev panel to set phases).
-- S6 closes the cycle: CI wiring, asset validation in pipeline, final typecheck + lint.
+S1 and S2 must run sequentially (S2 imports S1). S3 depends on S2 (needs the
+toggle wired). No parallelism within the cycle.
 
-## Sprint 0 — Scaffold
+---
 
-Lightweight setup. No new logic.
+## Sprint 1 — ECS substrate primitives
 
-| Task | Files | AC |
-|---|---|---|
-| S0-T1 | Create `lib/assets/` directory, empty index | dir exists |
-| S0-T2 | Add `puru-dev-panel-enabled` localStorage key + `__PURU_DEV__` global type declaration to `lib/runtime/types.d.ts` | tsc passes |
-| S0-T3 | Add npm scripts: `assets:check`, `test:visual`, `test:visual:update` to package.json | scripts exist in package.json |
-| S0-T4 | Confirm Playwright config exists; if not, create `playwright.config.ts` with reduced-motion + headless defaults | `pnpm test:visual` exits cleanly with no tests |
-| S0-T5 | Create `tests/visual/` and `tests/visual/fixtures/` directories with `.gitkeep` | dirs exist |
-| S0-T6 | Branch hygiene: confirm we're on `feat/hb-s7-devpanel-audit` or create `feat/battle-foundations-2026-05-12` | git status clean, branch name correct |
+**Scope**: scaffold `lib/engine/` with the smallest viable archetype + system
+shape needed for the leaf proof. No app code touches yet. Pure substrate.
 
-**Sprint exit criteria**: tsc passes, no new tests yet, npm scripts callable (even if no-op).
-
-## Sprint 1 — Asset manifest + validator (FR-1)
+**Files created**: 5 source + 2 test = ~150 LOC
 
 | Task | Files | AC |
 |---|---|---|
-| S1-T1 | `lib/assets/types.ts` — AssetClass, AssetRecord types | tsc passes |
-| S1-T2 | `lib/assets/manifest.ts` — port every URL from `lib/cdn.ts` into typed MANIFEST array, plus measured dimensions for known assets | exports: MANIFEST, BRAND, WORLD_SCENES, etc., cardArtChain |
-| S1-T3 | `lib/assets/manifest.test.ts` — cardArtChain returns correct order per (cardType, element); MANIFEST has no duplicate ids; fallbackChain is non-empty for every primary | `vitest run lib/assets` passes |
-| S1-T4 | `scripts/check-assets.mjs` — HEAD every URL in MANIFEST, exit 1 on any 4xx/5xx, JSON report on stderr | manual: `pnpm assets:check` prints per-asset status |
-| S1-T5 | `lib/cdn.ts` reduces to re-export shim with deprecation jsdoc | tsc passes, every existing import keeps working |
-| S1-T6 | `pnpm assets:check` exits 0 against the real bucket | AC-1 |
-| S1-T7 | Adversarial: add a fake URL, confirm exits 1, then remove | AC-2 |
+| S1-T1 | `lib/engine/ecs/archetype.ts` — `Archetype<TCols>` class with typed-array column slabs, `add(init): EntityId` (returns dense slot), `destroy(id)` via swap-remove, `columnArray(name): Float32Array` accessor, capacity grows in powers of 2 | tsc passes; exports `Archetype` class + `ColumnSpec` type |
+| S1-T2 | `lib/engine/ecs/world.ts` — `World` with `createEntity(archetype, init): EntityId`, `destroyEntity(id)`. Single-archetype lookup (no routing across archetypes). Lightweight. | tsc passes; exports `World` class + `EntityId` brand type |
+| S1-T3 | `lib/engine/ecs/system.ts` — `System<TCols>` type alias `(arch, dt, t) => void`. No scheduler, no registry — systems are called manually from useFrame. | tsc passes; exports `System` type |
+| S1-T4 | `lib/engine/animation/sway-system.ts` — `swayLeafSystem` reads `(phase, amplitude, frequency)` columns + writes the rotation portion of a `matrix4` column. Uses `swayAngle` math semantically equivalent to `app/battle-v2/_components/vfx/celVocab.ts` (verify against the existing helper). | tsc passes; pure function; matches existing celVocab sway math |
+| S1-T5 | `lib/engine/index.ts` — re-exports `Archetype, World, System, swayLeafSystem` | tsc passes |
+| S1-T6 | `lib/engine/ecs/archetype.test.ts` — vitest: (a) create + add 5 → length 5; (b) destroy slot 2 → swap-remove behavior preserves contiguity; (c) capacity grows from 4 → 8 → 16 when filled; (d) columnArray returns the actual backing slab (mutations visible). ≥6 assertions. | `vitest run lib/engine` passes |
+| S1-T7 | `lib/engine/animation/sway-system.test.ts` — vitest: (a) same archetype state + same `t` → bit-identical output across calls (determinism); (b) different `phase` columns → independent sway; (c) writes only the rotation portion of matrix4 (translation+scale untouched). ≥3 assertions. | vitest passes |
 
-**Sprint exit criteria**: tsc passes, vitest passes, `pnpm assets:check` exits 0.
+**Sprint 1 exit criteria**: `pnpm tsc --noEmit` passes, `pnpm vitest run lib/engine` passes (all assertions green), no exports consumed by app code yet.
 
-## Sprint 2 — Reducer extraction + tests (FR-3)
+**Not in scope**: no integration with R3F, no Three.js imports, no `@effect/schema`-derived layouts, no multi-archetype scheduler.
 
-The riskiest sprint. Touches the hot path.
+---
 
-| Task | Files | AC |
-|---|---|---|
-| S2-T1 | `lib/honeycomb/match.reducer.ts` — pure `reduce(snapshot, command) → { next, events }` function. Handles begin-match, choose-element, complete-tutorial, tap-position, swap-positions, reset-match. Returns explicit event list. | exports reduce function |
-| S2-T2 | `match.live.ts` wired to delegate to reduce() for the 6 deterministic commands. The `lock-in`/`advance-clash`/`advance-round` keep their fiber-driven paths untouched. | `pnpm tsc --noEmit` passes |
-| S2-T3 | `match.reducer.test.ts` — test cases per §4.3 of SDD: tap-position (5), swap-positions (3), choose-element (3), phase transitions (12+), combo recompute (2) | `vitest run lib/honeycomb` ≥20 assertions |
-| S2-T4 | Regression test: AC-4 — tap-position publishes state-changed event | test passes |
-| S2-T5 | Manual smoke test in browser: arrange phase tap/swap visibly works | manual: cards reorder on tap-tap |
-| S2-T6 | TypeScript invariant comment in match.live.ts: `// NEVER use Ref.update(stateRef, …) directly. Route through reduce() for deterministic commands or update() for fiber-internal mutations.` | comment present |
+## Sprint 2 — Renderer + integration
 
-**Sprint exit criteria**: tsc, vitest, manual smoke all green. Tap-to-swap regression caught by AC-4.
+**Scope**: wire the ECS substrate to a single `<InstancedMesh>` and gate the
+alternate render path behind `useInstancedLeaves`. When toggle is ON, fixtures
+skip their `<LeafPuff>` JSX and the scene mounts one `<InstancedLeafField>`
+collecting all leaf data via extractor pure functions.
 
-## Sprint 3 — Dev panel (FR-2)
+**Files created/modified**: 1 new renderer + 1 new extractor module + 1 config
+edit + 4 fixture edits + 1 scene edit = ~190 LOC
 
 | Task | Files | AC |
 |---|---|---|
-| S3-T1 | `match.port.ts` adds `dev:force-phase` + `dev:inject-snapshot` MatchCommand variants. `validCommandsFor` admits them in every phase. | tsc passes |
-| S3-T2 | `match.live.ts` handles dev:* commands; rejects them unless `process.env.NODE_ENV !== "production" && globalThis.__PURU_DEV__ === true` | guards in place |
-| S3-T3 | `app/battle/_inspect/PhaseScrubber.tsx` — buttons for each MatchPhase, "advance clash step" button | renders, click forces phase |
-| S3-T4 | `app/battle/_inspect/SnapshotJsonView.tsx` — collapsible JSON view with hidden verbose arrays | renders, expand/collapse works |
-| S3-T5 | `app/battle/_inspect/EventLogView.tsx` — last 5 MatchEvents w/ timestamps | renders, updates on event |
-| S3-T6 | `DevConsole.tsx` extends to host the new sub-panels; backtick toggles visibility; persists to localStorage | AC-5 |
-| S3-T7 | Manual: force-set phase advances snapshot JSON | AC-6 |
-| S3-T8 | NODE_ENV=production gate confirmed (next build doesn't include the panel) | check `next build` output bundle |
+| S2-T1 | `app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx` — R3F `<InstancedMesh>` bound to a `LeafArchetype` (allocated in `useMemo`). One `useFrame` mounts `swayLeafSystem(arch, dt, t)` then writes back to `mesh.instanceMatrix` (with `needsUpdate = true`) + `mesh.instanceColor`. Uses `icosahedronGeometry(detail=0)` + `meshToonMaterial` with `DEFAULT_TOON_GRADIENT` to match LeafPuff's primary puff. | tsc passes; component renders an instanced mesh given an archetype prop |
+| S2-T2 | `app/battle-v2/_components/vfx/effects/leafExtractors.ts` — pure functions: `treeLeafData(fixture, plotOrigin)`, `mushroomLeafData(fixture, plotOrigin)`, `wildflowerLeafData(fixture, plotOrigin)`, `rockMossLeafData(fixture, plotOrigin)`. Each returns `LeafData[]` with `{ worldPosition, color, swayParams }`. Math mirrors the current per-fixture render (`buildBranches` in Tree.tsx, etc.). | tsc passes; vitest snapshot of stable scatter for one seed (≥2 assertions) |
+| S2-T3 | `app/battle-v2/_components/vfx/VfxConfig.ts` — add `useInstancedLeaves: S.Boolean` to `HexSceneConfig` schema, default `false`. PostPane → debug section picks it up automatically via the existing schema-driven control rendering. | tsc passes; PostPane shows toggle under "debug" |
+| S2-T4 | `app/battle-v2/_components/vfx/effects/Tree.tsx` — accept optional `suppressLeaves?: boolean` prop. When `true`, skip the `<LeafPuff>` JSX at each branch tip. Render trunk + branches normally. | tsc passes; visual smoke: toggle OFF behaves identically; toggle ON shows tree with no leaves |
+| S2-T5 | `app/battle-v2/_components/vfx/effects/Mushroom.tsx` + `Wildflower.tsx` + `Rock.tsx` — same `suppressLeaves` prop pattern. Mushroom suppresses its cap LeafPuff; Wildflower suppresses its bloom-head LeafPuff; Rock suppresses its moss-tuft LeafPuff. Bush.tsx is OUT OF SCOPE (uses internal sub-puffs, not LeafPuff). | tsc passes |
+| S2-T6 | `app/battle-v2/_components/vfx/effects/HexScene.tsx` — when `config.useInstancedLeaves` is true: walk `plots[].fixtures`, call the matching extractor per fixture kind, build one `LeafArchetype` with all leaves, mount `<InstancedLeafField archetype={archetype}>` once at the scene level. Pass `suppressLeaves={config.useInstancedLeaves}` to each fixture in HexPlot. | manual smoke: toggle ON renders all leaves through one InstancedMesh; toggle OFF unchanged |
+| S2-T7 | `app/battle-v2/_components/vfx/effects/HexPlot.tsx` — forward `suppressLeaves` prop from HexScene through to Tree/Mushroom/Wildflower/Rock render calls (no own logic; pure pass-through). | tsc passes |
 
-**Sprint exit criteria**: backtick toggles dev panel; force-set-phase changes snapshot; production build excludes the panel.
+**Sprint 2 exit criteria**: `pnpm tsc --noEmit` passes; manual smoke in `/battle-v2/vfx-lab` confirms (a) toggle OFF behaves as today; (b) toggle ON renders all leaves visually equivalent at idle (modulo ink outlines on leaves — see "documented regressions" below).
 
-## Sprint 4 — Combo discovery (FR-5)
+**Documented regression** (Alexander craft-lens flag): drei's `<Outlines>` uses
+an inverted-hull mesh that does NOT support instancing. The instanced path
+will have NO ink outlines on the LEAVES specifically. Trunks, branches,
+mushroom caps, wildflower stems, rocks — all keep their outlines. Per the
+PRD's "outline parity" rule, this is a structural compromise we accept for
+the proof; revisit with a custom instanced-outline shader in a later cycle if
+the visual impact is significant.
 
-Depends on S2 (reducer hosts discovery check).
+**Not in scope**: Bush.tsx refactor, custom instanced-outline shader, render-plugin
+port abstraction, deletion of LeafPuff or per-fixture render paths.
 
-| Task | Files | AC |
-|---|---|---|
-| S4-T1 | `lib/honeycomb/discovery.ts` — loadDiscovery / recordDiscovery / isFirstTime + COMBO_META | exports complete, tsc passes |
-| S4-T2 | `lib/honeycomb/discovery.test.ts` — round-trip persistence, isFirstTime semantics, all 4 combo kinds have unique meta | vitest passes, AC-10 |
-| S4-T3 | `match.port.ts` adds `combo-discovered` MatchEvent variant | tsc passes |
-| S4-T4 | `match.reducer.ts` emits `combo-discovered` event when newly-active combo found; calls recordDiscovery on first time | reducer test asserts emission |
-| S4-T5 | `app/battle/_scene/ComboDiscoveryToast.tsx` — center-screen overlay subscribed to combo-discovered{isFirstTime:true} | renders on event, auto-dismisses at 2.4s |
-| S4-T6 | `BattleScene.tsx` mounts ComboDiscoveryToast + sets `data-paused` on `.arena` while toast active | manual: arrange a chain, observe pause + toast |
-| S4-T7 | `app/battle/_styles/ComboDiscoveryToast.css` + import in `battle.css` | toast styled correctly |
-| S4-T8 | Manual: clear localStorage, build a Shēng Chain, observe ceremony | AC-8 |
-| S4-T9 | Manual: build a second Shēng Chain — no ceremony | AC-9 |
-| S4-T10 | Reload page — discovery persists | AC-11 |
-| S4-T11 | `prefers-reduced-motion` — no breathe, instant in/out | NFR-1 |
+---
 
-**Sprint exit criteria**: All four combo kinds have first-time ceremonies that persist across reload.
+## Sprint 3 — A/B verify + distill
 
-## Sprint 5 — Visual regression (FR-4)
+**Scope**: measure the A/B PerfReadout numbers, write the cycle's RESULTS doc
+and the Stage-5 distillation per the build doc's pacing.
 
-Depends on S3 (uses dev panel to set phases).
+**Files created**: 3 docs + 1 cycle marker = no source code
 
 | Task | Files | AC |
 |---|---|---|
-| S5-T1 | `playwright.config.ts` — `prefers-reduced-motion: reduce`, headless: true, baseURL: http://localhost:3000, timeout: 30s, snapshotDir | exists, smoke test passes |
-| S5-T2 | `tests/visual/fixtures/arrange-seed.json` — deterministic snapshot patch (5 fixed cards, fixed weather) | json valid |
-| S5-T3 | `tests/visual/fixtures/clashing-impact-seed.json` — snapshot patch into clashing phase, idx=2, activeClashPhase=impact | json valid |
-| S5-T4 | `tests/visual/fixtures/result-player-wins-seed.json` — winner=p1, full rounds history | json valid |
-| S5-T5 | `tests/visual/battle.spec.ts` — three tests using `page.evaluate` to call `window.__PURU_DEV__.injectSnapshot(patch)` then screenshot | tests can run, first run generates baselines |
-| S5-T6 | Generate baseline screenshots via `pnpm test:visual:update` | baselines committed under `__snapshots__/` |
-| S5-T7 | Re-run `pnpm test:visual` — all green against baselines | AC-7, AC-12 |
-| S5-T8 | Manual: bump a CSS value, confirm test fails | adversarial verification |
+| S3-T1 | Capture PerfReadout values: navigate to `/battle-v2/vfx-lab`, enable `config.debugPerf`. Record (FPS, draw calls, triangles, useFrame count if available) with `config.useInstancedLeaves: false`. Toggle to `true` without other changes. Record again. | numbers recorded in S3-T2 file |
+| S3-T2 | `grimoires/loa/cycles/engine-substrate-2026-05-17/RESULTS.md` — table with OFF vs ON values + delta, includes commit hashes from S1+S2, plus a static-frame screenshot pair if practical (in `RESULTS-assets/` if added). | file exists; convergence target met (≥10× draw-call drop confirmed; FPS unchanged or better; visual parity acknowledged) |
+| S3-T3 | `grimoires/loa/distillations/session-16-ecs-substrate-proof-2026-05-17.md` — Stage 5 distillation per build doc: (a) what we learned about columnar ECS in OUR substrate (validating Table-over-Sparse against scene reality), (b) shape chosen + empirical justification (the fixture-table empirical analysis), (c) proof numbers (links to RESULTS.md), (d) explicit list of deferred items per PRD steps 5/6/7/8/9 + Bush internal refactor + custom outline shader, (e) open questions for next pair-point (e.g., when does a Sparse archetype appear in the engine roadmap?). | file exists; ≥1 explicit deferred item per PRD step; links to RESULTS.md |
+| S3-T4 | `grimoires/loa/cycles/engine-substrate-2026-05-17/CYCLE-COMPLETED.md` — marker with shipped commits (S1, S2 from this cycle), LOC delta, proof status (PROVEN / PARTIAL / NOT-MET), references to RESULTS + distillation. | file exists; references S1+S2 commit shas |
 
-**Sprint exit criteria**: 3 baselines committed, `pnpm test:visual` green.
+**Sprint 3 exit criteria**: distillation written, results captured, cycle
+marked complete. Convergence target evaluated honestly (PROVEN / PARTIAL /
+NOT-MET).
 
-## Sprint 6 — Integration + CI wiring
+---
 
-| Task | Files | AC |
+## Acceptance criteria for the whole cycle
+
+| # | Criterion | Verification |
 |---|---|---|
-| S6-T1 | `.github/workflows/battle-quality.yml` — add `pnpm assets:check` step + `pnpm test:unit` step | workflow valid |
-| S6-T2 | `.github/workflows/visual-regression.yml` (new, optional) — runs `pnpm test:visual` on PR open | optional; commit if time |
-| S6-T3 | Pre-commit hook: add `pnpm tsc --noEmit && pnpm test` if husky is present | check `.husky/pre-commit` |
-| S6-T4 | Run full local pipeline: `pnpm tsc --noEmit && pnpm oxlint && pnpm test && pnpm assets:check && pnpm test:visual` | all green |
-| S6-T5 | Update `CLAUDE.md` (compass) battle section: dev panel hotkey, asset:check workflow, reducer test entry point | doc updated |
-| S6-T6 | Final manual flow: pick element → drag-swap → lock-in → discover combo → result | end-to-end smoke green |
-| S6-T7 | CYCLE-COMPLETED.md in cycle folder | written |
+| AC-1 | All hex-plot leaves render through ONE `<InstancedMesh>` when `useInstancedLeaves` is ON | Three.js scene introspection in PerfReadout shows `InstancedMesh` count = 1 for leaves |
+| AC-2 | Single `useFrame` updates all leaves | `app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx` mounts exactly one `useFrame`; per-fixture LeafPuff `useFrame`s skipped when `suppressLeaves` true |
+| AC-3 | Draw call count drops ≥ 10× from OFF to ON | PerfReadout numbers in RESULTS.md |
+| AC-4 | FPS unchanged or better when ON vs OFF at idle | PerfReadout numbers in RESULTS.md |
+| AC-5 | Visual parity at static frame (modulo documented outline regression) | Manual A/B in PostPane; screenshot pair in RESULTS.md if practical |
+| AC-6 | Per-fixture render paths still work with `useInstancedLeaves` OFF | Toggle OFF behaves indistinguishably from current main |
 
-**Sprint exit criteria**: full local pipeline green; manual smoke green; CLAUDE.md updated; cycle marker present.
+## What NOT to build (Barth)
 
-## Beads task summary
+- NO `RenderPlugin` port abstraction (PRD step 5 — different cycle)
+- NO `PhysicsPlugin` port (PRD step 7)
+- NO event-bus / oracle ingestion (PRD steps 6 + 9)
+- NO migration of grass / rocks / macro-foliage to ECS — only LEAVES across hex-plot fixtures this cycle
+- NO multi-archetype scheduler — single sway-system function called from one useFrame is the proof
+- NO `@effect/schema`-derived buffer layouts — deferred until 2+ archetypes exist
+- NO Bush internal sub-puff refactor — Bush stays as-is this cycle
+- NO custom instanced-outline shader — accept ink-outline regression on leaves, document
+- NO deletion of LeafPuff.tsx, Tree.tsx, Bush.tsx, Mushroom.tsx, Wildflower.tsx, Rock.tsx — alternate path only
 
-For `/run sprint-plan`, the following beads tasks will be created (per Loa convention):
+## Risks
 
-```
-bd-S0-scaffold (6 subtasks)
-bd-S1-asset-manifest (7 subtasks)
-bd-S2-reducer-extract (6 subtasks)
-bd-S3-dev-panel (8 subtasks)
-bd-S4-combo-discovery (11 subtasks)
-bd-S5-visual-regression (8 subtasks)
-bd-S6-integration (7 subtasks)
-```
-
-Total: ~53 tasks. Run-mode will track via `br` and surface circuit-breaker triggers.
-
-## Acceptance criteria roll-up
-
-| AC | Sprint | How verified |
+| Risk | Likelihood | Mitigation |
 |---|---|---|
-| AC-1 | S1-T6 | `pnpm assets:check` green |
-| AC-2 | S1-T7 | Adversarial fake URL fails |
-| AC-3 | S2-T3 | vitest summary ≥20 |
-| AC-4 | S2-T4 | Regression test for tick |
-| AC-5 | S3-T6 | Manual: backtick toggle |
-| AC-6 | S3-T7 | Manual: force-set advances |
-| AC-7 | S5-T7 | `pnpm test:visual` green |
-| AC-8 | S4-T8 | Manual: first chain ceremony |
-| AC-9 | S4-T9 | Manual: second chain silent |
-| AC-10 | S4-T2 | discovery.test.ts coverage |
-| AC-11 | S4-T10 | Manual: reload persists |
-| AC-12 | S5-T7 | Baseline parity |
-| AC-13 | S6-T4 | Full pipeline green |
+| leafExtractors math drifts from Tree.tsx render → visual parity breaks | medium | S2-T2 snapshot test pins extractor output; manual A/B catches drift |
+| InstancedMesh + meshToonMaterial doesn't compose at instance scale | low | Rain.tsx already proves the combo works; matching its material setup |
+| Outline regression on leaves is visually significant (not just small leaves) | medium | Document in RESULTS; if too noticeable, S3 distill names "custom instanced-outline shader" as the next session's first task |
+| /run sprint-plan branch creation collides with feat/ecs-leaves-2026-05-17 (already on this branch) | low | If /run wants a fresh branch, it'll suffix the timestamp; that's fine |
 
-## Risks (refined from PRD)
+## Provenance
 
-| Risk | Sprint affected | Mitigation |
-|---|---|---|
-| Reducer extraction breaks the in-progress fiber | S2 | Keep `runRound` untouched; only port the 6 deterministic commands; manual smoke per sprint |
-| Playwright baselines flaky on CI | S5 | `maxDiffPixels: 200` + reduced motion + networkidle wait |
-| Dev panel ships to prod by accident | S3 | NODE_ENV guard + bundle-inspection in S3-T8 |
-| Asset bucket changes upstream during sprint | S1 | Validator is the canary; if it fails mid-cycle, fix the manifest, not the bucket |
-| Combo discovery toast interferes with clash reveal | S4 | Toast gated to `arrange` / `between-rounds` only |
-| Visual baselines drift on monitor color profile | S5 | Snapshots run in headless Chromium with sRGB; commit baselines from CI not from dev machine if it matters |
-
-## Out of scope this cycle
-
-(Restating from PRD for sprint clarity.)
-
-- Three.js / Pixi anything
-- Real cosmic weather wiring
-- AI opponent personality
-- CardPetal refinement
-- Mechanics rebalance
-- Performance work
-
-## Decisions resolved at sprint draft
-
-- **D-SPR-1**: Sprint ordering — alphabetical-ish dependency chain. S1, S2, S3 parallel-able; S4 → S2; S5 → S3.
-- **D-SPR-2**: Run mode? — `/run sprint-plan` for consolidated PR. Per Loa convention.
-- **D-SPR-3**: Beads tasks created before implementation, per `NEVER use TaskCreate for sprint tracking when beads available`.
-- **D-SPR-4**: Skip Phase 4.5 (Red Team SDD) — `red_team.simstim.auto_trigger` default false; this cycle is not security-sensitive.
-- **D-SPR-5**: Skip Phase 6.5 (Flatline beads loop) — `simstim.flatline.beads_loop: false` per current .loa.config.yaml (4d clock).
-
-## Success state (PRD §Success state, restated)
-
-After this cycle:
-
-1. `/battle?dev=1` + backtick = jump straight to any phase.
-2. `pnpm test:unit && pnpm test:visual && pnpm assets:check` = green-or-shout.
-3. Reducer tests = canonical "what the battle does" spec.
-4. First player to make a Shēng Chain gasps because the toast names it.
+- Build doc: `grimoires/loa/specs/enhance-columnar-ecs-teaching-session.md` (the kickoff)
+- PRD source: `grimoires/loa/specs/enhance-substrate-perf-and-engine.md`
+- Columnar dig: `grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md`
+- three.quarks dig: `grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md`
+- Operator pair-points (from session transcript 2026-05-17):
+  - Stage 1 grounded with operator-confirmed framing: hybrid Table+Sparse decision per fixture kind; "fixture" is the codebase term
+  - Path B chosen over full /simstim and direct-stages alternatives
+  - Sprint shape approved as drafted; commit + dispatch /run sprint-plan immediately
