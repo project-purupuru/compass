@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "columnar-stores-in-game-engine-ecs-trizen-ecs-archetype-pattern-clickh-b2e96aa7",
+  "ref": {
+    "name": "Columnar stores in game engine ECS · Trizen ECS archetype pattern · ClickHouse columnar storage how it enables SQL queries on columns · ECS Bitsquid / Caches Bevy / EnTT how archetypes bundle entities",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "columnar-stores-in-game-engine-ecs-trizen-ecs-archetype-pattern-clickh"
+  },
+  "resonance": {
+    "strength": 0.6,
+    "evidence": [
+      "Alexey Milovidov's architecture for ClickHouse proved that querying millions of rows requires bypassing irrelevant data to execute vectorized instructions over dense, predictable memory blocks. Sander Mertens, creator of Flecs, directly translates this to game engines, explicitly comparing the ECS archetype graph to the projection and materialization phases of columnar DBs and stating plainly that \"ECS is a Database.\" Loïc Baumann cemented this connection in his piece \"What game engines know about data that databases forgot,\" explicitly linking Unity's ECS and Burst Compiler to OLAP databases ",
+      "Carter Anderson's Bevy engine formalizes this columnar approach by bundling entities into \"Tables\" based purely on their component shape. Iterating over these archetypes means finding the matching tables and executing a \"straight, unbranched linear sweep through memory.\" This perfectly fills 64-byte CPU cache lines with parallel `Float32Array` data, avoiding the scattered heap allocations of standard JavaScript objects. In contrast, Michele Caini's EnTT framework achieves similar iteration speed using Sparse Sets and \"Groups\", mapping sparse Entity IDs to dense indices to ensure $O(1)$ compone",
+      "Michael Arnaldi's Effect-TS acts as the orchestration substrate to house this highly mutable, C-like machine code inside a pure functional environment. The ECS inner loop is injected as an \"opaque, mutable resource\", allowing Effect to manage the application lifecycle and system concurrency (`Effect.all(..., { concurrency: \"unbounded\" })`) without incurring garbage collection pauses on every array access. When integrating platforms like Three.js WebGPU, the Effect `Layer` simply binds the raw `Float32Array` as an Instanced Buffer Attribute, entirely bypassing the `THREE.Mesh` object graph to m"
+    ]
+  },
+  "why": {
+    "design": "Dig on \"Columnar stores in game engine ECS · Trizen ECS archetype pattern · ClickHouse columnar storage how it enables SQL queries on columns · ECS Bitsquid / Caches Bevy / EnTT how archetypes bundle entities with same component shape · why columnar data layout makes typed array access cache-friendly · convergence target: doctrine entry in effect-substrate construct on whether columnar-archetype ECS composes with our existing Effect-TS substrate, and what platform-agnostic plugin shape for renderer/physics looks like (Three.js WebGPU + Rapier as plugins, not coupled)\" surfaced 8 sources at + depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-2026-05-17-columnar-ecs.md",
+    "ratified_at": "2026-05-17",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "`@effect/schema` for memory-aligned byte offset generation",
+    "Loïc Baumann \"What game engines know about data that databases forgot\"",
+    "Three.js Shading Language (TSL) Compute Shader raw buffer binding",
+    "EnTT \"Groups\" sparse set iteration mechanics"
+  ]
+}

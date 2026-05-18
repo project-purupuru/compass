@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "guilty-gear-xrd-junya-motomura-authored-vertex-normals-technique-2d-lo-36dd68a6",
+  "ref": {
+    "name": "Guilty Gear Xrd Junya Motomura authored vertex normals technique 2D-looking 3D · how to implement in Three.js BufferGeometry normal authoring · Breath of the Wild grass authored normal trick for cohes",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "guilty-gear-xrd-junya-motomura-authored-vertex-normals-technique-2d-lo"
+  },
+  "resonance": {
+    "strength": 0.45,
+    "evidence": [
+      "Junya Motomura established the \"industry gold standard\" for emulating traditional 2D anime in 3D during his GDC 2015 presentation on *Guilty Gear Xrd*. He achieved this through manual vertex normal flattening to force \"broad, clean 'shadow blobs'\" and weaponized the Red channel of Vertex Colors as a data layer to offset lighting thresholds. This semantic decoupling of normals from physical geometry treats shading as an authored data mask rather than a simulated photon bounce, a technique mirroring modern font rendering where Signed Distance Fields (SDFs) use mathematical thresholding to mainta",
+      "Breath of the Wild* achieved its signature Ghibli-esque grass not through complex shading models, but via the \"Up\" Trick. By overriding grass card normals to point straight up (0, 1, 0) or matching the underlying terrain, the engine calculates the field as a single, cohesive volume, eradicating the noisy, \"papery\" look of intersecting planes. This specific visual goal—extracting readable macro-mass from chaotic micro-geometry—is structurally identical to how medical visualizers process MRI data, transferring normals from a heavily smoothed \"proxy volume\" to make trabecular bone visually parsea",
+      "Takuya Matsuyama physicalized these DCC-native hacks into declarative web environments with `ghibli-style-shader`, building directly on Kristof Dedene's Blender spherical normal proxy techniques. In a React Three Fiber context, assembling a painterly \"compass mini-scene\" requires bypassing standard geometry calculation with a memoized `Float32Array` of authored normals via a custom `<bufferAttribute>`, shifting the pipeline tradeoff from expensive runtime CPU mathematics to `.gltf` payload baking. This technical translation from proprietary AAA engine hacks to universal WebGL mathematics was h"
+    ]
+  },
+  "why": {
+    "design": "Dig on \"Guilty Gear Xrd Junya Motomura authored vertex normals technique 2D-looking 3D · how to implement in Three.js BufferGeometry normal authoring · Breath of the Wild grass authored normal trick for cohesive mass · how to set vertex normals in @react-three/fiber to make low-poly mesh read painterly · convergence: applied doctrine entry for compass mini-scene (tree + grass + rock) using authored-normal algorithm\" surfaced 15 sources at ± depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-session-2026-05-16-T3-authored-normals.md",
+    "ratified_at": "2026-05-17",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "Aaron Hertzmann SIGGRAPH painterly rendering cognitive science",
+    "Topographic shading normal bending algorithms GIS",
+    "Blender Data Transfer modifier custom normals pipeline",
+    "Freya Holmér abstract vector geometry stylization"
+  ]
+}
