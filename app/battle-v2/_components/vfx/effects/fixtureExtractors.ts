@@ -25,6 +25,7 @@ import type { FixtureRefT, PlotT } from "@/lib/hex/plot";
 import { PALETTE } from "../../world/palette";
 
 import { mulberry32 } from "../../world/Foliage";
+import { pickFlavorHue, type Flavor } from "../celVocab";
 import { buildBranches } from "./Tree";
 
 // ── Shared types ───────────────────────────────────────────────────────────
@@ -331,29 +332,205 @@ export function rockSpecsFromPlots(
   return out;
 }
 
-// ── Future extractors (S2 scope, defined here for forward-reference) ──────
+// ── Bush ───────────────────────────────────────────────────────────────────
 
 /**
- * Placeholder type — bushSpecsFromPlots lands in S2-T2.
+ * One row of BushArchetype. World-space position (sits on plot cap),
+ * Y-rotation (= 0 for visual parity with Bush.tsx — sway dropped on
+ * instanced path), uniform scale, per-instance hex hue.
  *
- * Per cycle-3 scope decision 2026-05-17: only Rock + Bush ship instancing
- * (the architecturally novel cases). Mushroom + Wildflower stay per-React
- * because they're pattern-repetition with Tree (single cylinder stem +
- * leaf-puff cap continuing through leaf field).
+ * Mirrors Bush.tsx:78-79:
+ *   const hue = useMemo(() => pickFlavorHue(flavor, seed), [flavor, seed]);
+ *   <group position={position}> ... </group>
  */
-export type BushSpec = never;
+export interface BushSpec {
+  readonly worldPosition: readonly [number, number, number];
+  readonly rotY: number;
+  readonly scale: number;
+  readonly hue: string;
+}
 
-// ── Fixture-kind dispatch utility (forward-looking) ────────────────────────
+export function bushSpecsFromPlots(
+  plots: ReadonlyArray<PlotT>,
+  plotWorldPositions: ReadonlyArray<readonly [number, number]>,
+): BushSpec[] {
+  if (plots.length !== plotWorldPositions.length) {
+    throw new Error(
+      `bushSpecsFromPlots: plot count ${plots.length} !== positions count ${plotWorldPositions.length}`,
+    );
+  }
+
+  const out: BushSpec[] = [];
+
+  for (let p = 0; p < plots.length; p++) {
+    const plot = plots[p];
+    const [worldX, worldZ] = plotWorldPositions[p];
+    const elev = plot.elevation;
+
+    for (const fix of plot.fixtures) {
+      if (fix.kind !== "bush") continue;
+
+      const flavor = (fix.variant as Flavor | undefined) ?? "green";
+      out.push({
+        worldPosition: [worldX + fix.offset[0], elev, worldZ + fix.offset[1]],
+        rotY: 0, // sway dropped on instanced path; visual gate decides if missed
+        scale: fix.scale,
+        hue: pickFlavorHue(flavor, fix.seed),
+      });
+    }
+  }
+
+  return out;
+}
+
+// ── Mushroom stem ──────────────────────────────────────────────────────────
 
 /**
- * Type-safe check for whether a fixture kind has an extractor in this module
- * (vs. continuing through the per-React HexPlot dispatch). Returns false for
- * kinds without instanced support; cycle-3 ships extractors for tree + rock
- * + bush (S2-T2 pending). Mushroom, wildflower, grass-field, structure,
- * character, fallen-log all stay per-React.
+ * One row of MushroomArchetype. The stem only — cap continues through
+ * cycle-1 leaf field via mushroomLeafSpecs (unchanged).
  *
- * The cycle-3 SuppressFixtures Set passed to HexPlot drives the other side
- * of this dispatch (HexPlot skips dispatch for kinds in the Set).
+ * Mirrors Mushroom.tsx:43-44:
+ *   <group position={position}> ... <mesh position={[0, stemHeight/2, 0]}>
+ */
+export interface MushroomStemSpec {
+  readonly worldPosition: readonly [number, number, number];
+  readonly rotY: number;
+  readonly scale: number;
+}
+
+export function mushroomStemSpecsFromPlots(
+  plots: ReadonlyArray<PlotT>,
+  plotWorldPositions: ReadonlyArray<readonly [number, number]>,
+): MushroomStemSpec[] {
+  if (plots.length !== plotWorldPositions.length) {
+    throw new Error(
+      `mushroomStemSpecsFromPlots: plot count ${plots.length} !== positions count ${plotWorldPositions.length}`,
+    );
+  }
+
+  const out: MushroomStemSpec[] = [];
+
+  for (let p = 0; p < plots.length; p++) {
+    const plot = plots[p];
+    const [worldX, worldZ] = plotWorldPositions[p];
+    const elev = plot.elevation;
+
+    for (const fix of plot.fixtures) {
+      if (fix.kind !== "mushroom") continue;
+      out.push({
+        worldPosition: [worldX + fix.offset[0], elev, worldZ + fix.offset[1]],
+        rotY: 0,
+        scale: fix.scale,
+      });
+    }
+  }
+
+  return out;
+}
+
+// ── Wildflower stem ────────────────────────────────────────────────────────
+
+/**
+ * One row of WildflowerArchetype. Stem only — bloom continues through
+ * cycle-1 leaf field via wildflowerLeafSpecs.
+ *
+ * Mirrors Wildflower.tsx:45-46 (same shape as Mushroom).
+ */
+export interface WildflowerStemSpec {
+  readonly worldPosition: readonly [number, number, number];
+  readonly rotY: number;
+  readonly scale: number;
+}
+
+export function wildflowerStemSpecsFromPlots(
+  plots: ReadonlyArray<PlotT>,
+  plotWorldPositions: ReadonlyArray<readonly [number, number]>,
+): WildflowerStemSpec[] {
+  if (plots.length !== plotWorldPositions.length) {
+    throw new Error(
+      `wildflowerStemSpecsFromPlots: plot count ${plots.length} !== positions count ${plotWorldPositions.length}`,
+    );
+  }
+
+  const out: WildflowerStemSpec[] = [];
+
+  for (let p = 0; p < plots.length; p++) {
+    const plot = plots[p];
+    const [worldX, worldZ] = plotWorldPositions[p];
+    const elev = plot.elevation;
+
+    for (const fix of plot.fixtures) {
+      if (fix.kind !== "wildflower") continue;
+      out.push({
+        worldPosition: [worldX + fix.offset[0], elev, worldZ + fix.offset[1]],
+        rotY: 0,
+        scale: fix.scale,
+      });
+    }
+  }
+
+  return out;
+}
+
+// ── Fallen log ─────────────────────────────────────────────────────────────
+
+/**
+ * One row of FallenLogArchetype. The log itself. Moss tufts on top are
+ * DROPPED on the instanced path (cycle-3 trade-off — parallel to Bush
+ * sway drop). If operator visual gate flags missing moss, extend
+ * leafExtractors.ts with fallenLogMossLeafSpecs in a follow-up.
+ *
+ * Mirrors HexPlot.tsx:514-522 (the case "fallen-log" dispatch):
+ *   facing={fix.seed * 0.0007}  ← per-instance Y rotation
+ */
+export interface FallenLogSpec {
+  readonly worldPosition: readonly [number, number, number];
+  readonly rotY: number;
+  readonly scale: number;
+}
+
+export function fallenLogSpecsFromPlots(
+  plots: ReadonlyArray<PlotT>,
+  plotWorldPositions: ReadonlyArray<readonly [number, number]>,
+): FallenLogSpec[] {
+  if (plots.length !== plotWorldPositions.length) {
+    throw new Error(
+      `fallenLogSpecsFromPlots: plot count ${plots.length} !== positions count ${plotWorldPositions.length}`,
+    );
+  }
+
+  const out: FallenLogSpec[] = [];
+
+  for (let p = 0; p < plots.length; p++) {
+    const plot = plots[p];
+    const [worldX, worldZ] = plotWorldPositions[p];
+    const elev = plot.elevation;
+
+    for (const fix of plot.fixtures) {
+      if (fix.kind !== "fallen-log") continue;
+      out.push({
+        worldPosition: [worldX + fix.offset[0], elev, worldZ + fix.offset[1]],
+        rotY: fix.seed * 0.0007, // per HexPlot.tsx:521 facing math
+        scale: fix.scale,
+      });
+    }
+  }
+
+  return out;
+}
+
+// ── Fixture-kind dispatch utility ──────────────────────────────────────────
+
+/**
+ * Type-safe check for whether a fixture kind has an extractor in this
+ * module (vs. continuing through the per-React HexPlot dispatch). Cycle-3
+ * ships extractors for tree + rock + bush + mushroom + wildflower +
+ * fallen-log (S1-T2 + S2-T1 + S2-T2..T5). Grass-field, structure,
+ * character stay per-React.
+ *
+ * Grass-field is deferred (codex 2026-05-17: "may be better as merged
+ * chunk geometry than per-tuft ECS because each field is already one
+ * mesh" — instancing wouldn't gain much).
  */
 export function fixtureKindHasInstancedExtractor(
   kind: FixtureKindT,
@@ -361,8 +538,11 @@ export function fixtureKindHasInstancedExtractor(
   switch (kind) {
     case "tree":
     case "rock":
+    case "bush":
+    case "mushroom":
+    case "wildflower":
+    case "fallen-log":
       return true;
-    // S2-T2 will add: case "bush"
     default:
       return false;
   }

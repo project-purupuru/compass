@@ -200,23 +200,23 @@ describe("treeSpecsFromPlots — pre-conditions", () => {
 
 // ── Dispatch utility ──────────────────────────────────────────────────────
 
-describe("fixtureKindHasInstancedExtractor (S1+S2 scope)", () => {
-  it("returns true for tree (S1) + rock (S2-T1)", () => {
+describe("fixtureKindHasInstancedExtractor (cycle-3 full purge scope)", () => {
+  it("returns true for all 6 cycle-3-instanced kinds", () => {
     expect(fixtureKindHasInstancedExtractor("tree")).toBe(true);
     expect(fixtureKindHasInstancedExtractor("rock")).toBe(true);
+    expect(fixtureKindHasInstancedExtractor("bush")).toBe(true);
+    expect(fixtureKindHasInstancedExtractor("mushroom")).toBe(true);
+    expect(fixtureKindHasInstancedExtractor("wildflower")).toBe(true);
+    expect(fixtureKindHasInstancedExtractor("fallen-log")).toBe(true);
   });
 
-  it("returns false for kinds without cycle-3 instanced extractors", () => {
-    // bush will flip to true after S2-T2 lands.
-    expect(fixtureKindHasInstancedExtractor("bush")).toBe(false);
-    // mushroom + wildflower: deferred per cycle-3 scope decision 2026-05-17
-    // (pattern-repetition; stay per-React).
-    expect(fixtureKindHasInstancedExtractor("mushroom")).toBe(false);
-    expect(fixtureKindHasInstancedExtractor("wildflower")).toBe(false);
+  it("returns false for kinds deferred from cycle-3 instancing", () => {
+    // grass-field: codex flagged "may be better as merged chunk geometry
+    // than per-tuft ECS because each field is already one mesh"
     expect(fixtureKindHasInstancedExtractor("grass-field")).toBe(false);
+    // structure, character: rare per-tile fixtures, instancing not earned.
     expect(fixtureKindHasInstancedExtractor("structure")).toBe(false);
     expect(fixtureKindHasInstancedExtractor("character")).toBe(false);
-    expect(fixtureKindHasInstancedExtractor("fallen-log")).toBe(false);
   });
 });
 

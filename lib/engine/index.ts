@@ -37,3 +37,11 @@ export {
   ROCK_SHAPE_PEBBLE,
 } from "./ecs/rock-archetype";
 export type { RockCols } from "./ecs/rock-archetype";
+export { BUSH_COLUMN_SPECS } from "./ecs/bush-archetype";
+export type { BushCols } from "./ecs/bush-archetype";
+export { MUSHROOM_COLUMN_SPECS } from "./ecs/mushroom-archetype";
+export type { MushroomCols } from "./ecs/mushroom-archetype";
+export { WILDFLOWER_COLUMN_SPECS } from "./ecs/wildflower-archetype";
+export type { WildflowerCols } from "./ecs/wildflower-archetype";
+export { FALLEN_LOG_COLUMN_SPECS } from "./ecs/fallen-log-archetype";
+export type { FallenLogCols } from "./ecs/fallen-log-archetype";

@@ -58,10 +58,21 @@ import { Stats } from "@react-three/drei";
 import { gatherLeavesFromPlots } from "./leafExtractors";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
+import { InstancedBushField } from "./InstancedBushField";
+import { InstancedFallenLogField } from "./InstancedFallenLogField";
 import { InstancedLeafField } from "./InstancedLeafField";
+import { InstancedMushroomField } from "./InstancedMushroomField";
 import { InstancedRockField } from "./InstancedRockField";
 import { InstancedTreeField } from "./InstancedTreeField";
-import { rockSpecsFromPlots, treeSpecsFromPlots } from "./fixtureExtractors";
+import { InstancedWildflowerField } from "./InstancedWildflowerField";
+import {
+  bushSpecsFromPlots,
+  fallenLogSpecsFromPlots,
+  mushroomStemSpecsFromPlots,
+  rockSpecsFromPlots,
+  treeSpecsFromPlots,
+  wildflowerStemSpecsFromPlots,
+} from "./fixtureExtractors";
 import { PerfReadout } from "./PerfReadout";
 import { PuruhaniWalker } from "./PuruhaniWalker";
 import { ZoneMonument } from "./ZoneMonument";
@@ -425,8 +436,19 @@ export function BigRealmScenePreview({
     const set = new Set<FixtureKindT>();
     if (config.useInstancedTrees) set.add("tree");
     if (config.useInstancedRocks) set.add("rock");
+    if (config.useInstancedBushes) set.add("bush");
+    if (config.useInstancedMushrooms) set.add("mushroom");
+    if (config.useInstancedWildflowers) set.add("wildflower");
+    if (config.useInstancedFallenLogs) set.add("fallen-log");
     return set;
-  }, [config.useInstancedTrees, config.useInstancedRocks]);
+  }, [
+    config.useInstancedTrees,
+    config.useInstancedRocks,
+    config.useInstancedBushes,
+    config.useInstancedMushrooms,
+    config.useInstancedWildflowers,
+    config.useInstancedFallenLogs,
+  ]);
 
   // Leaf specs — gather only when useInstancedLeaves is ON, otherwise pass
   // an empty array (cheap). The InstancedLeafField conditional below skips
@@ -459,6 +481,42 @@ export function BigRealmScenePreview({
         ? rockSpecsFromPlots(plots, plotWorldPositions)
         : [],
     [config.useInstancedRocks, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Bush specs — gather only when useInstancedBushes ON.
+  const bushSpecs = useMemo(
+    () =>
+      config.useInstancedBushes && config.showTileContent
+        ? bushSpecsFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedBushes, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Mushroom stem specs — caps continue through cycle-1 leaf field.
+  const mushroomStemSpecs = useMemo(
+    () =>
+      config.useInstancedMushrooms && config.showTileContent
+        ? mushroomStemSpecsFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedMushrooms, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Wildflower stem specs — blooms continue through cycle-1 leaf field.
+  const wildflowerStemSpecs = useMemo(
+    () =>
+      config.useInstancedWildflowers && config.showTileContent
+        ? wildflowerStemSpecsFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedWildflowers, config.showTileContent, plots, plotWorldPositions],
+  );
+
+  // Fallen log specs — moss tufts dropped on instanced path (cycle-3 trade-off).
+  const fallenLogSpecs = useMemo(
+    () =>
+      config.useInstancedFallenLogs && config.showTileContent
+        ? fallenLogSpecsFromPlots(plots, plotWorldPositions)
+        : [],
+    [config.useInstancedFallenLogs, config.showTileContent, plots, plotWorldPositions],
   );
 
   return (
@@ -525,6 +583,23 @@ export function BigRealmScenePreview({
        *  cycle-1 leaf field via rockMossLeafSpecs (unchanged). */}
       {config.useInstancedRocks && config.showTileContent && rockSpecs.length > 0 && (
         <InstancedRockField specs={rockSpecs} />
+      )}
+
+      {/* Cycle-3 S2-T2..T5 — finish the per-React fixture purge (post-
+       *  worst-case-measurement decision 2026-05-17). Each adds ONE
+       *  InstancedMesh per kind; outline-on-instanced-mesh works for all
+       *  via drei isInstancedMesh branch. */}
+      {config.useInstancedBushes && config.showTileContent && bushSpecs.length > 0 && (
+        <InstancedBushField specs={bushSpecs} />
+      )}
+      {config.useInstancedMushrooms && config.showTileContent && mushroomStemSpecs.length > 0 && (
+        <InstancedMushroomField specs={mushroomStemSpecs} />
+      )}
+      {config.useInstancedWildflowers && config.showTileContent && wildflowerStemSpecs.length > 0 && (
+        <InstancedWildflowerField specs={wildflowerStemSpecs} />
+      )}
+      {config.useInstancedFallenLogs && config.showTileContent && fallenLogSpecs.length > 0 && (
+        <InstancedFallenLogField specs={fallenLogSpecs} />
       )}
 
       {/* Per-element glow discs — kept as a subtle ground tint overlay so

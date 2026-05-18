@@ -1019,6 +1019,26 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
     );
     debug.addBinding(
       config as unknown as Record<string, unknown>,
+      "useInstancedBushes",
+      { label: "instanced bushes" },
+    );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedMushrooms",
+      { label: "instanced mushrooms" },
+    );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedWildflowers",
+      { label: "instanced wildflowers" },
+    );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useInstancedFallenLogs",
+      { label: "instanced fallen-logs" },
+    );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
       "useStatsPanel",
       {
         // Cycle-3 S2 perf-investigation toggle. ON: mount drei <Stats />

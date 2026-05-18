@@ -715,6 +715,15 @@ export const BigRealmSceneConfig = S.extend(
      */
     useInstancedRocks: S.Boolean,
 
+    /** Cycle-3 S2-T2+: instance bushes through canonical merged-puff-cluster + per-instance hue. */
+    useInstancedBushes: S.Boolean,
+    /** Cycle-3 S2-T3+: instance mushroom stems (single cylinder per stem). Caps continue through cycle-1 leaf field. */
+    useInstancedMushrooms: S.Boolean,
+    /** Cycle-3 S2-T4+: instance wildflower stems. Blooms continue through cycle-1 leaf field. */
+    useInstancedWildflowers: S.Boolean,
+    /** Cycle-3 S2-T5+: instance fallen logs. Moss tufts dropped on instanced path (cycle-3 trade-off). */
+    useInstancedFallenLogs: S.Boolean,
+
     /**
      * Show drei `<Stats />` panel (stats.js) in addition to PerfReadout.
      *
@@ -774,5 +783,9 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   useInstancedLeaves: false,
   useInstancedTrees: false,
   useInstancedRocks: false,
+  useInstancedBushes: false,
+  useInstancedMushrooms: false,
+  useInstancedWildflowers: false,
+  useInstancedFallenLogs: false,
   useStatsPanel: false,
 };
