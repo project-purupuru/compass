@@ -1062,6 +1062,18 @@ const CARD_LAB_DEF: VfxEffectDefinition<CardLabConfigT> = {
   defaults: CARD_LAB_DEFAULTS,
   Preview: CardLabPreview,
   registerKnobs(pane, config) {
+    // Defensive: HMR + persisted localStorage configs preserve old shape
+    // across schema evolution. Backfill defaults at registerKnobs time so
+    // tweakpane's addBinding doesn't throw "No matching controller" on
+    // missing keys. Same pattern as BIG_REALM_SCENE_DEF (session-18 fix
+    // d3c411fa). Extended to CARD_LAB_DEF 2026-05-17 after operator hit
+    // "No matching controller for 'hoverLiftPx'" in production.
+    const cfg = config as unknown as Record<string, unknown>;
+    const defaults = CARD_LAB_DEFAULTS as unknown as Record<string, unknown>;
+    for (const key of Object.keys(defaults)) {
+      if (cfg[key] === undefined) cfg[key] = defaults[key];
+    }
+
     const hover = pane.addFolder({ title: "hover", expanded: true });
     hover.addBinding(config as unknown as Record<string, unknown>, "hoverLiftPx", {
       label: "lift (px)", min: 0, max: 60, step: 1,
