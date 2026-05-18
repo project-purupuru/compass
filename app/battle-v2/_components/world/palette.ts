@@ -36,6 +36,14 @@ export const PALETTE = {
   trunk: "#7a5536",
   bush: ["#5f9b3a", "#74ad4c"],
 
+  // ── Stone ───────────────────────────────────────────────────────────────
+  // Restored on merge 2026-05-17 — main's palette dropped stone entries but
+  // cycle-3 Rock.tsx + fixtureExtractors.ts + InstancedRockField.tsx depend
+  // on them. Cool-leaning blue-gray (4 hues for cluster variance) + warm
+  // grey-green lichen accents (~20% chance per Rock.tsx hue selection).
+  stone: ["#9aa0a8", "#7e858f", "#aab0b6", "#6c737e"],
+  stoneLichen: ["#90a26d", "#7c9059"],
+
   // ── Structures ──────────────────────────────────────────────────────────
   wall: "#efe2c4", // warm plaster / daub walls
   wallShade: "#d8c79f",
