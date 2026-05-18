@@ -1,0 +1,74 @@
+  /* CardFoil — CSS-shader-style iridescent overlay on cards.
+     A study in composable "shaders" via conic-gradient + mix-blend-mode
+     + masked animations. Not a true WebGL shader (those go in a future
+     world-stage cycle), but it captures the spirit:
+       - The conic-gradient is the "fragment program" — interpolates color
+         across angle.
+       - The mask-image is the "stencil" — limits effect to card surface.
+       - prefers-reduced-motion is the "reduce uniform" — opt-out path.
+
+     Mounted as a sibling overlay on .card-slot.player-card and the
+     revealed .opponent-card. Subtle by default; ramps on :hover. */
+
+  .card-foil {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 5;
+    mix-blend-mode: color-dodge;
+    opacity: 0.18;
+    transition: opacity 320ms var(--ease-puru-settle);
+    background: conic-gradient(
+      from var(--foil-rotation, 0deg) at 60% 35%,
+      transparent 0deg,
+      oklch(0.85 0.18 28 / 0.35) 35deg,
+      oklch(0.82 0.16 85 / 0.4) 80deg,
+      oklch(0.85 0.15 142 / 0.3) 130deg,
+      oklch(0.78 0.16 218 / 0.35) 180deg,
+      oklch(0.80 0.18 290 / 0.4) 230deg,
+      oklch(0.82 0.16 340 / 0.35) 285deg,
+      transparent 360deg
+    );
+    /* The "sweep" — a slowly rotating angle keeps the foil alive without
+       any JavaScript. Per-card delay is set inline (--foil-delay). */
+    animation: foil-sweep 8s linear infinite;
+    animation-delay: var(--foil-delay, 0s);
+  }
+
+  /* Element-tinted foils — each element prefers its hue at the bright spot.
+     Implemented as filter-hue-rotate from the base palette. */
+  .card-slot[data-element='wood']  .card-foil { filter: hue-rotate(60deg)  saturate(0.85); }
+  .card-slot[data-element='fire']  .card-foil { filter: hue-rotate(-15deg) saturate(1.15); }
+  .card-slot[data-element='earth'] .card-foil { filter: hue-rotate(30deg)  saturate(0.95); }
+  .card-slot[data-element='metal'] .card-foil { filter: hue-rotate(160deg) saturate(0.80); }
+  .card-slot[data-element='water'] .card-foil { filter: hue-rotate(110deg) saturate(0.90); }
+
+  /* Hover intensifies the foil — Balatro-style tactile feedback. */
+  @media (pointer: fine) {
+    .card-slot:hover .card-foil { opacity: 0.45; }
+  }
+  /* Selected state — even brighter, locked rotation pulse. */
+  .card-slot.selected .card-foil { opacity: 0.55; }
+
+  /* Suppress during clash phases so the impact + VFX read clearly. */
+  .card-slot.clashing-approach .card-foil,
+  .card-slot.clashing-impact .card-foil,
+  .card-slot.clashing-settle .card-foil,
+  .card-slot.disintegrating .card-foil { opacity: 0; }
+
+  @keyframes foil-sweep {
+    from { --foil-rotation: 0deg; }
+    to   { --foil-rotation: 360deg; }
+  }
+  /* The custom property keyframe requires @property registration so the
+     browser knows it's animatable. */
+  @property --foil-rotation {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-foil { animation: none; opacity: 0.12; }
+  }

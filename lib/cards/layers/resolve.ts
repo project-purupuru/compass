@@ -2,7 +2,7 @@
  * Card Layer Resolver — pure function: ResolveInput → ResolvedLayer[]
  *
  * Walks the registry, filters by face + reveal stage, applies each layer's
- * selectionLogic, interpolates `{element}`/`{caretaker}`/`{rarity}`
+ * selectionLogic, interpolates `{element}`/`{caretaker}`/`{cardType}`/`{rarity}`
  * placeholders, prepends cdnBase for relative paths, and returns the queue
  * sorted by zIndex (low → high).
  *
@@ -63,10 +63,14 @@ function pickPath(logic: SelectionLogic, input: ResolveInput): string | null {
     }
     case "rarity":
       return logic.variants[input.rarity] ?? null;
+    case "cardType":
+      return logic.variants[input.cardType] ?? null;
     case "resonance": {
       const r = input.resonance ?? 50;
       const bucket = bucketResonance(r, logic.thresholds);
-      return logic.paths[bucket] ?? null;
+      const path = logic.paths[bucket];
+      if (!path) return null;
+      return path;
     }
     case "static":
       return logic.path;
@@ -77,6 +81,7 @@ function interpolateAndPrefix(path: string, input: ResolveInput): string {
   const interpolated = path
     .replace(/\{element\}/g, input.element)
     .replace(/\{caretaker\}/g, CARETAKER_BY_ELEMENT[input.element])
+    .replace(/\{cardType\}/g, input.cardType)
     .replace(/\{rarity\}/g, input.rarity);
   if (interpolated.startsWith("/") || interpolated.startsWith("http")) return interpolated;
   const base = input.registry.cdnBase.replace(/\/$/, "");

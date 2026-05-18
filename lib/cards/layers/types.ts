@@ -1,17 +1,21 @@
 /**
- * Card Layer System — Types.
+ * Card Layer System — Types
  *
- * Ported into the purupuru cycle-1 worktree from compass's lib/cards/layers.
- * Decoupled from the honeycomb card/element taxonomy so it stands alone: the
- * layer system is element + rarity driven. The original `cardType` axis is
- * dropped — its only consumer (the `character` layer) was element-driven
- * anyway (all four cardType variants resolved to the same path).
+ * Ported from `purupuru/lib/card-system/` with the compass-specific
+ * `face: "front" | "back"` axis so card backs are first-class layers
+ * (not patched filenames).
  *
- * Render model: DOM-stacked <img> layers (NOT canvas) — mobile-first,
+ * Render model: DOM-stacked `<img>` layers (NOT canvas) — mobile-first,
  * hit-testable, motion-compatible.
+ *
+ * Doctrine pointer: kickoff brief Pillar 1
+ *   grimoires/loa/proposals/kickoff-next-session-2026-05-12.md
  */
 
-export type LayerElement = "wood" | "fire" | "earth" | "metal" | "water" | "harmony";
+import type { CardType } from "@/lib/honeycomb/cards";
+import type { Element } from "@/lib/honeycomb/wuxing";
+
+export type LayerElement = Element | "harmony";
 
 export type LayerRarity = "common" | "mid" | "rare" | "rarest";
 
@@ -26,6 +30,7 @@ export type ResonanceBucket = "dormant" | "awakening" | "resonant" | "harmonized
 export type SelectionLogic =
   | { readonly type: "element"; readonly variants: Readonly<Record<string, string>> }
   | { readonly type: "rarity"; readonly variants: Readonly<Record<LayerRarity, string>> }
+  | { readonly type: "cardType"; readonly variants: Readonly<Record<CardType, string>> }
   | {
       readonly type: "resonance";
       readonly thresholds: Readonly<Record<ResonanceBucket, readonly [number, number]>>;
@@ -41,7 +46,7 @@ export interface LayerDefinition {
   readonly selectionLogic: SelectionLogic;
   /** If absent, layer applies to all reveal stages. */
   readonly revealStages?: readonly RevealStage[];
-  /** If absent, layer applies to all faces. */
+  /** If absent, layer applies to all faces. Compass extension. */
   readonly faces?: readonly Face[];
   readonly description?: string;
 }
@@ -64,6 +69,7 @@ export interface ResolvedLayer {
 export interface ResolveInput {
   readonly registry: LayerRegistry;
   readonly element: LayerElement;
+  readonly cardType: CardType;
   readonly rarity: LayerRarity;
   readonly revealStage: RevealStage;
   readonly face: Face;
@@ -71,6 +77,28 @@ export interface ResolveInput {
   readonly resonance?: number;
   /** Adaptive element affinity from score API. Defaults to `element`. */
   readonly elementAffinity?: LayerElement;
+}
+
+/**
+ * Coarse mapping from compass cardType → layer rarity for callers that
+ * don't have an explicit rarity value yet. Lifted at the boundary so
+ * the registry remains rarity-keyed and decoupled from cardType taxonomy.
+ *   jani         → common  (base striker)
+ *   caretaker_a  → mid     (support character)
+ *   caretaker_b  → rare    (utility character)
+ *   transcendence → rarest (transcendence)
+ */
+export function cardTypeToRarity(t: CardType): LayerRarity {
+  switch (t) {
+    case "jani":
+      return "common";
+    case "caretaker_a":
+      return "mid";
+    case "caretaker_b":
+      return "rare";
+    case "transcendence":
+      return "rarest";
+  }
 }
 
 /** Bucket a 0-100 resonance value into the behavioral layer's keys. */

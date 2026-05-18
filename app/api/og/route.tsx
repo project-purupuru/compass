@@ -8,9 +8,9 @@
 //   ?step=N         · 1..8 · per-step icon (rotates element by step % 5)
 //   ?archetype=X    · WOOD|FIRE|EARTH|METAL|WATER · archetype reveal icon
 
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
-type Element = "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER"
+type Element = "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER";
 
 // Element palette · OKLCH from app/globals.css (sync if globals change).
 // SVGs use fill values · OKLCH is well-supported in modern browsers + nextjs.
@@ -53,7 +53,7 @@ const ELEMENTS: Record<
     symbol: "水",
     ja: "Water",
   },
-}
+};
 
 const STEP_TO_ELEMENT: ReadonlyArray<Element> = [
   "WOOD", // step 1
@@ -64,18 +64,18 @@ const STEP_TO_ELEMENT: ReadonlyArray<Element> = [
   "WOOD", // step 6
   "FIRE", // step 7
   "WATER", // step 8 (final · cools to water before reveal)
-]
+];
 
 function svg({
   element,
   primary,
   secondary,
 }: {
-  element: Element
-  primary: string
-  secondary: string
+  element: Element;
+  primary: string;
+  secondary: string;
 }): string {
-  const { vivid, pastel, ink, symbol, ja } = ELEMENTS[element]
+  const { vivid, pastel, ink, symbol, ja } = ELEMENTS[element];
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
   <defs>
     <radialGradient id="bg" cx="50%" cy="40%" r="80%">
@@ -123,15 +123,15 @@ function svg({
         fill="${ink}"
         opacity="0.6"
         letter-spacing="0.15em">${ja.toUpperCase()}</text>
-</svg>`
+</svg>`;
 }
 
 export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const step = url.searchParams.get("step")
-  const archetype = url.searchParams.get("archetype")?.toUpperCase()
+  const url = new URL(request.url);
+  const step = url.searchParams.get("step");
+  const archetype = url.searchParams.get("archetype")?.toUpperCase();
 
-  let body: string
+  let body: string;
 
   if (archetype && (archetype as Element) in ELEMENTS) {
     // Archetype reveal icon · large element symbol + element name.
@@ -141,23 +141,23 @@ export async function GET(request: Request) {
       element: archetype as Element,
       primary: "Your Element",
       secondary: ELEMENTS[archetype as Element].ja,
-    })
+    });
   } else if (step) {
-    const n = Number.parseInt(step, 10)
+    const n = Number.parseInt(step, 10);
     if (Number.isInteger(n) && n >= 1 && n <= 8) {
-      const element = STEP_TO_ELEMENT[n - 1]
+      const element = STEP_TO_ELEMENT[n - 1];
       body = svg({
         element,
         primary: `Question ${n}`,
         secondary: "of 8",
-      })
+      });
     } else {
       // Unknown step · fall through to default
       body = svg({
         element: "WOOD",
         primary: "purupuru",
         secondary: "",
-      })
+      });
     }
   } else {
     // No params · default landing icon
@@ -165,7 +165,7 @@ export async function GET(request: Request) {
       element: "WOOD",
       primary: "purupuru",
       secondary: "the awareness layer",
-    })
+    });
   }
 
   return new NextResponse(body, {
@@ -173,5 +173,5 @@ export async function GET(request: Request) {
       "Content-Type": "image/svg+xml",
       "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
     },
-  })
+  });
 }

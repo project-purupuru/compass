@@ -14,11 +14,7 @@ const DISPLAY_ORDER: readonly Element[] = ["wood", "fire", "earth", "metal", "wa
  * two rows of two + a wider "water" cell spanning row 3 so all five
  * fit in the 2-column grid without orphaning a half-empty cell.
  */
-export function StatsTile({
-  distribution,
-}: {
-  distribution: Record<Element, number>;
-}) {
+export function StatsTile({ distribution }: { distribution: Record<Element, number> }) {
   const leader = useMemo(() => {
     let best: Element = "wood";
     let bestVal = -Infinity;
@@ -36,9 +32,7 @@ export function StatsTile({
       <header className="relative z-10 shrink-0 bg-puru-cloud-bright px-6 py-4 shadow-[0_1px_0_0_var(--puru-surface-border),0_2px_4px_var(--puru-surface-shadow-sm)]">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col">
-            <h3 className="font-puru-display text-xl text-puru-ink-rich">
-              Stats
-            </h3>
+            <h3 className="font-puru-display text-xl text-puru-ink-rich">Stats</h3>
           </div>
           <span className="inline-flex shrink-0 items-center gap-2.5 font-puru-mono text-2xs uppercase tracking-[0.22em] text-puru-ink-dim">
             <span
@@ -58,9 +52,7 @@ export function StatsTile({
           const spanFull = idx === DISPLAY_ORDER.length - 1;
           // Non-leader cells dim to ~50% so the leading clan visibly
           // owns the panel — same treatment as the desktop KpiStrip.
-          const dimClass = isLeader
-            ? "opacity-100"
-            : "opacity-60";
+          const dimClass = isLeader ? "opacity-100" : "opacity-60";
           return (
             <div
               key={el}
@@ -81,9 +73,7 @@ export function StatsTile({
                     : undefined
                 }
                 asideStyle={
-                  isLeader
-                    ? { color: `var(--puru-${el}-vivid)`, opacity: 0.42 }
-                    : undefined
+                  isLeader ? { color: `var(--puru-${el}-vivid)`, opacity: 0.42 } : undefined
                 }
               />
             </div>

@@ -87,11 +87,13 @@ function pickElement(): Element {
   return ELEMENTS[ELEMENTS.length - 1];
 }
 
-function makeEntry(opts: {
-  element?: Element;
-  isYou?: boolean;
-  joinedAt?: string;
-} = {}): SpawnedPuruhani {
+function makeEntry(
+  opts: {
+    element?: Element;
+    isYou?: boolean;
+    joinedAt?: string;
+  } = {},
+): SpawnedPuruhani {
   const seed = nextSeed++;
   const element = opts.element ?? pickElement();
   const identity = identityFor(seed, element);
@@ -126,8 +128,7 @@ function spawnNow(opts: { isYou?: boolean } = {}): SpawnedPuruhani | null {
 
 function scheduleTrickle(): void {
   if (typeof window === "undefined") return;
-  const delay =
-    TRICKLE_MIN_MS + Math.random() * (TRICKLE_MAX_MS - TRICKLE_MIN_MS);
+  const delay = TRICKLE_MIN_MS + Math.random() * (TRICKLE_MAX_MS - TRICKLE_MIN_MS);
   trickleHandle = setTimeout(() => {
     spawnNow();
     scheduleTrickle();
@@ -180,7 +181,11 @@ export const populationStore: PopulationStore = {
   },
   distribution() {
     const out: Record<Element, number> = {
-      wood: 0, fire: 0, earth: 0, water: 0, metal: 0,
+      wood: 0,
+      fire: 0,
+      earth: 0,
+      water: 0,
+      metal: 0,
     };
     for (const p of buffer) out[p.primaryElement]++;
     return out;

@@ -24,9 +24,7 @@ export function useWeather(): WeatherState {
         const feed = yield* WeatherFeed;
         const initial = yield* feed.current;
         setState(initial);
-        yield* Stream.runForEach(feed.stream, (s) =>
-          Effect.sync(() => setState(s)),
-        );
+        yield* Stream.runForEach(feed.stream, (s) => Effect.sync(() => setState(s)));
       }),
     );
     return () => {

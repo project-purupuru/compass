@@ -14,7 +14,8 @@
 
 "use client";
 
-import { CardStack, type LayerRarity } from "@/lib/cards/layers";
+import { cardTypeBridge, rarityBridge } from "@/lib/cards/bridge";
+import { CardStack } from "@/lib/cards/layers";
 import { useCardTilt } from "@/lib/cards/useCardTilt";
 import type { CardDefinition } from "@/lib/purupuru/contracts/types";
 
@@ -30,19 +31,6 @@ interface CardFaceProps {
   readonly onMouseLeave?: () => void;
 }
 
-/**
- * cycle-1 harness cardType → layer-system rarity. The harness taxonomy is
- * role-based; rarity escalates with how decisive the card's role is.
- */
-const RARITY_BY_CARDTYPE: Record<CardDefinition["cardType"], LayerRarity> = {
-  activation: "common",
-  tool: "common",
-  modifier: "mid",
-  event: "mid",
-  daemon: "rare",
-  ritual: "rarest",
-};
-
 export function CardFace({
   card,
   hovered = false,
@@ -52,7 +40,8 @@ export function CardFace({
   onMouseLeave,
 }: CardFaceProps) {
   const element = card.elementId;
-  const rarity = RARITY_BY_CARDTYPE[card.cardType];
+  const rarity = rarityBridge(card.cardType);
+  const layerCardType = cardTypeBridge(card.cardType);
 
   // pokemon-cards-css 3D tilt — writes CSS vars to the button; card-face.css
   // applies the rotation to .card-face__art and a pointer glare on top.
@@ -83,6 +72,7 @@ export function CardFace({
         beginPending({
           cardId: card.id,
           element,
+          cardType: layerCardType,
           rarity,
           pointer: { x: e.clientX, y: e.clientY },
         });
@@ -97,6 +87,7 @@ export function CardFace({
       <CardStack
         className="card-face__art"
         element={element}
+        cardType={layerCardType}
         rarity={rarity}
         alt={card.id.replace(/_/g, " ")}
       />

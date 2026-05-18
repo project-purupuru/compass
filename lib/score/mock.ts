@@ -23,10 +23,13 @@ function affinity(seed: number): Record<Element, number> {
   const total = 100;
   const raw = ELEMENTS.map((_, i) => Math.abs(Math.sin(seed + i * 1.7)));
   const sum = raw.reduce((a, b) => a + b, 0);
-  return ELEMENTS.reduce((acc, el, i) => {
-    acc[el] = Math.round((raw[i] / sum) * total);
-    return acc;
-  }, {} as Record<Element, number>);
+  return ELEMENTS.reduce(
+    (acc, el, i) => {
+      acc[el] = Math.round((raw[i] / sum) * total);
+      return acc;
+    },
+    {} as Record<Element, number>,
+  );
 }
 
 export const mockScoreAdapter: ScoreReadAdapter = {

@@ -14,12 +14,7 @@
 import { Schema as S } from "effect";
 import upstreamSchema from "./schemas/hounfour-audit-trail-entry.schema.json";
 
-export const ConservationStatus = S.Literal(
-  "balanced",
-  "drifted",
-  "violated",
-  "uncertain",
-);
+export const ConservationStatus = S.Literal("balanced", "drifted", "violated", "uncertain");
 export type ConservationStatus = S.Schema.Type<typeof ConservationStatus>;
 
 export const AuditTrailEntryPort = S.Struct({

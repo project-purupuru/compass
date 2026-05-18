@@ -1,323 +1,111 @@
 ---
-status: post-sprint-review-r1-patched
+status: draft-r0
 type: sprint-plan
-review: 2-agent skeptic adversarial · 3 BLOCKERS + 7 HIGH + 2 MEDIUM all addressed
-revision: post-sp-r1 · SP-001..012 reconciled · G5a budget revised per operator decision · legacy migration moved into S1
-cycle: substrate-agentic-translation-adoption-2026-05-12
-mode: arch + adopt
+cycle: hex-composition-scale-2026-05-17
+session: 18 (post-session-17 handoff)
+mode: ARCH (OSTROM) + craft lens (ALEXANDER) — push scale boundaries
+branch: feat/ecs-leaves-2026-05-17 (continues — see provenance below)
 prd: grimoires/loa/prd.md
 sdd: grimoires/loa/sdd.md
-created: 2026-05-12
-operator: zksoju
+prd_source: grimoires/loa/specs/enhance-substrate-perf-and-engine.md (parent)
+predecessor_cycle: engine-substrate-2026-05-17 (PARTIAL close — substrate proven, scale unverified)
+predecessor_distillation: grimoires/loa/distillations/session-16-ecs-substrate-proof-2026-05-17.md
+session_17_handoff: lib/wuxing/*, lib/hex/zone.ts, app/battle-v2/_components/vfx/effects/{ZoneScene,RealmScene,LeafSwirl,PollenMotes,Mist,RippleField,Embers,DustMotes,Sparks,PuruhaniWalker,ZoneMonument,ShengFlow,MusubiSilhouette,MountainRing}.tsx (all uncommitted operator in-flight)
+convergence_target: "BigRealmScene composes N×N hex blocks via extended PlotT (element + ambientBindings). Scale-test at 5×5 → 10×10 → 20×20 captures perf signal that the 7-plot engine-substrate cycle couldn't surface. Numbers reveal what to ECS-ize next."
+created: 2026-05-17
 ---
 
-# Sprint Plan · Substrate-Agentic Translation Layer · Compass Adoption
+# Hex Composition + Scale Cycle
 
-7 sprints (S0-S6) · feature-branch parent `feat/substrate-agentic-adoption` · per-sprint sub-branches `feat/sa-sN-<slug>` · operator pair-points at S0 close · S1 close (pattern-lock) · S2 entry · S2 close · S3 close · S4 close · S6 close (per SP-006 fix).
+Build on the closed engine-substrate cycle. Substrate is proven; this cycle
+proves the **composition shape** at the scale where it actually matters.
 
-**Critical path** (per SDD §13 dep graph): `S0 → S1 → S2 → (S3 ‖ S4) → S5 → S6`.
+Operator framing (verbatim):
+> "Each of these hexagon grids should be composable. We should think about
+> it like building blocks, kind of like a Minecraft block. Each thing
+> represents an individual section of the world, and then you can compose
+> together a bunch of procedural stuff and environmental stuff together…
+> we should see how it feels."
 
-**LOC budget** (PRD §3.1 · revised per SP-002/SP-003):
-- Conformance LOC delta (S0+S1+S2+S3+S6 · scoped to `lib/ packages/peripheral-events/` excluding `lib/world/`): ≤ **+500 net** (honest accounting · hand-port floor +400 + envelope shell +200 + fence +50 - legacy removal -80 - other shrinkage). Sub-target: non-hand-port refactor work ≤ **-100 LOC** (the substrate-shrinkage discipline survives at the sub-target level).
-- World substrate LOC budget (S4 · `lib/world/`): ≤ **+600**
-- Cycle net LOC: ≤ **+1200**
+## Dependency graph
 
----
+```
+  S1 (PlotT extension + Zone refactor)
+     │
+     ▼
+  S2 (BigRealmScene composer + VfxRegistry effect)
+     │
+     ▼
+  S3 (scale-test 5×5 → 10×10 → 20×20 + distill what bottlenecks)
+```
 
-## S0 · Conformance audit (operator pair-point gate · no code)
+Each sprint runs implement → review (cross-model dissent) → audit (cross-
+model dissent) → COMPLETED. Same gate pattern as cycle engine-substrate.
 
-**Branch**: `feat/sa-s0-conformance-audit`
-**LOC budget**: 0
-**Duration estimate**: 1-2 days
-**Exit gate**: Q7 S0→S1 promotion gate (PRD §3.1 / SDD §15)
+## Sprint 1 — Substrate composition primitives (~30 LOC)
 
-### Tasks
+Already partially landed (PlotT extension committed in this session). Tests
+and Zone passthrough are the remaining work.
 
-| ID | Title | Acceptance |
+| Task | Files | AC |
 |---|---|---|
-| **S0-T1** | Resolve §10.5 SHA-pin manifest | `grimoires/loa/prd.md §10.5` filled in with resolved SHAs for hounfour + rooms-substrate + straylight |
-| **S0-T2** | Map compass domain types → hounfour schemas | `grimoires/loa/context/12-hounfour-conformance-map.md` exists · maps `peripheral-events/src/world-event.ts` + `lib/sim/types.ts` + `lib/weather/types.ts` + `lib/activity/types.ts` to candidate schemas (PRD §5.1.1) OR marks "no upstream equivalent" |
-| **S0-T3** | Map compass behaviors → straylight surfaces | Append to S0-T2 doc · each behavior tagged "doc-only this cycle" or "defer N+2" |
-| **S0-T4** | Verify Phase 23a status with Eileen | Read straylight Phase 23a `docs/handoffs/phase-23a-mvp-schema-contract-draft.md` at resolved SHA · note any change since 2026-05-12 verification |
-| **S0-T5** | Open 3 tracking issues | One issue per upstream repo: `loa-hounfour` · `loa-straylight` · `construct-rooms-substrate` · titled `compass adoption tracker [substrate-agentic-2026-05-12]` · cite at least one compass file:line per issue (PRD G8 quality bar) |
-| **S0-T6** | File schema-blocker upstream issues if any | For each blocker found in S0-T2/T3, file an issue with reproducible fixture · 72h timeout protocol per PRD FR-S0-3 (S0 close blocked until either upstream resolution OR 72h elapsed AND operator NOTES.md decision recorded · per SP-011) |
-| **S0-T7** | Verify hounfour npm publish status | `npm view @0xhoneyjar/loa-hounfour version` matches local 7.0.0 OR document install path (file:link / git+url) |
-| **S0-T8** | Verify Next.js 16 ESM JSON imports | Quick spike: `import schema from './tmp/test.schema.json' with { type: "json" }` builds clean in dev + production · confirm `tsconfig.resolveJsonModule: true` |
-| **S0-T9** | Verify multi-world repo paths exist (per SP-008) | Confirm `~/Documents/GitHub/world-purupuru/` + `world-sprawl/` + `world-mibera/` exist with referenceable substrate-shape code · if absent, downgrade S5-T3/T4 to "no compass-substrate-shape exists yet · annotation-only" |
-| **S0-T10** | Document rooms-substrate drift posture (per SP-010) | rooms-substrate is operator-machine-only · NO public GitHub repo · drift detection (SDD §9.1) only covers hounfour · envelope schemas refresh manually at annual operator pair-point · capture this in NOTES.md |
-| **S0-T11** | Operator pair-point: S0→S1 promotion gate | NOTES.md decision record · check Q7 sub-conditions (a)(b)(c) PASS or FAIL · if FAIL, pivot to S0.5 negotiation cycle |
+| S1-T1 | `lib/hex/plot.ts` — DONE: `element?: ElementIdT` + `ambientBindings?: ElementIdT[]` optional fields on Plot schema | tsc passes; existing PlotT consumers unaffected (Plot was extended additively) |
+| S1-T2 | `lib/hex/zone.ts` — verify Zone primitive composes cleanly with extended PlotT (no required changes; Zone already carries `element` at the group level) | no edits required; cite that this composes |
+| S1-T3 | `lib/hex/plot.test.ts` (new) — assert PlotT can be constructed with and without `element` / `ambientBindings`; assert `S.Schema` validation accepts both shapes | vitest passes; ≥3 assertions |
 
-### Sprint exit criteria
+**Sprint exit**: tsc passes; new test file green; no regression in `lib/engine` tests; PlotT consumers downstream unaffected.
 
-- All 11 tasks closed
-- Q7 promotion gate documented PASS in NOTES.md
-- §10.5 SHA-pin manifest filled in
-- Multi-world repo paths verified (per SP-008)
-- Rooms-substrate drift posture captured (per SP-010)
-- For S0-T6 blockers: either upstream resolution OR 72h elapsed AND NOTES.md decision (per SP-011)
-- Operator approves move to S1
+## Sprint 2 — BigRealmScene composer (~120 LOC + knob registration)
 
----
-
-## S1 · Envelope shell + lift activity/population + pattern-lock
-
-**Branch**: `feat/sa-s1-envelope-shell`
-**LOC budget**: ≤ +200 net (envelope shell + new lift files +280 - legacy removal -80 = net +200)
-**Duration estimate**: 4-5 days (added migration + removal tasks per SP-003 fix)
-**Exit gate**: pattern-lock template documented · all tests green · `pnpm test` ≥ 24 · grep zero legacy subscribe(cb) callers · legacy code DELETED (not deprecated)
-
-### Tasks
-
-| ID | Title | Acceptance |
+| Task | Files | AC |
 |---|---|---|
-| **S1-T1** | Vendor envelope JSON schemas | `lib/domain/schemas/construct-handoff.schema.json` + `room-activation-packet.schema.json` copied verbatim from rooms-substrate · `lib/domain/schemas/README.md` names source SHA |
-| **S1-T2** | Author `lib/domain/handoff.schema.ts` | Effect Schema mirror per SDD §4.2 · ESM JSON import per BB-003 · `verdict: S.Unknown` placeholder per D6 |
-| **S1-T3** | Author `lib/domain/validate-envelope.ts` | AJV runtime validator per SDD §4.3 · throws `EnvelopeValidationError` on parse failure |
-| **S1-T4** | Annotate world-event.ts with output_type | Every `_tag: S.Literal` variant in `packages/peripheral-events/src/world-event.ts` gets matching `output_type` per SDD §4.4 |
-| **S1-T5** | Author envelope-coverage CI script | `scripts/check-envelope-coverage.sh` per SDD §4.4 · regex-based · zero deps · `.github/workflows/envelope-coverage.yml` invokes |
-| **S1-T6** | Lift activityStream to Effect Layer | NEW: `lib/activity/activity.port.ts` · `activity.live.ts` (wraps existing `activityStream`) · `activity.mock.ts` · `__tests__/activity.test.ts` |
-| **S1-T6.5** | Migrate ALL `app/` callers from `activityStream.subscribe(cb)` to `Activity` port (per SP-003 · operator decision) | `grep -rE "activityStream\.subscribe\|from.*activity'\)" app/` returns ZERO hits · all consumers use `runtime.runFork(Effect.gen(...))` pattern with `Activity` Service Tag |
-| **S1-T6.9** | DELETE legacy `subscribe(cb)` from `lib/activity/index.ts` | After S1-T6.5 grep zero · remove lines 42-48 + cleanup · -40 LOC · atomic commit `[adopt:rooms-substrate] remove-legacy-activity-subscribe` |
-| **S1-T7** | Lift populationStore to Effect Layer | NEW: `lib/sim/population.port.ts` · `population.live.ts` · `population.mock.ts` · `__tests__/population.test.ts` |
-| **S1-T7.5** | Migrate ALL `app/` callers from `populationStore.subscribe(cb)` to `Population` port (per SP-003) | `grep -rE "populationStore\.subscribe\|from.*population'\)" app/` returns ZERO hits |
-| **S1-T7.9** | DELETE legacy `subscribe(cb)` from `lib/sim/population.system.ts` | After S1-T7.5 grep zero · remove line 165+ subscribe block · -40 LOC · atomic commit `[adopt:rooms-substrate] remove-legacy-population-subscribe` |
-| **S1-T8** | Extend AppLayer in `lib/runtime/runtime.ts` | Add `ActivityLive` + `PopulationLive` to existing `Layer.mergeAll(...)` · NO new file in `lib/runtime/` |
-| **S1-T9** | Author single-runtime CI script | `scripts/check-single-runtime.sh` per SDD §5.3 · `grep -c "ManagedRuntime.make"` lib/+app/ MUST equal 1 · `.github/workflows/single-runtime.yml` invokes |
-| **S1-T10** | Document lift-pattern template | `grimoires/loa/specs/lift-pattern-template.md` per SDD §5.4 · 4-file canonical trio + Layer integration step + example component pattern + naming conventions · **APPLIED MECHANICALLY BY S4** (per SP-007 clarification: S2 hand-ports follow separate SDD §3.4 procedure · NOT this template) |
-| **S1-T11** | Test substrate green | `pnpm test` returns ≥ 24 + new test files green |
-| **S1-T12** | Operator pair-point: pattern-lock review | Operator confirms S1 lift pattern is template-worthy before S2 / S4 apply it |
+| S2-T1 | `app/battle-v2/_components/vfx/effects/BigRealmScene.tsx` — new effect. Takes `gridCols × gridRows` axial hex grid; assigns each cell an element via a seeded pattern (e.g. modulo cycle or Voronoi-style clustering); mounts terrain + element-glow disc per cell; mounts SHARED per-element ambients (one LeafSwirl across all `wood` cells, one Mist across all `water` cells, etc.) | tsc passes; renders an arbitrary-N hex grid with correct world positions; element distribution visibly mixed |
+| S2-T2 | `app/battle-v2/_components/vfx/effects/BigRealmScene.tsx` — atmosphere driver (reuse RealmScene's pattern: time-of-day-driven sky + fog + lights) | tsc passes |
+| S2-T3 | `app/battle-v2/_components/vfx/VfxConfig.ts` — add `BigRealmSceneConfig` schema (gridCols, gridRows, elementDistribution: "checker"/"voronoi"/"stripes", ambientBase, fogDensity, showWalkers, walkerCount, showMonuments, monumentEveryN, debugPerf, scatterSeed) + `BIG_REALM_SCENE_DEFAULTS` | tsc passes |
+| S2-T4 | `app/battle-v2/_components/vfx/VfxRegistry.ts` — register `big-realm-scene` effect at top of picker (next to realm-scene) with all knob bindings | toggle appears in PostPane |
 
-### Sprint exit criteria
+**Sprint exit**: `/battle-v2/vfx-lab` picker shows `big-realm-scene`. Selecting it renders an N×N hex grid with mixed elements + shared per-element ambients + atmosphere. Operator can change gridCols/gridRows live.
 
-- All 16 tasks closed (12 original + S1-T6.5 + S1-T6.9 + S1-T7.5 + S1-T7.9 added per SP-003)
-- All CI checks green (envelope-coverage · single-runtime · existing tests)
-- `pnpm test` ≥ 24 passing tests
-- S1 commit history is atomic (1 commit per logical change · NFR-ROLLBACK-3)
-- Legacy `subscribe(cb)` DELETED from both lib/activity/index.ts AND lib/sim/population.system.ts (NOT deferred to S2)
-- Operator approves pattern-lock template
+**Constraints (load-bearing)**:
+- NEVER author 3D character/walker geometry — use PaperPuppet3D for any walker render (per session-17 doctrine memory `[[paper-puppet-aesthetic]]`)
+- NEVER perimeter-ring mountains on a gameplay-facing surface (use terrain-class hexes for mountains)
+- Consult `.claude/constructs/packs/purupuru-codex/` before assigning element affinity to specific landmark concepts
+- Don't re-implement wuxing/zone/element primitives — import from `lib/wuxing/*` and `lib/hex/zone.ts`
+- ECS-ize walkers is OUT OF SCOPE this cycle — keep them as-is; the scale test will tell us at what N they bottleneck
 
----
+## Sprint 3 — Scale-test + distill
 
-## S2 · Hand-port hounfour schemas
-
-**Branch**: `feat/sa-s2-hand-port-hounfour`
-**LOC budget**: ≤ +400 LOC (5-8 schemas × ~80 LOC per port-set) + ~30 LOC for verdict narrowing + drift script ~150 LOC = +580 ceiling. Counted toward G5a (revised target +500 net per SP-002 fix). NOTE: -80 legacy offset NOT counted here (already removed in S1).
-**Duration estimate**: 2-3 days
-**Exit gate**: All hand-ports pass drift test · operator pair-point on idiom-fit
-
-### Tasks (one per candidate schema · S0 may add/remove)
-
-| ID | Title | Acceptance |
+| Task | Files | AC |
 |---|---|---|
-| **S2-T1** | Pre-flight: grep verdict callers | Per SDD §4.2.1 · `grep -rE "ConstructHandoff[\"']*\.verdict\|handoff\.verdict" lib/ app/` · expected 0 · operator pair-point on result before narrowing |
-| **S2-T2** | Hand-port `agent-identity` | `lib/domain/agent-identity.hounfour-port.ts` + `.mock.ts` + `__tests__/*.{port,drift}.test.ts` + vendored JSON schema · per SDD §3.4 8-step procedure |
-| **S2-T3** | Hand-port `agent-lifecycle-state` | Same procedure |
-| **S2-T4** | Hand-port `agent-descriptor` | Same procedure |
-| **S2-T5** | Hand-port `audit-trail-entry` | Same procedure (uses `Schema.Class` per SDD §8.2) |
-| **S2-T6** | Hand-port `domain-event` | Same procedure · this is the source for verdict union |
-| **S2-T7** | Hand-port `lifecycle-transition-payload` | Same procedure |
-| **S2-T8** | Author `scripts/hounfour-drift.ts` + add deps | Per SDD §9.1 · GITHUB_TOKEN auth · 404=red · diff-vs-main · **per SP-004**: `pnpm install @octokit/rest json-schema-diff --save-dev` · package.json devDependencies updated · `pnpm install` clean |
-| **S2-T9** | Author `pnpm hounfour:drift` script entry | **per SP-012**: package.json `scripts.hounfour:drift` registered (e.g. `"hounfour:drift": "tsx scripts/hounfour-drift.ts"`) · `pnpm hounfour:drift` runs without ENOENT · manual invocation only this sprint · cron CI deferred to S6 |
-| **S2-T10** | Narrow envelope verdict union | `lib/domain/handoff.schema.ts` · `verdict: S.Union(<hand-ported types>)` · per S2-T1 result use direct narrowing OR additive `typed_verdict` field |
-| **S2-T11** | Operator pair-point: idiom-fit review | Operator reviews each `.hounfour-port.ts` for Effect-Schema idiom · approves before sprint close |
+| S3-T1 | Capture PerfReadout: 5×5 (25 tiles), 10×10 (100 tiles), 20×20 (400 tiles). Record FPS / FRAME / DRAW / TRIS / GEO / TEX / PROG at each scale, both with ambients ON and OFF, walkers ON and OFF | numbers exist in S3-T2 file |
+| S3-T2 | `grimoires/loa/cycles/hex-composition-scale-2026-05-17/RESULTS.md` — measurement table with all scales × all toggles; visual observations at each scale | file exists; convergence target evaluated honestly |
+| S3-T3 | `grimoires/loa/distillations/session-18-hex-composition-scale-2026-05-17.md` — Stage-5 distill: what bottlenecks at scale, what substrate evolution is earned next (walker ECS? shared ambient instances? LOD?), explicit deferred items | file exists |
+| S3-T4 | `grimoires/loa/cycles/hex-composition-scale-2026-05-17/CYCLE-COMPLETED.md` — marker | file exists |
 
-### Sprint exit criteria
+## What NOT to build (Barth)
 
-- All hand-port tasks closed (count locked at S0-T2)
-- All drift tests green (pinned SHAs match vendored copies)
-- `pnpm hounfour:drift` runs clean against current main
-- @octokit/rest + json-schema-diff installed (per SP-004)
-- package.json scripts.hounfour:drift entry registered (per SP-012)
-- Verdict narrowing landed without breaking callers
-- Operator approves idiom-fit
-- (Legacy subscribe(cb) removal NOT a S2 task anymore · was moved to S1 per SP-003)
+- NO new ECS archetypes (walker pool stays React-side; defer until S3 numbers say so)
+- NO LOD strategy (surface as deferred item in distill; defer to next cycle)
+- NO ambient-instance sharing optimization beyond the simple "one InstancedMesh per element across all tiles with that binding"
+- NO new VFX primitives (LeafSwirl/Mist/Embers/etc are all in session-17 substrate; reuse them)
+- NO render-plugin port (PRD step 5, different cycle)
+- NO mountains as a perimeter ring on the gameplay surface
+- NO 3D character geometry — paper-puppet doctrine is LOCKED
+- NO biome-decorator integration into BigRealmScene this cycle (HexScene's biome+decorator system stays for HexScene; BigRealmScene uses a lighter element-tinted terrain rendering until biome composition earns its keep at scale)
 
----
+## Risks
 
-## S3 · Doc-only force-chain mapping + compile-time fence (parallel with S4 after S2)
-
-**Branch**: `feat/sa-s3-force-chain-fence`
-**LOC budget**: ≤ +50 (just the brand-type fence file · the doc is in grimoires/)
-**Duration estimate**: 1-2 days
-**Exit gate**: tstyche assertion green · issue opened on straylight
-
-### Tasks
-
-| ID | Title | Acceptance |
+| Risk | Likelihood | Mitigation |
 |---|---|---|
-| **S3-T1** | Read straylight Phase 23a recall-wedge contract | Re-verify state at S3 entry · note any change · operator pair-point if Phase 23b has landed |
-| **S3-T2** | Author `grimoires/loa/context/13-force-chain-mapping.md` | Per SDD §6.1 · 9-step force chain table for puruhani lifecycle · each step gets "where does this gate live in compass" answer or "no surface yet · placeholder" |
-| **S3-T3** | Author `lib/domain/verify-fence.ts` | Per SDD §6.2 · `unique symbol` brand · `verify()` + `judge()` functions · `VerifyError` + `JudgeError` typed errors · ZERO straylight import |
-| **S3-T4** | Add `expect-type` to package.json | Per BB-005 · NOT tstyche · add `test:types` script |
-| **S3-T5** | Author `lib/test/judge-fence.spec-types.ts` | Per SDD §6.3 · passing AND failing type assertions · `pnpm test:types` exits 0 only when fence holds |
-| **S3-T6** | Add CI step `.github/workflows/test-types.yml` | Q6 surface · failure of either type assertion = CI red |
-| **S3-T7** | Open issue on `loa-straylight` | Per FR-S3-4 · cite `lib/domain/verify-fence.ts:1` · ask Phase 23b compatibility question |
-| **S3-T8** | Operator pair-point: S3 close | Force-chain doc + fence file approved before merge |
+| 20×20 = 400 tiles may exceed M4 perf budget without LOD | high | This is the POINT of the cycle — surface where the wall is |
+| Element-ambient sharing across N tiles may have unexpected behavior (e.g. tile-confined spawn math may not generalize to a 20×20 grid's worth of `wood` tiles) | medium | Test at 5×5 first; bisect on shape if anomalies |
+| Time-of-day atmosphere may overwhelm small differences at small scale | low | Defaults pin to a single phase ("morning") during measurement passes |
+| Visual regression from engine-substrate's BLACK-leaves bug still unfixed | confirmed | This cycle's BigRealmScene uses element-glow discs + ambient particles, NOT InstancedLeafField. The BLACK-leaves bug is deferred and doesn't gate this work |
 
-### Sprint exit criteria
+## Provenance
 
-- 8 tasks closed
-- Compile-time fence assertion green (`pnpm test:types`)
-- Force-chain mapping doc reviewed by operator
-- Issue opened on straylight (G8 partial)
-
----
-
-## S4 · World substrate · applies S1 pattern-lock (parallel with S3 after S2)
-
-**Branch**: `feat/sa-s4-world-substrate`
-**LOC budget**: ≤ +600 (G5b)
-**Duration estimate**: 2-3 days (mechanical · per BB-012 · template-applied)
-**Exit gate**: operator iteration test passes · agent navigation test passes
-
-### Tasks (apply S1-T10 lift-pattern-template mechanically)
-
-| ID | Title | Acceptance |
-|---|---|---|
-| **S4-T1** | Audit existing `lib/{sim,weather,activity}/` for system shape | Per FR-S4-1 · document which systems have ports · which mix concerns · which need test substrate |
-| **S4-T2** | Author `lib/world/SKILL.md` | Per SDD §7.4 · includes §7.7 state ownership matrix · agent navigation test passes (fresh agent answers "what does awareness do" in ≤3 grep calls) |
-| **S4-T3** | Author `lib/world/awareness.{port,live,mock,test}.ts` | Apply lift-pattern-template · `awarenessRef` ownership declared in SKILL.md |
-| **S4-T4** | Author `lib/world/observatory.{port,live,mock,test}.ts` | Apply lift-pattern-template · NO writes (read-only declared) |
-| **S4-T5** | Author `lib/world/invocation.{port,live,mock,test}.ts` | Apply lift-pattern-template · NOT named "ceremony" per BB-011 · `commandsPubSub` ownership declared |
-| **S4-T6** | Author `lib/world/world.system.ts` | Composes all systems · orchestrator role · NOT a Service Tag (just a composition module) |
-| **S4-T7** | Extend AppLayer in `lib/runtime/runtime.ts` | Add `AwarenessLive` + `ObservatoryLive` + `InvocationLive` to `Layer.mergeAll` · single-runtime CI rule still passes (count == 1) |
-| **S4-T8** | Author 3 example components | `app/_components/awareness-example.tsx` · `observatory-example.tsx` · `invocation-example.tsx` · operator can copy-paste pattern |
-| **S4-T9** | Author `scripts/check-world-discipline.sh` | D4 enforcement · grep blocks `@solana` imports + `kvSet`/`kv.put` writes in `lib/world/` |
-| **S4-T10** | Author `scripts/check-state-ownership.sh` | BB-006 · §7.7 · grep enforces no system writes to a Ref/PubSub it doesn't declare ownership of in SKILL.md |
-| **S4-T11** | Author `scripts/check-system-name-uniqueness.sh` | BB-009 · system names of `*.live.ts` files in `lib/world/` appear exactly once in runtime.ts AppLayer mergeAll args · **per SP-009**: `world.system.ts` orchestrator EXCLUDED from check (it's a composition module · NOT a Layer Tag) · script uses explicit allowlist |
-| **S4-T12** | Add `find compass/lib -name '*card*' -o -name '*battle*'` CI rule | Q card-game-stays-out gate · per PRD §3.2 |
-| **S4-T13** | Operator iteration test | Operator runs `git mv lib/world/awareness.* lib/world/a-rename.*` + updates runtime.ts import · `pnpm test` stays green in 1 commit · per FR-S4-6 |
-| **S4-T14** | Agent navigation test | Fresh-context agent dispatched · asked "what does awareness expose and what ports does it have" · answers in ≤3 grep calls per Q operator-vibe-check |
-
-### Sprint exit criteria
-
-- 14 tasks closed
-- World substrate composes cleanly
-- All CI checks green (envelope-coverage · single-runtime · world-discipline · state-ownership · system-name-uniqueness · card-game-out)
-- Operator iteration test passes (1-commit rename works)
-- Agent navigation test passes (≤3 grep calls)
-- LOC budget G5b ≤ +600 verified
-
----
-
-## S5 · Multi-world readiness playbook (light touch · evidence-grounded)
-
-**Branch**: `feat/sa-s5-multi-world-playbook`
-**LOC budget**: 0 (docs only)
-**Duration estimate**: 0.5 day
-**Exit gate**: Each per-world paragraph cites real file:line per IMP-S5
-
-### Tasks
-
-| ID | Title | Acceptance |
-|---|---|---|
-| **S5-T1** | Author `grimoires/loa/specs/per-world-adoption-playbook.md` | 1-page checklist · enumerated steps to adopt the substrate in a new world |
-| **S5-T2** | Stub `world-purupuru` paragraph | 1 paragraph · cites at least one file:line in `~/Documents/GitHub/world-purupuru/` that demonstrates shape compass adopted (or absence thereof) |
-| **S5-T3** | Stub `world-sprawl` paragraph | Same evidence requirement IF S0-T9 verified repo exists · ELSE annotation-only "no compass-substrate-shape exists yet · adoption candidate when world-sprawl ships" (per SP-008) |
-| **S5-T4** | Stub `world-mibera` paragraph | Same evidence requirement IF S0-T9 verified repo exists · ELSE annotation-only "no compass-substrate-shape exists yet · adoption candidate when world-mibera ships" (per SP-008) |
-| **S5-T5** | Cross-link from `lib/world/SKILL.md` | Add reference to playbook so future agents find it |
-
-### Sprint exit criteria
-
-- 5 tasks closed
-- Each per-world paragraph passes evidence requirement (file:line citation)
-- Playbook reads as a checklist (not aspirational doc)
-
----
-
-## S6 · Distill upstream
-
-**Branch**: `feat/sa-s6-distill-upstream`
-**LOC budget**: -50 to +100 (changes to upstream pack · NOT compass)
-**Duration estimate**: 1 day
-**Exit gate**: doctrine ratification · drift CI cron live
-
-### Tasks
-
-| ID | Title | Acceptance |
-|---|---|---|
-| **S6-T1** | Update `construct-effect-substrate` pack | Status `candidate` → `validated · 1-project · adopting hounfour as canonical schema source · hand-port pattern documented` |
-| **S6-T2** | Add hand-port pattern reference to pack SKILL.md | Document the `*.hounfour-port.ts` convention · the 8-step S2-Tn procedure |
-| **S6-T3** | Add `examples/compass-adoption-example.md` | Walk through compass's adoption as worked example · file paths · LOC numbers · gotchas |
-| **S6-T4** | Activate `.github/workflows/hounfour-drift.yml` cron | Per SDD §9.2 · weekly Monday 6am UTC · authenticated GITHUB_TOKEN |
-| **S6-T5** | Operator decision: compass-as-fixture? | Per SDD-D4 / IMP-016 · should compass become a downstream CI gate for hounfour? Operator pair-point · capture decision · execute or defer |
-| **S6-T6** | Final NOTES.md decision log entry | All cycle decisions captured · ready for next cycle's reference |
-| **S6-T7** | Operator pair-point: doctrine ratification | construct-effect-substrate doctrine update approved before publishing |
-
-### Sprint exit criteria
-
-- 7 tasks closed
-- Doctrine pack updated and operator-approved
-- Drift CI cron active
-- Compass-as-fixture decision captured (do or defer)
-
----
-
-## Cross-sprint conventions
-
-### PR title format (per PRAISE-001)
-
-Every PR in this cycle includes `[adopt:<substrate>]` tag:
-- S1 PRs: `[adopt:rooms-substrate]`
-- S2 PRs: `[adopt:hounfour:<schema-name>]`
-- S3 PRs: `[adopt:straylight:doc-only]`
-- S4 PRs: `[adopt:lift-pattern]`
-- S5 PRs: `[adopt:playbook]`
-- S6 PRs: `[adopt:distill]`
-
-### Atomic commit contract (NFR-ROLLBACK-3)
-
-- One logical change per commit
-- S2: one commit per schema (`adopt-hounfour-<name>: hand-port + drift test + mock + Layer wire`)
-- Cross-sprint commits FORBIDDEN
-
-### Test-failure pause threshold (NFR-ROLLBACK-2)
-
-- `pnpm test` failures > 5 simultaneous → automatic pause + operator pair-point
-- CI auto-comments on PR
-
-### Operator pair-points (mandatory)
-
-| Gate | After sprint | Decision |
-|---|---|---|
-| Q7 promotion | S0 close | Proceed to S1 OR pivot to S0.5 |
-| Pattern-lock | S1 close | Approve template for S4 mechanical apply |
-| Verdict-callers | S2 entry | Direct narrow OR additive `typed_verdict` |
-| Idiom-fit | S2 close | Approve hand-ports |
-| Force-chain | S3 close | Approve doc + fence |
-| Iteration test | S4 close | Approve world substrate |
-| Doctrine | S6 close | Ratify pack update |
-
-### Beads task IDs
-
-Tasks above translate 1:1 to beads tasks (`br create`) at sprint start. ID format `<sprint>-T<N>` matches PR template.
-
----
-
-## Cuts (BARTH discipline · enforced by CI lint forever)
-
-- ❌ No `construct-translation-layer` pack: `find . -path '*/construct-translation-layer*'` empty
-- ❌ No `lib/adapters/` folder: `find lib -path '*adapter*'` empty
-- ❌ No card game in compass: `find compass/lib -name '*card*' -o -name '*battle*'` empty (S4-T12)
-- ❌ No straylight runtime imports: `grep -r "from.*loa-straylight" lib/` empty
-- ❌ No TypeBox: `grep -r "@sinclair/typebox" package.json` empty
-- ❌ No puppet theater: `find . -name 'puppet-*.ts'` empty
-- ❌ No solana imports in `lib/world/`: `grep -rE "from ['\"]@solana" lib/world/` empty
-- ❌ No new files in `lib/runtime/` this cycle: file count in `lib/runtime/` at S6 close == 2
-
-## Verification gates summary
-
-Per PRD §3.1 quantitative gates:
-
-| Gate | Measured at | Passing condition |
-|---|---|---|
-| Q1 conformance LOC delta | S6 close | ≤ 0 net (target -100) |
-| Q2 world-substrate LOC | S4 close | ≤ +600 |
-| Q3 hand-ported schemas | S2 close | ≥ 5 distinct |
-| Q4 envelope coverage | S1 close · CI | 100% variants tagged |
-| Q5 tests baseline | every PR | 24/24 → ≥ 24 + new |
-| Q6 compile-time fence | S3 close · CI | tstyche/expect-type assertion green |
-| Q7 S0→S1 gate | S0 close | NOTES.md PASS |
-| Q8 tracking issues | S0 close | 3/3 with file:line citation |
-| Q9 atomic commits | every commit | reviewable as 1-commit-per-change |
-| Q10 drift CI | S6 close | `.github/workflows/hounfour-drift.yml` active |
+- Predecessor cycle: `engine-substrate-2026-05-17` (PARTIAL close 2026-05-17)
+- PRD source: `grimoires/loa/specs/enhance-substrate-perf-and-engine.md`
+- Session-17 handoff: visual substrate + Zone primitive + wuxing runtime (all uncommitted operator in-flight on this branch)
+- Operator pacing: kaironic + teaching, same as last cycle
+- Branch continuation: `feat/ecs-leaves-2026-05-17` (continues with new commits scoped via `feat(sprint-N-comp): …` to keep the cycle-2 lineage distinguishable from cycle-1's `feat(sprint-N): …`)

@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Play,
-  Pause,
-  SkipForward,
-  Bell,
-  BellSlash,
-} from "@phosphor-icons/react";
+import { Play, Pause, SkipForward, Bell, BellSlash } from "@phosphor-icons/react";
 import { CELESTIAL } from "@/lib/world-purupuru-cdn";
 
 // Two-track ambient soundtrack. Each track gets a celestial album-art
@@ -138,9 +132,7 @@ export function MusicPlayer({
             alt={`${track.title} album art`}
             className="h-full w-full object-contain"
             style={{
-              animation: playing
-                ? "breathe 5.5s var(--ease-puru-breathe) infinite"
-                : undefined,
+              animation: playing ? "breathe 5.5s var(--ease-puru-breathe) infinite" : undefined,
             }}
           />
         </div>
@@ -195,11 +187,7 @@ export function MusicPlayer({
               sfxEnabled ? "text-puru-ink-soft" : "text-puru-ink-dim"
             }`}
           >
-            {sfxEnabled ? (
-              <Bell weight="fill" size={11} />
-            ) : (
-              <BellSlash weight="fill" size={11} />
-            )}
+            {sfxEnabled ? <Bell weight="fill" size={11} /> : <BellSlash weight="fill" size={11} />}
           </button>
         </div>
       </div>

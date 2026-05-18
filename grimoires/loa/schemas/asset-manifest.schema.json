@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/project-purupuru/purupuru-assets/schemas/asset-catalog.schema.json",
+  "title": "Purupuru Asset Catalog",
+  "description": "Canonical schema for purupuru-assets MANIFEST.json. Hash-first asset substrate: files, content-addressed assets, labels, storage keys, and event-log references.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "kind",
+    "version",
+    "released_at",
+    "generated_at",
+    "source",
+    "storage",
+    "consumers",
+    "total_files",
+    "total_assets",
+    "total_bytes",
+    "files",
+    "assets",
+    "events_file",
+    "projections"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": "1.0.0" },
+    "kind": { "const": "purupuru.asset.catalog" },
+    "version": { "type": "string", "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "released_at": { "type": "string", "format": "date-time" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "required": ["repo", "authority"],
+      "properties": {
+        "repo": { "const": "purupuru-assets" },
+        "authority": { "const": "canonical" }
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "required": ["tenant", "bucket_env", "region_env", "cdn_base_env", "dry_run_default"],
+      "properties": {
+        "tenant": { "const": "Purupuru" },
+        "bucket_env": { "const": "PURUPURU_ASSETS_S3_BUCKET" },
+        "region_env": { "const": "AWS_REGION" },
+        "cdn_base_env": { "const": "PURUPURU_ASSETS_CDN_BASE" },
+        "dry_run_default": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "consumers": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+(?::v[0-9]+)?$" }
+    },
+    "total_files": { "type": "integer", "minimum": 0 },
+    "total_assets": { "type": "integer", "minimum": 0 },
+    "total_bytes": { "type": "integer", "minimum": 0 },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fileRecord" }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assetRecord" }
+    },
+    "events_file": { "type": "string" },
+    "projections": {
+      "type": "object",
+      "required": ["sky_eyes_catalog"],
+      "properties": {
+        "sky_eyes_catalog": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "fileRecord": {
+      "type": "object",
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^public/(art|brand|fonts|data/materials)/.+" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "label": {
+      "type": "object",
+      "required": ["label_id", "type", "value", "source", "status", "confidence", "actor"],
+      "properties": {
+        "label_id": { "type": "string" },
+        "type": { "type": "string" },
+        "value": { "type": "string" },
+        "source": { "enum": ["path", "sky-eyes-catalog", "human", "agent"] },
+        "status": { "enum": ["proposed", "approved", "rejected"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "actor": { "type": "string" },
+        "event_hash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "assetRecord": {
+      "type": "object",
+      "required": [
+        "asset_id",
+        "sha256",
+        "bytes",
+        "mime",
+        "canonical_path",
+        "paths",
+        "lifecycle",
+        "label_quality",
+        "labels",
+        "provenance",
+        "purupuru",
+        "storage"
+      ],
+      "properties": {
+        "asset_id": { "type": "string", "pattern": "^asset_[0-9a-f]{12}$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "mime": { "type": "string" },
+        "canonical_path": { "type": "string", "pattern": "^public/(art|brand|fonts|data/materials)/.+" },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^public/(art|brand|fonts|data/materials)/.+" }
+        },
+        "dimensions": {
+          "type": "object",
+          "required": ["width", "height", "orientation"],
+          "properties": {
+            "width": { "type": "number", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "exclusiveMinimum": 0 },
+            "orientation": { "enum": ["portrait", "landscape", "square"] }
+          },
+          "additionalProperties": false
+        },
+        "lifecycle": { "enum": ["local", "candidate", "approved", "published", "deprecated"] },
+        "label_quality": { "enum": ["none", "path", "catalog", "human"] },
+        "labels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/label" }
+        },
+        "provenance": { "type": "array" },
+        "purupuru": { "type": "object" },
+        "storage": {
+          "type": "object",
+          "required": ["tenant", "key"],
+          "properties": {
+            "tenant": { "const": "Purupuru" },
+            "key": { "type": "string", "minLength": 1 },
+            "public_url": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

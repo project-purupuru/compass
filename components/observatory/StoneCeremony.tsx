@@ -122,11 +122,61 @@ interface AmbientSig {
 }
 
 const AMBIENT: Record<Element, AmbientSig> = {
-  wood:  { count: 6, driftY: -1, swayX: 12, durRange: [10, 14], sizeRange: [2, 3.5], glowMod: 0.27, squashWeight: 1.0,  migrateMul: 1.10, migrateApexVh: 20 },
-  fire:  { count: 7, driftY: -1, swayX:  6, durRange: [ 6,  9], sizeRange: [2, 4],   glowMod: 0.32, squashWeight: 0.9,  migrateMul: 0.85, migrateApexVh: 16 },
-  earth: { count: 6, driftY:  1, swayX:  8, durRange: [12, 16], sizeRange: [2, 3.5], glowMod: 0.25, squashWeight: 1.15, migrateMul: 1.00, migrateApexVh: 14 },
-  metal: { count: 2, driftY: -1, swayX:  4, durRange: [16, 22], sizeRange: [1.5, 2.5], glowMod: 0,    squashWeight: 1.0,  migrateMul: 0.95, migrateApexVh: 24 },
-  water: { count: 5, driftY: -1, swayX: 18, durRange: [11, 15], sizeRange: [2, 3],   glowMod: 0.22, squashWeight: 1.05, migrateMul: 1.15, migrateApexVh: 18 },
+  wood: {
+    count: 6,
+    driftY: -1,
+    swayX: 12,
+    durRange: [10, 14],
+    sizeRange: [2, 3.5],
+    glowMod: 0.27,
+    squashWeight: 1.0,
+    migrateMul: 1.1,
+    migrateApexVh: 20,
+  },
+  fire: {
+    count: 7,
+    driftY: -1,
+    swayX: 6,
+    durRange: [6, 9],
+    sizeRange: [2, 4],
+    glowMod: 0.32,
+    squashWeight: 0.9,
+    migrateMul: 0.85,
+    migrateApexVh: 16,
+  },
+  earth: {
+    count: 6,
+    driftY: 1,
+    swayX: 8,
+    durRange: [12, 16],
+    sizeRange: [2, 3.5],
+    glowMod: 0.25,
+    squashWeight: 1.15,
+    migrateMul: 1.0,
+    migrateApexVh: 14,
+  },
+  metal: {
+    count: 2,
+    driftY: -1,
+    swayX: 4,
+    durRange: [16, 22],
+    sizeRange: [1.5, 2.5],
+    glowMod: 0,
+    squashWeight: 1.0,
+    migrateMul: 0.95,
+    migrateApexVh: 24,
+  },
+  water: {
+    count: 5,
+    driftY: -1,
+    swayX: 18,
+    durRange: [11, 15],
+    sizeRange: [2, 3],
+    glowMod: 0.22,
+    squashWeight: 1.05,
+    migrateMul: 1.15,
+    migrateApexVh: 18,
+  },
 };
 
 interface Mote {
@@ -138,7 +188,11 @@ interface Mote {
 }
 
 const ELEMENT_SEEDS: Record<Element, number> = {
-  wood: 11, fire: 27, earth: 43, metal: 59, water: 71,
+  wood: 11,
+  fire: 27,
+  earth: 43,
+  metal: 59,
+  water: 71,
 };
 
 function buildMotes(seed: number, sig: AmbientSig): Mote[] {
@@ -193,10 +247,7 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
     // viewport-center via flex; the target is the wedge vertex on
     // the pentagram canvas. dx/dy are the deltas the motion.div
     // needs to translate to land on-target.
-    const wedgePoint = resolveWedgeViewportPoint(
-      pentagramPaneRef.current,
-      element,
-    );
+    const wedgePoint = resolveWedgeViewportPoint(pentagramPaneRef.current, element);
     if (wedgePoint) {
       const screenCx = window.innerWidth / 2;
       const screenCy = window.innerHeight / 2;
@@ -372,7 +423,12 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
             }}
             initial={{ opacity: 0, scaleY: 0.3 }}
             animate={{ opacity: [0, 0.95, 0], scaleY: [0.3, 1, 1.1] }}
-            transition={{ duration: 0.18, delay: 0.36, ease: [0.16, 1, 0.3, 1], times: [0, 0.55, 1] }}
+            transition={{
+              duration: 0.18,
+              delay: 0.36,
+              ease: [0.16, 1, 0.3, 1],
+              times: [0, 0.55, 1],
+            }}
           />
         )}
 
@@ -381,7 +437,8 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
             aria-hidden
             className="pointer-events-none absolute"
             style={{
-              width: 220, height: 220,
+              width: 220,
+              height: 220,
               background: `radial-gradient(circle at 50% 50%, color-mix(in oklch, oklch(0.04 0.008 80) 35%, transparent) 0%, transparent 70%)`,
               filter: "blur(12px)",
               transform: "translateY(-30px)",
@@ -413,7 +470,11 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
                   // Scale collapses 1.06 → 0.78 → 0.16 over the same
                   // segments. Rotation -8° → +4° wobble for solidity.
                   x: [0, targetRef.current.dx * 0.42, targetRef.current.dx],
-                  y: [0, targetRef.current.apexY + targetRef.current.dy * 0.42, targetRef.current.dy],
+                  y: [
+                    0,
+                    targetRef.current.apexY + targetRef.current.dy * 0.42,
+                    targetRef.current.dy,
+                  ],
                   scale: [1.06, 0.78, 0.16],
                   rotate: [0, -8, 4],
                   opacity: phase === "landed" ? 0 : 1,
@@ -443,7 +504,10 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
                   duration: migrateMs / 1000,
                   ease: "easeInOut",
                   times: targetRef.current ? [0, 0.42, 1] : undefined,
-                  opacity: { duration: 0.16, delay: phase === "landed" ? 0 : (migrateMs - 80) / 1000 },
+                  opacity: {
+                    duration: 0.16,
+                    delay: phase === "landed" ? 0 : (migrateMs - 80) / 1000,
+                  },
                 }
               : reduce
                 ? { duration: 0.18, delay: 0.06, ease: "easeOut" }
@@ -483,8 +547,10 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
                 : reduce || sig.glowMod === 0
                   ? { duration: 0.4, delay: 0.6 }
                   : {
-                      duration: glowSec, delay: 1.0,
-                      repeat: Infinity, ease: [0.45, 0.05, 0.55, 0.95],
+                      duration: glowSec,
+                      delay: 1.0,
+                      repeat: Infinity,
+                      ease: [0.45, 0.05, 0.55, 0.95],
                     }
             }
           />
@@ -498,7 +564,12 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
             transition={
               reduce || isExiting
                 ? undefined
-                : { duration: breathSec, delay: 1.6, repeat: Infinity, ease: [0.45, 0.05, 0.55, 0.95] }
+                : {
+                    duration: breathSec,
+                    delay: 1.6,
+                    repeat: Infinity,
+                    ease: [0.45, 0.05, 0.55, 0.95],
+                  }
             }
           >
             <Image
@@ -567,7 +638,8 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  duration: 0.36, ease: [0.22, 1, 0.36, 1],
+                  duration: 0.36,
+                  ease: [0.22, 1, 0.36, 1],
                   delay: reduce ? 0.22 + i * 0.04 : 1.44 + i * 0.08,
                 }}
               >
@@ -648,7 +720,8 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
               style={{
                 left: `calc(50vw + ${targetRef.current.dx}px)`,
                 top: `calc(50vh + ${targetRef.current.dy}px)`,
-                width: 200, height: 200,
+                width: 200,
+                height: 200,
                 transform: "translate(-50%, -50%)",
                 background: `radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--puru-${element}-vivid) 60%, transparent) 0%, color-mix(in oklch, var(--puru-${element}-vivid) 25%, transparent) 30%, transparent 70%)`,
                 filter: "blur(8px)",
@@ -664,7 +737,8 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
               style={{
                 left: `calc(50vw + ${targetRef.current.dx}px)`,
                 top: `calc(50vh + ${targetRef.current.dy}px)`,
-                width: 480, height: 480,
+                width: 480,
+                height: 480,
                 transform: "translate(-50%, -50%)",
                 background: `radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--puru-honey-base) 30%, transparent) 0%, color-mix(in oklch, var(--puru-honey-tint) 15%, transparent) 35%, transparent 70%)`,
                 filter: "blur(16px)",
@@ -685,9 +759,7 @@ export function StoneCeremony({ element, pentagramPaneRef, onDismiss }: Props) {
 // shown flag. Returns the element to celebrate, or null.
 export function readWelcomeElement(): Element | null {
   if (typeof window === "undefined") return null;
-  const raw = new URLSearchParams(window.location.search)
-    .get("welcome")
-    ?.toLowerCase();
+  const raw = new URLSearchParams(window.location.search).get("welcome")?.toLowerCase();
   if (!raw) return null;
   const VALID: readonly Element[] = ["wood", "fire", "earth", "metal", "water"];
   if (!VALID.includes(raw as Element)) return null;

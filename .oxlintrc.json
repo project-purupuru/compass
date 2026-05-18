@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxlint-config-json-schema/refs/heads/main/schema/v0.16.6.json",
+  "plugins": ["react", "typescript", "nextjs", "import"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "eqeqeq": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-no-undef": "error",
+    "react/no-children-prop": "error",
+    "react/self-closing-comp": "warn",
+    "typescript/no-explicit-any": "warn",
+    "import/no-duplicates": "warn"
+  },
+  "ignorePatterns": [
+    ".next",
+    ".next.OLD*",
+    "node_modules",
+    "dist",
+    "build",
+    ".claude",
+    "programs",
+    "packages/*/dist",
+    ".vercel"
+  ],
+  "overrides": [
+    {
+      "files": ["scripts/**/*.ts", "scripts/**/*.mjs", "scripts/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "tests/**"],
+      "rules": {
+        "no-console": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ]
+}

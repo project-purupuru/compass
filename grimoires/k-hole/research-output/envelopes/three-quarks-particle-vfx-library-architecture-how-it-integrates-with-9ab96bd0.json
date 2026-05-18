@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "three-quarks-particle-vfx-library-architecture-how-it-integrates-with-9ab96bd0",
+  "ref": {
+    "name": "three.quarks particle VFX library architecture · how it integrates with Three.js scene · environmental effects rain thunder earthquake displacement · particle system performance budgets for 100k+ part",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "three-quarks-particle-vfx-library-architecture-how-it-integrates-with"
+  },
+  "resonance": {
+    "strength": 0.6,
+    "evidence": [
+      "Alchemist0823's `three.quarks` library achieves \"Unity-like\" visual fidelity by using a global `BatchedRenderer` to combine multiple `ParticleSystem` instances into a single `THREE.InstancedMesh` draw call. However, its hybrid architecture relies on CPU-side looping to resolve complex behaviors (like Bezier curve LUTs and sub-emitters) before pushing interleaved vertex buffers to the GPU. This CPU bottleneck means it is highly optimized for \"game-scale\" deployments (5k–20k particles) but will critically fail your 100,000+ interactive particle budget. Attempting to force your custom `MeshToonMa",
+      "Genshin Impact*-style VFX relies heavily on complex \"technical art\" rather than sheer billboard volume, executing stylized logic entirely within the shader. Techniques like procedural erosion using noise textures, high-speed UV panning across custom cylinder meshes, and stepped lighting via LUTs define this visual register. Injecting these hyper-specific, fragment-level toon constraints into a generalized engine is an anti-pattern. Instead, the convergence target points toward a bespoke pure-GPU primitive. Processing 100k particles in under 2ms requires either classic GPGPU Frame Buffer Object",
+      "`r3f-vfx` represents the modern bridge for this bespoke approach, bypassing React reconciliation overhead entirely by utilizing \"Custom Vertex Streams\" designed specifically for the React Three Fiber ecosystem. For localized, hex-tile environmental effects like displacement or rain, managing lifecycle state through custom attributes in a targeted `THREE.ShaderMaterial` provides tighter coupling to the grid state than wrangling generalized sub-emitters. This mirrors the architectural leap seen in compute-driven rendering pipelines like Unreal's Niagara, where simulation data never leaves VRAM, "
+    ]
+  },
+  "why": {
+    "design": "Dig on \"three.quarks particle VFX library architecture · how it integrates with Three.js scene · environmental effects rain thunder earthquake displacement · particle system performance budgets for 100k+ particles in web games · GPU-based particle simulation in r3f vs CPU · convergence target: assessment of whether three.quarks composes with our existing cel-shaded toon-material lab, or whether we should roll a smaller bespoke particle primitive that fits the visual register (Nightmare Circus / Genshin) and works per-hex-tile\" surfaced 11 sources at + depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-2026-05-17-three-quarks-vfx.md",
+    "ratified_at": "2026-05-17",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "WebGPU TSL compute shaders Three.js",
+    "r3f-vfx custom vertex streams implementation",
+    "Genshin Impact particle shader procedural erosion",
+    "THREE-CustomShaderMaterial GPU instancing hooks"
+  ]
+}

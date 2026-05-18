@@ -1,0 +1,265 @@
+  /* DevConsole — phase scrubber + event log + snapshot view styles.
+     Pulled out of DevConsole.tsx Tailwind utilities for the new
+     sub-panels. NODE_ENV gate ensures this only ships in dev builds. */
+
+  .dev-section {
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid oklch(0.85 0.02 85 / 0.3);
+  }
+  .dev-section:last-child { border-bottom: none; }
+
+  .dev-h3 {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--puru-ink-soft);
+    margin: 0 0 var(--space-xs);
+  }
+
+  /* Phase scrubber buttons */
+  .dev-phase-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2xs);
+  }
+  .dev-phase-btn {
+    padding: var(--space-2xs) var(--space-xs);
+    border: 1px solid oklch(0.85 0.02 85 / 0.4);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--puru-ink-dim);
+    cursor: pointer;
+    text-align: left;
+    transition: background 120ms, color 120ms;
+  }
+  .dev-phase-btn:hover {
+    background: var(--puru-cloud-base);
+    color: var(--puru-ink-rich);
+  }
+  .dev-phase-btn--active {
+    background: var(--puru-honey-base);
+    color: var(--puru-ink-rich);
+    border-color: var(--puru-honey-rich);
+    font-weight: 600;
+  }
+
+  .dev-action-row {
+    display: flex;
+    gap: var(--space-2xs);
+    margin-top: var(--space-xs);
+  }
+  .dev-action-btn {
+    flex: 1;
+    padding: var(--space-2xs) var(--space-xs);
+    border: 1px solid oklch(0.85 0.02 85 / 0.4);
+    border-radius: var(--radius-sm);
+    background: oklch(0.95 0.005 85);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--puru-ink-base);
+    cursor: pointer;
+    text-transform: lowercase;
+    letter-spacing: 0.06em;
+  }
+  .dev-action-btn:hover { background: var(--puru-cloud-base); }
+
+  /* Event log */
+  .dev-events {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .dev-event-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 2px var(--space-2xs);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--puru-ink-base);
+    background: oklch(0.97 0.005 85);
+    border-radius: 3px;
+  }
+  .dev-event-tag {
+    font-weight: 600;
+    color: var(--puru-ink-rich);
+  }
+  .dev-event-ts {
+    color: var(--puru-ink-ghost);
+    font-feature-settings: "tnum" 1;
+  }
+  .dev-empty {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--puru-ink-ghost);
+    font-style: italic;
+    padding: var(--space-xs);
+  }
+
+  /* Snapshot JSON */
+  .dev-json {
+    margin: 0;
+    padding: var(--space-xs);
+    max-height: 360px;
+    overflow-y: auto;
+    background: oklch(0.97 0.005 85);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--puru-ink-base);
+    white-space: normal;
+  }
+  .dev-json-line {
+    display: flex;
+    gap: 4px;
+    align-items: baseline;
+    padding: 1px 0;
+  }
+  .dev-json-line--clickable {
+    cursor: pointer;
+    color: var(--puru-honey-rich);
+  }
+  .dev-json-line--clickable:hover { background: oklch(0.93 0.01 85); }
+  .dev-json-key {
+    color: var(--puru-water-vivid);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .dev-json-colon { color: var(--puru-ink-ghost); }
+  .dev-json-value {
+    color: var(--puru-ink-base);
+    word-break: break-all;
+  }
+
+  /* ── MechanicsInspector ───────────────────────────────────────
+     Live readout of every active substrate mechanic in human language.
+     One row per mechanic. Wide rows for collections (per-card mults,
+     clash sequence). */
+  .dev-mech-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  .dev-mech-row {
+    display: grid;
+    grid-template-columns: 18px 88px 1fr;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: var(--radius-xs);
+    background: oklch(0.97 0.005 85);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    line-height: 1.4;
+    color: var(--puru-ink-base);
+  }
+  .dev-mech-row--wide {
+    grid-template-columns: 18px 88px 1fr;
+  }
+  .dev-mech-row[data-kind='sheng-chain']     { background: oklch(0.96 0.04 112); }
+  .dev-mech-row[data-kind='setup-strike']    { background: oklch(0.95 0.05 28); }
+  .dev-mech-row[data-kind='elemental-surge'] { background: oklch(0.96 0.06 85); }
+  .dev-mech-row[data-kind='weather-blessing']{ background: oklch(0.96 0.04 266); }
+  .dev-mech-row[data-kind='transcendence']   { background: oklch(0.96 0.04 309); }
+  .dev-mech-icon {
+    font-family: var(--font-card);
+    font-size: var(--text-sm);
+    text-align: center;
+    color: var(--puru-ink-rich);
+  }
+  .dev-mech-icon[data-element='wood']  { color: var(--puru-wood-vivid); }
+  .dev-mech-icon[data-element='fire']  { color: var(--puru-fire-vivid); }
+  .dev-mech-icon[data-element='earth'] { color: var(--puru-earth-vivid); }
+  .dev-mech-icon[data-element='metal'] { color: var(--puru-metal-vivid); }
+  .dev-mech-icon[data-element='water'] { color: var(--puru-water-vivid); }
+  .dev-mech-label {
+    color: var(--puru-ink-soft);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    font-size: 9px;
+  }
+  .dev-mech-value {
+    color: var(--puru-ink-base);
+    word-break: break-word;
+  }
+  .dev-mech-value strong {
+    color: var(--puru-ink-rich);
+    font-weight: 700;
+  }
+  .dev-mech-note {
+    color: var(--puru-honey-rich);
+    font-style: italic;
+  }
+  .dev-mech-multipliers {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .dev-mech-mult {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: oklch(0.94 0.01 85);
+    color: var(--puru-ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .dev-mech-mult[data-bonus] {
+    background: var(--puru-honey-base);
+    color: var(--puru-ink-rich);
+    font-weight: 700;
+  }
+  .dev-mech-clashes {
+    display: flex;
+    gap: 4px;
+  }
+  .dev-mech-clash {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    text-align: center;
+    line-height: 14px;
+    background: oklch(0.92 0.005 85);
+    color: var(--puru-ink-ghost);
+    font-size: 10px;
+    opacity: 0.4;
+  }
+  .dev-mech-clash[data-revealed] { opacity: 1; }
+  .dev-mech-clash[data-loser='p1']   { background: oklch(0.85 0.12 28); color: oklch(0.25 0.15 28); }
+  .dev-mech-clash[data-loser='p2']   { background: oklch(0.85 0.12 112); color: oklch(0.25 0.15 112); }
+  .dev-mech-clash[data-loser='draw'] { background: oklch(0.85 0.03 85);  color: oklch(0.30 0 0); }
+
+  /* ── Tweakpane host ───────────────────────────────────────────────
+     Tweakpane provides its own dark UI; we only style the wrapper
+     section + the explainer paragraph. */
+  .dev-tweakpane-host {
+    /* Tweakpane uses its own injected styles; no need to override. */
+    margin-top: var(--space-xs);
+  }
+  .dev-h-sub {
+    font-family: var(--font-body);
+    font-size: var(--text-2xs);
+    color: var(--puru-ink-dim);
+    margin: 0 0 var(--space-sm);
+    line-height: 1.4;
+  }
+  .dev-h-sub code {
+    font-family: var(--font-mono);
+    background: oklch(0.93 0.005 85);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: var(--puru-ink-base);
+  }

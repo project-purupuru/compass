@@ -13,11 +13,7 @@ import {
 } from "pixi.js";
 import { ELEMENTS, scoreAdapter, type Element } from "@/lib/score";
 import { ELEMENT_KANJI } from "@/lib/domain/element";
-import {
-  createPentagram,
-  pentagonEdges,
-  innerStarEdges,
-} from "@/lib/sim/pentagram";
+import { createPentagram, pentagonEdges, innerStarEdges } from "@/lib/sim/pentagram";
 import { advanceBreath, restingPositionFor } from "@/lib/sim/entities";
 import { populationStore, type SpawnedPuruhani } from "@/lib/sim/population.system";
 import type { Puruhani, PuruhaniIdentity } from "@/lib/sim/types";
@@ -47,8 +43,8 @@ const ELEMENT_HEX: Record<Element, number> = {
 // (#a7a7a7); nudged toward cool silver so it reads as glow rather
 // than dead pixels.
 const AURA_HEX: Record<Element, number> = {
-  wood:  0xba7349,
-  fire:  0xff8e00,
+  wood: 0xba7349,
+  fire: 0xff8e00,
   earth: 0xa1a55c,
   water: 0x9cd7eb,
   metal: 0xc8ccd6,
@@ -59,8 +55,8 @@ const AURA_HEX: Record<Element, number> = {
 // blob-URL worker that can't follow cross-origin redirects even
 // when the remote serves permissive CORS.
 const ELEMENT_ICON_URL: Record<Element, string> = {
-  wood:  "/art/elements/wood.png",
-  fire:  "/art/elements/fire.png",
+  wood: "/art/elements/wood.png",
+  fire: "/art/elements/fire.png",
   earth: "/art/elements/earth.png",
   water: "/art/elements/water.png",
   metal: "/art/elements/metal.png",
@@ -137,16 +133,13 @@ function computeAssetSizes(radius: number): AssetSizes {
 interface SpriteEntry {
   entity: Puruhani;
   node: Sprite;
-  shadow: Graphics;    // soft elliptical contact shadow underneath
+  shadow: Graphics; // soft elliptical contact shadow underneath
   baseScale: number;
-  spawnDelay: number;  // ms · staggered fade-in offset from canvas start
-  focusAlpha: number;  // 0..1 — smoothly tracks focus dim/restore target
+  spawnDelay: number; // ms · staggered fade-in offset from canvas start
+  focusAlpha: number; // 0..1 — smoothly tracks focus dim/restore target
 }
 
-function topAffinity(
-  affinity: Record<Element, number>,
-  primary: Element,
-): Element {
+function topAffinity(affinity: Record<Element, number>, primary: Element): Element {
   let best: Element = primary;
   let bestVal = -1;
   for (const el of ELEMENTS) {
@@ -273,8 +266,12 @@ function rng(seed: number): () => number {
 // Per-channel lerp between two hex colors. t=0 → a, t=1 → b.
 // Used for the smooth tint transition when sprite focus dim/restores.
 function lerpHex(a: number, b: number, t: number): number {
-  const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
-  const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+  const ar = (a >> 16) & 0xff,
+    ag = (a >> 8) & 0xff,
+    ab = a & 0xff;
+  const br = (b >> 16) & 0xff,
+    bg = (b >> 8) & 0xff,
+    bb = b & 0xff;
   const r = Math.round(ar + (br - ar) * t);
   const g = Math.round(ag + (bg - ag) * t);
   const bl = Math.round(ab + (bb - ab) * t);
@@ -396,10 +393,7 @@ export function PentagramCanvas({
       const seenTraders = new Set<string>();
       let youSpriteEntry: SpriteEntry | null = null;
 
-      async function addSpriteForSpawn(
-        spawn: SpawnedPuruhani,
-        spawnAtTms: number,
-      ): Promise<void> {
+      async function addSpriteForSpawn(spawn: SpawnedPuruhani, spawnAtTms: number): Promise<void> {
         if (seenTraders.has(spawn.trader)) return;
         seenTraders.add(spawn.trader);
 
@@ -408,15 +402,14 @@ export function PentagramCanvas({
         const profile = await scoreAdapter.getWalletProfile(spawn.trader);
         if (cancelled) return;
         const affinity = profile?.elementAffinity ?? {
-          wood: 20, fire: 20, earth: 20, water: 20, metal: 20,
+          wood: 20,
+          fire: 20,
+          earth: 20,
+          water: 20,
+          metal: 20,
         };
         const positionRng = rng(spawn.seed + 1009);
-        const resting = restingPositionFor(
-          spawn.primaryElement,
-          affinity,
-          geometry,
-          positionRng,
-        );
+        const resting = restingPositionFor(spawn.primaryElement, affinity, geometry, positionRng);
         const phaseRng = rng(spawn.seed + 13);
 
         const entity: Puruhani = {
@@ -446,7 +439,12 @@ export function PentagramCanvas({
         spriteLayer.addChild(node);
 
         const shadow = new Graphics();
-        shadow.ellipse(0, 0, assetSizes.shadowRx * SHADOW_OUTER_SCALE, assetSizes.shadowRy * SHADOW_OUTER_SCALE);
+        shadow.ellipse(
+          0,
+          0,
+          assetSizes.shadowRx * SHADOW_OUTER_SCALE,
+          assetSizes.shadowRy * SHADOW_OUTER_SCALE,
+        );
         shadow.fill({ color: 0x000000, alpha: SHADOW_OUTER_FILL_ALPHA });
         shadow.ellipse(0, 0, assetSizes.shadowRx, assetSizes.shadowRy);
         shadow.fill({ color: 0x000000, alpha: SHADOW_INNER_FILL_ALPHA });
@@ -455,7 +453,10 @@ export function PentagramCanvas({
         shadowLayer.addChild(shadow);
 
         const entry: SpriteEntry = {
-          entity, node, shadow, baseScale,
+          entity,
+          node,
+          shadow,
+          baseScale,
           spawnDelay: spawnAtTms,
           focusAlpha: 1,
         };
@@ -642,7 +643,7 @@ export function PentagramCanvas({
             const color = ELEMENT_HEX[target.entity.primaryElement];
             focusGlow.clear();
             focusGlow.circle(target.node.x, target.node.y + 2, r + 6);
-            focusGlow.fill({ color, alpha: 0.10 });
+            focusGlow.fill({ color, alpha: 0.1 });
             focusGlow.circle(target.node.x, target.node.y + 2, r);
             focusGlow.stroke({ width: 1.5, color, alpha: 0.55 });
             focusGlow.alpha = Math.min(1, focusGlow.alpha + dt / 200);
@@ -710,7 +711,12 @@ export function PentagramCanvas({
           // (outer ring first, tighter contact disk on top). shadow.y
           // is updated by the ticker every frame from assetSizes.shadowOffsetY.
           s.shadow.clear();
-          s.shadow.ellipse(0, 0, assetSizes.shadowRx * SHADOW_OUTER_SCALE, assetSizes.shadowRy * SHADOW_OUTER_SCALE);
+          s.shadow.ellipse(
+            0,
+            0,
+            assetSizes.shadowRx * SHADOW_OUTER_SCALE,
+            assetSizes.shadowRy * SHADOW_OUTER_SCALE,
+          );
           s.shadow.fill({ color: 0x000000, alpha: SHADOW_OUTER_FILL_ALPHA });
           s.shadow.ellipse(0, 0, assetSizes.shadowRx, assetSizes.shadowRy);
           s.shadow.fill({ color: 0x000000, alpha: SHADOW_INNER_FILL_ALPHA });

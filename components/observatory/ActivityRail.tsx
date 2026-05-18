@@ -78,9 +78,7 @@ export function ActivityRail() {
       <header className="relative z-10 shrink-0 bg-puru-cloud-bright px-6 py-4 shadow-[0_1px_0_0_var(--puru-surface-border),0_2px_4px_var(--puru-surface-shadow-sm)]">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col">
-            <h3 className="font-puru-display text-xl text-puru-ink-rich">
-              Activity
-            </h3>
+            <h3 className="font-puru-display text-xl text-puru-ink-rich">Activity</h3>
           </div>
           <span className="inline-flex shrink-0 items-center gap-2.5 font-puru-body text-2xs uppercase tracking-[0.22em] text-puru-ink-dim">
             <span
@@ -88,9 +86,7 @@ export function ActivityRail() {
               style={{ backgroundColor: "var(--puru-wood-vivid)" }}
               aria-hidden
             />
-            <span className="inline-block min-w-[5.25em] text-right tabular-nums">
-              {lastSeen}
-            </span>
+            <span className="inline-block min-w-[5.25em] text-right tabular-nums">{lastSeen}</span>
           </span>
         </div>
       </header>
@@ -113,9 +109,8 @@ export function ActivityRail() {
             // plain content. Captured as a tuple so both fields stay
             // narrowed across the JSX boundary (TS doesn't back-propagate
             // `txInfo !== null` to `e.kind === "mint"` on its own).
-            const txInfo = e.kind === "mint"
-              ? { url: solscanTxUrl(e.signature), sig: e.signature }
-              : null;
+            const txInfo =
+              e.kind === "mint" ? { url: solscanTxUrl(e.signature), sig: e.signature } : null;
             const rowContent = (
               <>
                 {actor ? (

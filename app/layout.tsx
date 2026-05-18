@@ -46,9 +46,7 @@ export default async function RootLayout({
   // client-side resolution.
   const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
   const initialTheme: ResolvedTheme | undefined =
-    cookieTheme === "old-horai" || cookieTheme === "day-horai"
-      ? cookieTheme
-      : undefined;
+    cookieTheme === "old-horai" || cookieTheme === "day-horai" ? cookieTheme : undefined;
 
   return (
     <html

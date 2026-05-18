@@ -1,0 +1,19 @@
+{
+  "_test_purpose": "gold tier declared but linked_utcs empty · agent-confabulated promotion · MUST REJECT",
+  "_expected_outcome": "invalid",
+  "_expected_constraint_violations": ["gold-requires-utc-linked", "gold-utc-learning-valid"],
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000004",
+    "artifact_path": "grimoires/loa/context/taste-tokens/agent-confabulated-spec.md",
+    "tier": "gold",
+    "grounding_status": "grounded",
+    "linked_utcs": [],
+    "blessed_by": "auto-derived",
+    "operator_signed": false,
+    "asserted_at": "2026-05-16T15:45:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "_failure_mode": "agent self-promotion to gold without UTC backing · the load-bearing fix"
+    }
+  }
+}

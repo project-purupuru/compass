@@ -11,7 +11,13 @@ import type { SpawnedPuruhani } from "../population.system";
 const samplePuruhani: SpawnedPuruhani = {
   seed: 1,
   trader: "test-trader",
-  identity: { archetype: "fire", swag: "Bold", era: "Past", ancestor: "Inkstone", molecule: "Salt" } as never,
+  identity: {
+    archetype: "fire",
+    swag: "Bold",
+    era: "Past",
+    ancestor: "Inkstone",
+    molecule: "Salt",
+  } as never,
   primaryElement: "fire",
   joinedAt: new Date().toISOString(),
   isYou: false,
@@ -23,7 +29,9 @@ describe("PopulationLive lift", () => {
       const p = yield* Population;
       return yield* p.current;
     });
-    const result = await Effect.runPromise(Effect.provide(program, PopulationMock([samplePuruhani])));
+    const result = await Effect.runPromise(
+      Effect.provide(program, PopulationMock([samplePuruhani])),
+    );
     expect(result).toHaveLength(1);
     expect(result[0]?.primaryElement).toBe("fire");
   });

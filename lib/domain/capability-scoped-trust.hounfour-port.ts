@@ -12,13 +12,7 @@
 import { Schema as S } from "effect";
 import upstreamSchema from "./schemas/hounfour-capability-scoped-trust.schema.json";
 
-export const TrustLevel = S.Literal(
-  "untrusted",
-  "basic",
-  "verified",
-  "trusted",
-  "sovereign",
-);
+export const TrustLevel = S.Literal("untrusted", "basic", "verified", "trusted", "sovereign");
 export type TrustLevel = S.Schema.Type<typeof TrustLevel>;
 
 export const CapabilityScopedTrustPort = S.Struct({

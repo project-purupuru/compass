@@ -1,0 +1,83 @@
+{
+  "_provenance": {
+    "_source": "construct-effect-substrate/constraints/GroundingEnvelope.constraints.json",
+    "_pattern": "hand-port-with-drift (cycle-2 doctrine)",
+    "_vendored_at": "2026-05-16"
+  },
+  "$schema": "https://construct-effect-substrate.dev/schemas/constraint-file.json",
+  "schema_id": "GroundingEnvelope",
+  "contract_version": "1.0.0",
+  "expression_version": "1.0",
+  "constraints": [
+    {
+      "id": "gold-requires-utc-linked",
+      "expression": "tier == 'gold' => linked_utcs != null && linked_utcs.length >= 1",
+      "severity": "error",
+      "message": "tier=gold requires at least one linked UTC (anti-spiral tether)",
+      "fields": ["tier", "linked_utcs"]
+    },
+    {
+      "id": "gold-requires-grounded",
+      "expression": "tier == 'gold' => grounding_status == 'grounded'",
+      "severity": "error",
+      "message": "tier=gold requires grounding_status=grounded",
+      "fields": ["tier", "grounding_status"]
+    },
+    {
+      "id": "gold-utc-learning-valid",
+      "expression": "tier == 'gold' => exists(linked_utcs, lu => lu.learning_status in ['strongly-validated', 'directionally-correct'])",
+      "severity": "error",
+      "message": "tier=gold requires at least one UTC with learning_status in [strongly-validated, directionally-correct]",
+      "fields": ["tier", "linked_utcs"]
+    },
+    {
+      "id": "silver-requires-signature-or-consensus",
+      "expression": "tier == 'silver' => operator_signed == true || (blessed_by == 'construct-consensus' && metadata.consensus_voices.length >= 2)",
+      "severity": "error",
+      "message": "tier=silver requires operator_signed=true OR construct-consensus with >=2 voices",
+      "fields": ["tier", "operator_signed", "blessed_by"]
+    },
+    {
+      "id": "operator-signed-needs-blessed-by-operator",
+      "expression": "operator_signed == true => blessed_by == 'operator'",
+      "severity": "error",
+      "message": "operator_signed=true requires blessed_by=operator (non-transferability)",
+      "fields": ["operator_signed", "blessed_by"]
+    },
+    {
+      "id": "refuted-requires-timestamp",
+      "expression": "grounding_status == 'refuted' => refuted_at != null",
+      "severity": "error",
+      "message": "grounding_status=refuted requires refuted_at timestamp",
+      "fields": ["grounding_status", "refuted_at"]
+    },
+    {
+      "id": "refuted-at-only-with-refuted-status",
+      "expression": "refuted_at != null => grounding_status == 'refuted'",
+      "severity": "error",
+      "message": "refuted_at present requires grounding_status=refuted",
+      "fields": ["refuted_at", "grounding_status"]
+    },
+    {
+      "id": "refuted-gold-warning-integration-gate",
+      "expression": "grounding_status == 'refuted' && tier == 'gold' => false",
+      "severity": "warning",
+      "message": "tier=gold with grounding_status=refuted preserves history but integrators MUST treat as ungated",
+      "fields": ["tier", "grounding_status"]
+    },
+    {
+      "id": "bronze-no-operator-signature-expected",
+      "expression": "tier == 'bronze' && operator_signed == true => false",
+      "severity": "warning",
+      "message": "tier=bronze with operator_signed=true suggests forgotten silver promotion",
+      "fields": ["tier", "operator_signed"]
+    },
+    {
+      "id": "envelope-contract-version-current",
+      "expression": "contract_version == '1.0.0'",
+      "severity": "warning",
+      "message": "contract_version != 1.0.0 (this validator authored against 1.0.0)",
+      "fields": ["contract_version"]
+    }
+  ]
+}

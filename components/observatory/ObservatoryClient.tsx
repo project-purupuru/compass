@@ -21,10 +21,20 @@ import { MobileBottomPanel } from "./MobileBottomPanel";
 import { StoneCeremony, readWelcomeElement } from "./StoneCeremony";
 
 const ZERO_DISTRIBUTION: Record<Element, number> = {
-  wood: 0, fire: 0, earth: 0, water: 0, metal: 0,
+  wood: 0,
+  fire: 0,
+  earth: 0,
+  water: 0,
+  metal: 0,
 };
 
-const ELEMENT_DISPLAY_ORDER: readonly Element[] = ["wood", "fire", "earth", "metal", "water"] as const;
+const ELEMENT_DISPLAY_ORDER: readonly Element[] = [
+  "wood",
+  "fire",
+  "earth",
+  "metal",
+  "water",
+] as const;
 
 export function ObservatoryClient() {
   const [introDone, setIntroDone] = useState(false);
@@ -34,8 +44,7 @@ export function ObservatoryClient() {
   // (returning visit, no welcome param, or invalid element). The
   // post-intro defer is intentional: the IntroAnimation logo flash
   // gets to land before the ceremony scrim covers it.
-  const [ceremonyElement, setCeremonyElement] =
-    useState<Element | null>(null);
+  const [ceremonyElement, setCeremonyElement] = useState<Element | null>(null);
   const [distribution, setDistribution] = useState<Record<Element, number>>(ZERO_DISTRIBUTION);
   const weather = useWeather();
   const [focused, setFocused] = useState<PuruhaniIdentity | null>(null);
@@ -88,9 +97,7 @@ export function ObservatoryClient() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (weather.is_night === undefined) return;
-    document.documentElement.dataset.theme = weather.is_night
-      ? "old-horai"
-      : "day-horai";
+    document.documentElement.dataset.theme = weather.is_night ? "old-horai" : "day-horai";
     persistResolvedTheme({
       isNight: weather.is_night,
       sunriseIso: weather.sunrise,
@@ -320,10 +327,7 @@ export function ObservatoryClient() {
           </div>
         </aside>
       </main>
-      <MobileBottomPanel
-        distribution={distribution}
-        weather={weather}
-      />
+      <MobileBottomPanel distribution={distribution} weather={weather} />
     </div>
   );
 }

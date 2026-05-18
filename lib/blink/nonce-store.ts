@@ -24,21 +24,17 @@
  *   response from being submitted to chain twice.
  */
 
-import { kv } from "@vercel/kv"
+import { kv } from "@vercel/kv";
 
-export type ClaimNonceResult = "fresh" | "replay" | "kv-down"
+export type ClaimNonceResult = "fresh" | "replay" | "kv-down";
 
-const NONCE_TTL_SECONDS = 300
-const NONCE_KEY_PREFIX = "puru:nonce:"
+const NONCE_TTL_SECONDS = 300;
+const NONCE_KEY_PREFIX = "puru:nonce:";
 
 // Minimal interface · matches @vercel/kv's set signature for the subset we use.
 // Exported so tests can supply an in-memory mock without vi.mock module-replace.
 export interface NonceStore {
-  set(
-    key: string,
-    value: string,
-    opts: { nx: true; ex: number },
-  ): Promise<"OK" | null | unknown>
+  set(key: string, value: string, opts: { nx: true; ex: number }): Promise<"OK" | null | unknown>;
 }
 
 /**
@@ -50,22 +46,19 @@ export interface NonceStore {
  * `store` parameter exists for testability · production code calls without
  * args and uses the @vercel/kv default singleton.
  */
-export async function claimNonce(
-  nonce: string,
-  store: NonceStore = kv,
-): Promise<ClaimNonceResult> {
-  if (!nonce || typeof nonce !== "string") return "kv-down"
+export async function claimNonce(nonce: string, store: NonceStore = kv): Promise<ClaimNonceResult> {
+  if (!nonce || typeof nonce !== "string") return "kv-down";
   try {
     const result = await store.set(`${NONCE_KEY_PREFIX}${nonce}`, "1", {
       nx: true,
       ex: NONCE_TTL_SECONDS,
-    })
-    return result === "OK" ? "fresh" : "replay"
+    });
+    return result === "OK" ? "fresh" : "replay";
   } catch {
-    return "kv-down"
+    return "kv-down";
   }
 }
 
 // Exposed for tests + ops dashboards.
-export const NONCE_TTL = NONCE_TTL_SECONDS
-export const NONCE_KEY_NAMESPACE = NONCE_KEY_PREFIX
+export const NONCE_TTL = NONCE_TTL_SECONDS;
+export const NONCE_KEY_NAMESPACE = NONCE_KEY_PREFIX;

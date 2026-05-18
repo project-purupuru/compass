@@ -1,0 +1,25 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index b6662bd6b8bcc9555e22a4d1a0de99198e0c11b5..b213efc6fe152609cb1a9cd707ecdbf5da4b1c24 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -7234,8 +7234,19 @@ function parseComponentFrame(stack) {
+     /react-stack-bottom-frame/,
+     /react-reconciler/,
+     /scheduler/,
+-    /<anonymous>/
++    /<anonymous>/,
+     // Proxy handler frames
++    // PATCH (compass cycle 2026-05-12 r2): NARROW agentation-bundle skip.
++    // Skip ONLY the agentation library's own bundled output paths. Do
++    // NOT skip /_next/static/chunks/ wholesale — Turbopack serves
++    // EVERY user component from chunks too, and skipping all of them
++    // leaves the probe with nothing to return.
++    // The agentation bundle path looks like:
++    //   /_next/static/chunks/0icm_agentation_dist_index_mjs_<hash>.js
++    //   or /node_modules/.pnpm/agentation@3.0.2.../dist/index.mjs
++    /agentation[_/]+dist[_/]+index[_/]+mjs/i,
++    /agentation@\d+\.\d+/i,
++    /node_modules\/.pnpm\/agentation@/i
+   ];
+   const v8Re = /^\s*at\s+(?:.*?\s+\()?(.+?):(\d+):(\d+)\)?$/;
+   const webkitRe = /^[^@]*@(.+?):(\d+):(\d+)$/;

@@ -9,16 +9,15 @@
 // that Twitter's crawler reads when the URL is pasted before Dialect
 // registry approval lands.
 
-import { pageMetadata } from "@/lib/seo/metadata"
-import { BlinkPreview } from "@/components/blink/blink-preview"
-import "@/components/blink/blink-styles.css"
+import { pageMetadata } from "@/lib/seo/metadata";
+import { BlinkPreview } from "@/components/blink/blink-preview";
+import "@/components/blink/blink-styles.css";
 
-export const metadata = pageMetadata("quiz")
+export const metadata = pageMetadata("quiz");
 
 export default function QuizPage() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://purupuru.world"
-  const targetUrl = `${baseUrl}/api/actions/quiz/start`
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://purupuru.world";
+  const targetUrl = `${baseUrl}/api/actions/quiz/start`;
 
   return (
     <main className="min-h-dvh w-full flex items-center justify-center bg-puru-cloud-deep p-6 md:p-12 font-puru-body">
@@ -26,5 +25,5 @@ export default function QuizPage() {
         <BlinkPreview url={targetUrl} stylePreset="x-light" />
       </div>
     </main>
-  )
+  );
 }

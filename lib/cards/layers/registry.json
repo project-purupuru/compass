@@ -23,7 +23,7 @@
           "harmony": "backgrounds/harmony.svg"
         }
       },
-      "description": "Element-specific background."
+      "description": "Element-specific background. Adaptive — may be driven by holder element-affinity (Score API) or card element."
     },
     {
       "name": "card_back",
@@ -34,7 +34,7 @@
         "type": "static",
         "path": "/brand/project-purupuru-logo-card-back.png"
       },
-      "description": "Canonical brand card-back. Only resolves for face=back; the cycle-1 hand renders front faces, so this asset is not required."
+      "description": "Canonical brand card-back — Project プルプル wordmark on white with rainbow gradient border. Single design for all elements (operator decision 2026-05-12 — element-keyed scene-card backs leaked character art). Asset mirrored from S3 (thj-assets/Purupuru/brand/)."
     },
     {
       "name": "frame",
@@ -51,7 +51,7 @@
           "rarest": "frames/rarest.svg"
         }
       },
-      "description": "Card frame at full reveal. Reveal stages 1-2 swap to frame_pot."
+      "description": "Card frame at full reveal. Reveal stages 1-2 swap to frame_pot (mutually exclusive)."
     },
     {
       "name": "frame_pot",
@@ -70,7 +70,7 @@
           "harmony": "frames_pot/harmony.svg"
         }
       },
-      "description": "Pot frame for reveal stages 1-2. Mutually exclusive with `frame`."
+      "description": "Pot frame for reveal stages 1-2. Mutually exclusive with `frame` (which is gated to revealStage 3)."
     },
     {
       "name": "character",
@@ -78,10 +78,15 @@
       "source": "immutable",
       "faces": ["front"],
       "selectionLogic": {
-        "type": "static",
-        "path": "art-panels/{caretaker}-{element}.png"
+        "type": "cardType",
+        "variants": {
+          "jani": "art-panels/{caretaker}-{element}.png",
+          "caretaker_a": "art-panels/{caretaker}-{element}.png",
+          "caretaker_b": "art-panels/{caretaker}-{element}.png",
+          "transcendence": "art-panels/{caretaker}-{element}.png"
+        }
       },
-      "description": "Character art panel — element-driven via {caretaker} interpolation. Ported: the original cardType-keyed variants all mapped to this same path."
+      "description": "Character art panel. MVP: all cardTypes map to the same per-element panel. Future: per-cardType variants will live alongside (jani-{element}.png, transcendence-{element}.png) — cards:audit CLI surfaces the gap."
     },
     {
       "name": "element_effects",
@@ -99,7 +104,7 @@
           "harmony": "/art/element-effects/harmony_glow.svg"
         }
       },
-      "description": "Element atmospheric overlay. Absolute paths bypass cdnBase prefix."
+      "description": "Element atmospheric overlay. Absolute paths (start with /) — bypass cdnBase prefix."
     },
     {
       "name": "rarity_treatment",
@@ -138,7 +143,7 @@
         },
         "elementSpecific": ["resonant", "harmonized"]
       },
-      "description": "Behavioral overlay driven by holder resonance. Element-specific for resonant + harmonized states."
+      "description": "Behavioral overlay driven by holder resonance (Score API). Element-specific for resonant + harmonized states."
     }
   ]
 }

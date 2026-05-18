@@ -15,16 +15,12 @@ import {
   signQuizState,
   type Answer,
   type Element,
-} from "@purupuru/peripheral-events"
+} from "@purupuru/peripheral-events";
 
-import { QUIZ_CONFIG, selectAnswers, shouldButtonsPost } from "./quiz-config"
-import type { ActionGetResponse, LinkedAction } from "./solana-actions-types"
-import { BLINK_DESCRIPTOR } from "./solana-actions-types"
-import {
-  ARCHETYPE_REVEALS,
-  QUIZ_CORPUS,
-  QUIZ_STEP_TITLES,
-} from "./voice-corpus"
+import { QUIZ_CONFIG, selectAnswers, shouldButtonsPost } from "./quiz-config";
+import type { ActionGetResponse, LinkedAction } from "./solana-actions-types";
+import { BLINK_DESCRIPTOR } from "./solana-actions-types";
+import { ARCHETYPE_REVEALS, QUIZ_CORPUS, QUIZ_STEP_TITLES } from "./voice-corpus";
 
 // Base URL configuration · injected by app-level wrapper.
 // Default to localhost:3000 for tests · prod sets env at runtime.
@@ -33,14 +29,14 @@ import {
 // process.env.QUIZ_HMAC_KEY (production path). Tests inject `hmacKey`
 // directly to avoid env coupling.
 export interface RendererConfig {
-  baseUrl: string // e.g. "https://purupuru-blinks.vercel.app"
-  iconBaseUrl?: string // optional CDN · defaults to baseUrl/api/og
-  hmacKey?: Buffer // optional · for test injection · falls back to env
+  baseUrl: string; // e.g. "https://purupuru-blinks.vercel.app"
+  iconBaseUrl?: string; // optional CDN · defaults to baseUrl/api/og
+  hmacKey?: Buffer; // optional · for test injection · falls back to env
 }
 
 const defaultConfig: RendererConfig = {
   baseUrl: "http://localhost:3000",
-}
+};
 
 // Build the icon URL for a given step · serves the per-step quiz illustration
 // from `/public/art/quiz/q{step}.png` (operator-curated atmospheric scenes ·
@@ -48,16 +44,13 @@ const defaultConfig: RendererConfig = {
 // generated SVG via `/api/og?step=N` for any out-of-range value.
 const iconUrlForStep = (step: number, config: RendererConfig): string => {
   if (step >= 1 && step <= 8) {
-    return `${config.baseUrl}/art/quiz/q${step}.png`
+    return `${config.baseUrl}/art/quiz/q${step}.png`;
   }
-  const base = config.iconBaseUrl ?? `${config.baseUrl}/api/og`
-  return `${base}?step=${step}`
-}
+  const base = config.iconBaseUrl ?? `${config.baseUrl}/api/og`;
+  return `${base}?step=${step}`;
+};
 
-const iconUrlForArchetype = (
-  archetype: Element,
-  config: RendererConfig,
-): string => {
+const iconUrlForArchetype = (archetype: Element, config: RendererConfig): string => {
   // Reveal card · serve the ACTUAL stone PNG from /public/art/stones/.
   // This is the same artifact the user is about to mint · visual continuity
   // from "You are Wood." reveal → claim button → wallet receives
@@ -65,8 +58,8 @@ const iconUrlForArchetype = (
   // mid-quiz step icons that should stay element-agnostic per operator's
   // design intent · the stones DO carry element identity by construction
   // since they're the artifact of a specific element claim).
-  return `${config.baseUrl}/art/stones/${archetype.toLowerCase()}.png`
-}
+  return `${config.baseUrl}/art/stones/${archetype.toLowerCase()}.png`;
+};
 
 // Render the start of the quiz · Q1 with N element-leaning answers (N = config.buttonsPerStep).
 //
@@ -77,17 +70,13 @@ const iconUrlForArchetype = (
 // We use title=question (the prompt the user actually answers) so the quiz
 // content gets the prominent slot · the step indicator becomes the soft
 // atmospheric subhead.
-export const renderQuizStart = (
-  config: RendererConfig = defaultConfig,
-): ActionGetResponse => {
-  const q = QUIZ_CORPUS[0]
+export const renderQuizStart = (config: RendererConfig = defaultConfig): ActionGetResponse => {
+  const q = QUIZ_CORPUS[0];
   if (!q) {
-    throw new Error(
-      `Quiz corpus empty · expected ${QUIZ_CONFIG.totalSteps} questions`,
-    )
+    throw new Error(`Quiz corpus empty · expected ${QUIZ_CONFIG.totalSteps} questions`);
   }
 
-  const buttons = buildAnswerButtons(q.step, [], q.answers, config)
+  const buttons = buildAnswerButtons(q.step, [], q.answers, config);
 
   return {
     icon: iconUrlForStep(q.step, config),
@@ -95,20 +84,20 @@ export const renderQuizStart = (
     description: QUIZ_STEP_TITLES[q.step] ?? `Question ${q.step}`, // step indicator as subhead
     label: "answer",
     links: { actions: buttons },
-  }
-}
+  };
+};
 
 // Render a mid-quiz step · steps 2..QUIZ_CONFIG.totalSteps · prior answers in URL state.
 //
 // Server-side caller validates HMAC over (step, priorAnswers) before rendering.
 // S2-T2 implements proper HMAC-SHA256 · this renderer just passes through the mac.
 export const renderQuizStep = (params: {
-  step: number // 1..QUIZ_CONFIG.totalSteps · the step we're rendering
-  priorAnswers: ReadonlyArray<0 | 1 | 2 | 3 | 4>
-  mac: string
-  config?: RendererConfig
+  step: number; // 1..QUIZ_CONFIG.totalSteps · the step we're rendering
+  priorAnswers: ReadonlyArray<0 | 1 | 2 | 3 | 4>;
+  mac: string;
+  config?: RendererConfig;
 }): ActionGetResponse => {
-  const config = params.config ?? defaultConfig
+  const config = params.config ?? defaultConfig;
 
   if (params.step < 1 || params.step > QUIZ_CONFIG.totalSteps) {
     return {
@@ -117,14 +106,16 @@ export const renderQuizStep = (params: {
       description: "We lost your place · start again to read you fresh.",
       label: "begin",
       links: {
-        actions: [{ type: "post", label: "Begin Again", href: `${config.baseUrl}/api/actions/quiz/start` }],
+        actions: [
+          { type: "post", label: "Begin Again", href: `${config.baseUrl}/api/actions/quiz/start` },
+        ],
       },
       error: { message: `Invalid step: ${params.step}` },
-    }
+    };
   }
 
-  const q = QUIZ_CORPUS[params.step - 1]
-  if (!q) throw new Error(`Quiz step ${params.step} not in corpus`)
+  const q = QUIZ_CORPUS[params.step - 1];
+  if (!q) throw new Error(`Quiz step ${params.step} not in corpus`);
 
   // Verify answer count matches step (length = step - 1).
   if (params.priorAnswers.length !== params.step - 1) {
@@ -134,20 +125,17 @@ export const renderQuizStep = (params: {
       description: "Your answers got out of sync · start over to read you fresh.",
       label: "begin",
       links: {
-        actions: [{ type: "post", label: "Begin Again", href: `${config.baseUrl}/api/actions/quiz/start` }],
+        actions: [
+          { type: "post", label: "Begin Again", href: `${config.baseUrl}/api/actions/quiz/start` },
+        ],
       },
       error: {
         message: `Answer count mismatch: expected ${params.step - 1}, got ${params.priorAnswers.length}`,
       },
-    }
+    };
   }
 
-  const buttons = buildAnswerButtons(
-    q.step,
-    params.priorAnswers,
-    q.answers,
-    config,
-  )
+  const buttons = buildAnswerButtons(q.step, params.priorAnswers, q.answers, config);
 
   return {
     icon: iconUrlForStep(q.step, config),
@@ -155,8 +143,8 @@ export const renderQuizStep = (params: {
     description: QUIZ_STEP_TITLES[q.step] ?? `Question ${q.step}`, // step indicator → subhead
     label: "answer",
     links: { actions: buttons },
-  }
-}
+  };
+};
 
 // Render the result step · archetype reveal + mint button.
 //
@@ -171,33 +159,31 @@ export const renderQuizStep = (params: {
 // the claim URL so the mint route verifies the same canonical state without
 // the result endpoint needing to re-sign.
 export const renderQuizResult = (params: {
-  archetype: Element
-  answers?: ReadonlyArray<0 | 1 | 2 | 3 | 4>
-  mac?: string
-  config?: RendererConfig
+  archetype: Element;
+  answers?: ReadonlyArray<0 | 1 | 2 | 3 | 4>;
+  mac?: string;
+  config?: RendererConfig;
 }): ActionGetResponse => {
-  const config = params.config ?? defaultConfig
+  const config = params.config ?? defaultConfig;
   const reveal =
-    ARCHETYPE_REVEALS[params.archetype] ??
-    "Claim the stone that's been reading you back."
+    ARCHETYPE_REVEALS[params.archetype] ?? "Claim the stone that's been reading you back.";
 
   // Title-case the element name · "Wood" · "Fire" · etc · for the
   // identity-locating phrase. Title Case for CTAs throughout.
-  const elementName =
-    params.archetype.charAt(0) + params.archetype.slice(1).toLowerCase()
+  const elementName = params.archetype.charAt(0) + params.archetype.slice(1).toLowerCase();
 
   // Build claim URL with answers + mac threaded as ?a1=...&a8=...&mac=... .
   // Mint route parses these to recompute archetype + quiz_state_hash AND
   // verify the HMAC over (step=9, answers).
-  const claimParams = new URLSearchParams()
+  const claimParams = new URLSearchParams();
   if (params.answers) {
-    params.answers.forEach((ans, i) => claimParams.set(`a${i + 1}`, String(ans)))
+    params.answers.forEach((ans, i) => claimParams.set(`a${i + 1}`, String(ans)));
   }
   if (params.mac) {
-    claimParams.set("mac", params.mac)
+    claimParams.set("mac", params.mac);
   }
-  const claimQuery = claimParams.toString()
-  const claimHref = `${config.baseUrl}/api/actions/mint/genesis-stone${claimQuery ? "?" + claimQuery : ""}`
+  const claimQuery = claimParams.toString();
+  const claimHref = `${config.baseUrl}/api/actions/mint/genesis-stone${claimQuery ? "?" + claimQuery : ""}`;
 
   return {
     icon: iconUrlForArchetype(params.archetype, config),
@@ -218,8 +204,8 @@ export const renderQuizResult = (params: {
         },
       ],
     },
-  }
-}
+  };
+};
 
 // Render the ambient `/api/actions/today` Blink · the on-ramp card that
 // previews zerker's observatory and pulls users into the quiz.
@@ -233,16 +219,14 @@ export const renderQuizResult = (params: {
 // Title rhythm matches renderQuizResult (`"You are Wood."`) — title is a
 // stable identity-locating phrase · description carries the live data subhead.
 export const renderAmbient = (params: {
-  todayElement: Element
-  mintCount: number
-  config?: RendererConfig
+  todayElement: Element;
+  mintCount: number;
+  config?: RendererConfig;
 }): ActionGetResponse => {
-  const config = params.config ?? defaultConfig
+  const config = params.config ?? defaultConfig;
 
   // Title-case the dominant element · "Wood" · matches result-reveal convention.
-  const elementName =
-    params.todayElement.charAt(0) +
-    params.todayElement.slice(1).toLowerCase()
+  const elementName = params.todayElement.charAt(0) + params.todayElement.slice(1).toLowerCase();
 
   return {
     icon: iconUrlForArchetype(params.todayElement, config),
@@ -264,8 +248,8 @@ export const renderAmbient = (params: {
         },
       ],
     },
-  }
-}
+  };
+};
 
 // Build answer buttons for a quiz step · count + selection driven by QUIZ_CONFIG.
 //
@@ -281,66 +265,62 @@ const buildAnswerButtons = (
   config: RendererConfig,
 ): LinkedAction[] => {
   // Apply selection strategy · slice corpus to QUIZ_CONFIG.buttonsPerStep
-  const selected = selectAnswers(answers, step - 1)
+  const selected = selectAnswers(answers, step - 1);
 
-  const buttonType = shouldButtonsPost() ? "post" : "external-link"
+  const buttonType = shouldButtonsPost() ? "post" : "external-link";
 
   return selected.map(({ originalIndex, answer }) => {
-    const newAnswers = [...priorAnswers, originalIndex as 0 | 1 | 2 | 3 | 4]
-    const nextStep = step + 1
-    const isCompletedNext = nextStep > QUIZ_CONFIG.totalSteps
+    const newAnswers = [...priorAnswers, originalIndex as 0 | 1 | 2 | 3 | 4];
+    const nextStep = step + 1;
+    const isCompletedNext = nextStep > QUIZ_CONFIG.totalSteps;
 
     // Final step → links go to /result with step=9 (completed sentinel) ·
     // earlier steps → /step with the next step number.
-    const path = isCompletedNext
-      ? "/api/actions/quiz/result"
-      : "/api/actions/quiz/step"
+    const path = isCompletedNext ? "/api/actions/quiz/result" : "/api/actions/quiz/step";
 
     // The `step` field in the signed HMAC state is the NEXT step number ·
     // for completed (after Q8 answered) the canonical step is 9.
-    const macStep = isCompletedNext ? QUIZ_COMPLETED_STEP : nextStep
+    const macStep = isCompletedNext ? QUIZ_COMPLETED_STEP : nextStep;
     const signed = signQuizState(
       { step: macStep, answers: newAnswers as ReadonlyArray<Answer> },
       config.hmacKey ? { key: config.hmacKey } : undefined,
-    )
+    );
 
-    const params = new URLSearchParams()
+    const params = new URLSearchParams();
     if (!isCompletedNext) {
-      params.set("step", String(nextStep))
+      params.set("step", String(nextStep));
     }
-    newAnswers.forEach((ans, i) => params.set(`a${i + 1}`, String(ans)))
-    params.set("mac", signed.mac)
+    newAnswers.forEach((ans, i) => params.set(`a${i + 1}`, String(ans)));
+    params.set("mac", signed.mac);
 
-    const queryString = params.toString()
-    const href = `${config.baseUrl}${path}${queryString ? "?" + queryString : ""}`
+    const queryString = params.toString();
+    const href = `${config.baseUrl}${path}${queryString ? "?" + queryString : ""}`;
 
-    return { type: buttonType, label: answer.label, href }
-  })
-}
+    return { type: buttonType, label: answer.label, href };
+  });
+};
 
 // Validate that a rendered ActionGetResponse fits within BLINK_DESCRIPTOR limits.
 // Useful in tests · NOT enforced at runtime (defensive · not coercive).
 export const validateActionResponse = (
   response: ActionGetResponse,
 ): { valid: boolean; violations: string[] } => {
-  const violations: string[] = []
+  const violations: string[] = [];
 
   if (response.title.length > BLINK_DESCRIPTOR.titleMaxChars) {
     violations.push(
       `title exceeds ${BLINK_DESCRIPTOR.titleMaxChars} chars: ${response.title.length}`,
-    )
+    );
   }
   if (response.description.length > BLINK_DESCRIPTOR.descriptionMaxChars) {
     violations.push(
       `description exceeds ${BLINK_DESCRIPTOR.descriptionMaxChars} chars: ${response.description.length}`,
-    )
+    );
   }
-  const buttonCount = response.links?.actions.length ?? 0
+  const buttonCount = response.links?.actions.length ?? 0;
   if (buttonCount > BLINK_DESCRIPTOR.buttonsMax) {
-    violations.push(
-      `button count ${buttonCount} exceeds max ${BLINK_DESCRIPTOR.buttonsMax}`,
-    )
+    violations.push(`button count ${buttonCount} exceeds max ${BLINK_DESCRIPTOR.buttonsMax}`);
   }
 
-  return { valid: violations.length === 0, violations }
-}
+  return { valid: violations.length === 0, violations };
+};

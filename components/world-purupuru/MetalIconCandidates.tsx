@@ -27,12 +27,7 @@ export function MetalBell({ className }: CandidateProps) {
         strokeWidth="3"
         strokeLinejoin="round"
       />
-      <path
-        d="M50 12 L 50 18"
-        stroke={STROKE}
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+      <path d="M50 12 L 50 18" stroke={STROKE} strokeWidth="3" strokeLinecap="round" />
       <circle cx="50" cy="80" r="5" fill={STROKE} opacity="0.85" />
     </svg>
   );
@@ -41,14 +36,7 @@ export function MetalBell({ className }: CandidateProps) {
 export function MetalCoin({ className }: CandidateProps) {
   return (
     <svg {...baseSvgProps} className={className} aria-label="metal · coin">
-      <circle
-        cx="50"
-        cy="50"
-        r="32"
-        fill={TINT}
-        stroke={STROKE}
-        strokeWidth="3"
-      />
+      <circle cx="50" cy="50" r="32" fill={TINT} stroke={STROKE} strokeWidth="3" />
       <rect
         x="42"
         y="38"
@@ -59,24 +47,8 @@ export function MetalCoin({ className }: CandidateProps) {
         strokeWidth="3"
         strokeLinejoin="round"
       />
-      <line
-        x1="32"
-        y1="50"
-        x2="42"
-        y2="50"
-        stroke={STROKE}
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <line
-        x1="58"
-        y1="50"
-        x2="68"
-        y2="50"
-        stroke={STROKE}
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+      <line x1="32" y1="50" x2="42" y2="50" stroke={STROKE} strokeWidth="3" strokeLinecap="round" />
+      <line x1="58" y1="50" x2="68" y2="50" stroke={STROKE} strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -98,12 +70,7 @@ export function MetalGem({ className }: CandidateProps) {
         strokeLinejoin="round"
         fill="none"
       />
-      <path
-        d="M50 50 L 50 84"
-        stroke={STROKE}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
+      <path d="M50 50 L 50 84" stroke={STROKE} strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -131,20 +98,8 @@ export function MetalIngot({ className }: CandidateProps) {
 export function MetalMirror({ className }: CandidateProps) {
   return (
     <svg {...baseSvgProps} className={className} aria-label="metal · mirror">
-      <ellipse
-        cx="50"
-        cy="42"
-        rx="24"
-        ry="28"
-        fill={TINT}
-        stroke={STROKE}
-        strokeWidth="3"
-      />
-      <path
-        d="M40 76 L 50 70 L 60 76 L 50 88 Z"
-        fill={STROKE}
-        opacity="0.9"
-      />
+      <ellipse cx="50" cy="42" rx="24" ry="28" fill={TINT} stroke={STROKE} strokeWidth="3" />
+      <path d="M40 76 L 50 70 L 60 76 L 50 88 Z" fill={STROKE} opacity="0.9" />
       <path
         d="M44 32 C 42 38, 42 44, 46 50"
         stroke="oklch(1 0 0 / 0.5)"
@@ -159,14 +114,7 @@ export function MetalMirror({ className }: CandidateProps) {
 export function MetalKey({ className }: CandidateProps) {
   return (
     <svg {...baseSvgProps} className={className} aria-label="metal · key">
-      <circle
-        cx="34"
-        cy="50"
-        r="14"
-        fill={TINT}
-        stroke={STROKE}
-        strokeWidth="3"
-      />
+      <circle cx="34" cy="50" r="14" fill={TINT} stroke={STROKE} strokeWidth="3" />
       <circle cx="34" cy="50" r="4" fill={STROKE} />
       <path
         d="M48 50 L 82 50 L 82 60 M70 50 L 70 60"

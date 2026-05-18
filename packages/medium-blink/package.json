@@ -13,11 +13,11 @@
   "dependencies": {
     "@purupuru/peripheral-events": "workspace:*"
   },
-  "peerDependencies": {
-    "effect": "^3.10.0"
-  },
   "devDependencies": {
     "typescript": "^5",
     "vitest": "^2"
+  },
+  "peerDependencies": {
+    "effect": "^3.10.0"
   }
 }

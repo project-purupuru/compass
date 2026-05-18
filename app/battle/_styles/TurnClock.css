@@ -1,0 +1,166 @@
+  .turn-clock {
+    /* Operator wants the pip strip vertical on the LEFT side (was
+       horizontal across the top). Top-left anchor, safe-area aware,
+       vertically column-flowed. Avoids collision with .speaker--player
+       which lives at bottom-left. z-index 30 above arena content. */
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 24px);
+    left: calc(env(safe-area-inset-left, 0px) + 16px);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    justify-content: center;
+    align-items: center;
+    padding: 14px 8px;
+    border-radius: var(--radius-full);
+    background: oklch(from var(--puru-cloud-bright) l c h / 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
+
+  /* Weather dot lives BELOW each pip in horizontal mode. Vertical mode
+     would collide with the next pip — move it to the RIGHT side instead. */
+  .turn-clock .weather-dot {
+    bottom: auto;
+    left: auto;
+    transform: none;
+    top: 50%;
+    right: -7px;
+    margin-top: -2.5px;
+  }
+
+  .pip {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 400ms var(--ease-puru-bounce),
+      opacity 400ms var(--ease-puru-settle);
+  }
+
+  .pip.future {
+    opacity: 0.3;
+    transform: scale(0.82);
+  }
+
+  .pip.past {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+
+  .pip.active {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+
+  /* Element colors — pastel for inactive, vivid for active */
+  .pip[data-element='wood'] {
+    background: var(--puru-wood-pastel);
+  }
+  .pip[data-element='fire'] {
+    background: var(--puru-fire-pastel);
+  }
+  .pip[data-element='earth'] {
+    background: var(--puru-earth-pastel);
+  }
+  .pip[data-element='metal'] {
+    background: var(--puru-metal-pastel);
+  }
+  .pip[data-element='water'] {
+    background: var(--puru-water-pastel);
+  }
+
+  .pip.active[data-element='wood'] {
+    background: var(--puru-wood-vivid);
+  }
+  .pip.active[data-element='fire'] {
+    background: var(--puru-fire-vivid);
+  }
+  .pip.active[data-element='earth'] {
+    background: var(--puru-earth-vivid);
+  }
+  .pip.active[data-element='metal'] {
+    background: var(--puru-metal-vivid);
+  }
+  .pip.active[data-element='water'] {
+    background: var(--puru-water-vivid);
+  }
+
+  .pip-kanji {
+    font-family: var(--font-card);
+    font-size: var(--text-sm);
+    color: var(--puru-ink-rich);
+    line-height: 1;
+  }
+
+  .pip.active .pip-kanji {
+    color: oklch(1 0 0);
+    font-size: var(--text-base);
+  }
+
+  .pip.past .pip-kanji {
+    opacity: 0.7;
+  }
+
+  /* Active ring pulse — breathe easing, 2s cycle */
+  .pip-ring {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    animation: ring-pulse 2000ms var(--ease-puru-breathe) infinite;
+    pointer-events: none;
+  }
+
+  .pip.active[data-element='wood'] .pip-ring {
+    color: var(--puru-wood-vivid);
+  }
+  .pip.active[data-element='fire'] .pip-ring {
+    color: var(--puru-fire-vivid);
+  }
+  .pip.active[data-element='earth'] .pip-ring {
+    color: var(--puru-earth-vivid);
+  }
+  .pip.active[data-element='metal'] .pip-ring {
+    color: var(--puru-metal-vivid);
+  }
+  .pip.active[data-element='water'] .pip-ring {
+    color: var(--puru-water-vivid);
+  }
+
+  @keyframes ring-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1.12);
+      opacity: 1;
+    }
+  }
+
+  /* Weather indicator — small honey dot below pip */
+  .weather-dot {
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--puru-honey-base);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pip-ring {
+      animation: none;
+      opacity: 0.7;
+    }
+  }

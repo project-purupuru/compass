@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # S4-T9 / D4 in-memory enforcement · NO solana imports + NO KV writes in lib/world/
 #
-# Card-game-stays-out is scoped to the world substrate. Purupuru and Honeycomb
-# are accepted local substrates under lib/purupuru/ and lib/honeycomb/, so this
-# gate must not block card/battle/deck vocabulary elsewhere in lib/.
+# Historical note: this script used to enforce "no card/battle/deck files
+# anywhere in lib/". Honeycomb is now an accepted local substrate under
+# lib/honeycomb/, so this gate is scoped to lib/world/ only.
 
 set -euo pipefail
 
@@ -38,11 +38,10 @@ if [ -n "$KV_FILES" ]; then
   exit 1
 fi
 
-# Card-game-stays-out gate (per PRD §3.2 + cuts §2.3): world must not absorb
-# local card-game substrates.
+# Card-game-stays-out gate for the world substrate.
 CARD_FILES=$(find "$WORLD_DIR" -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \) 2>/dev/null | wc -l | tr -d ' ')
 if [ "${CARD_FILES:-0}" != "0" ]; then
-  echo "FAIL: $CARD_FILES card/battle/deck files in $WORLD_DIR (world substrate must not absorb local card-game substrates)"
+  echo "FAIL: $CARD_FILES card/battle/deck files in $WORLD_DIR (world substrate must not absorb Honeycomb)"
   find "$WORLD_DIR" -type f \( -name '*card*' -o -name '*battle*' -o -name '*deck*' \)
   exit 1
 fi

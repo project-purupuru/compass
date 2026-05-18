@@ -10,15 +10,15 @@
 //      different eventIds via source_tag)
 //   4. Length-prefixed canonical encoding to forbid ambiguous concatenation
 
-import { createHash } from "node:crypto"
+import { createHash } from "node:crypto";
 
-import type { WorldEvent } from "./world-event"
+import type { WorldEvent } from "./world-event";
 
 // Source tags · prevents cross-source eventId collision per AC-1.4.
-export type SourceTag = "score" | "sonar" | "weather" | "test"
+export type SourceTag = "score" | "sonar" | "weather" | "test";
 
 // Schema version · increments on additive schema bump · same struct → same eventId.
-export const CURRENT_SCHEMA_VERSION = 1 as const
+export const CURRENT_SCHEMA_VERSION = 1 as const;
 
 // Recursively sort object keys for deterministic JSON encoding.
 //
@@ -29,22 +29,22 @@ export const CURRENT_SCHEMA_VERSION = 1 as const
 //   - Primitives use JSON.stringify defaults
 const canonicalEncode = (value: unknown): string => {
   if (value === null || value === undefined) {
-    return JSON.stringify(value)
+    return JSON.stringify(value);
   }
   if (value instanceof Date) {
-    return JSON.stringify(value.toISOString())
+    return JSON.stringify(value.toISOString());
   }
   if (Array.isArray(value)) {
-    return "[" + value.map(canonicalEncode).join(",") + "]"
+    return "[" + value.map(canonicalEncode).join(",") + "]";
   }
   if (typeof value === "object") {
-    const obj = value as Record<string, unknown>
-    const sortedKeys = Object.keys(obj).sort()
-    const parts = sortedKeys.map((k) => `${JSON.stringify(k)}:${canonicalEncode(obj[k])}`)
-    return "{" + parts.join(",") + "}"
+    const obj = value as Record<string, unknown>;
+    const sortedKeys = Object.keys(obj).sort();
+    const parts = sortedKeys.map((k) => `${JSON.stringify(k)}:${canonicalEncode(obj[k])}`);
+    return "{" + parts.join(",") + "}";
   }
-  return JSON.stringify(value)
-}
+  return JSON.stringify(value);
+};
 
 // Derive canonical eventId for a WorldEvent.
 //
@@ -55,20 +55,20 @@ export const eventIdOf = (
   source: SourceTag = "score",
   schemaVersion: number = CURRENT_SCHEMA_VERSION,
 ): string => {
-  const canonical = canonicalEncode(event)
+  const canonical = canonicalEncode(event);
   return createHash("sha256")
     .update(canonical)
     .update("|") // length-prefix delimiter (forbids concatenation ambiguity)
     .update(String(schemaVersion))
     .update("|")
     .update(source)
-    .digest("hex")
-}
+    .digest("hex");
+};
 
 // Verify a stored eventId matches what would be derived from the event payload.
 // Useful for integrity checks at substrate boundaries.
 export const verifyEventId = (event: WorldEvent, source: SourceTag = "score"): boolean => {
-  const { eventId, ...rest } = event
-  const derived = eventIdOf(rest as Omit<WorldEvent, "eventId">, source)
-  return derived === eventId
-}
+  const { eventId, ...rest } = event;
+  const derived = eventIdOf(rest as Omit<WorldEvent, "eventId">, source);
+  return derived === eventId;
+};

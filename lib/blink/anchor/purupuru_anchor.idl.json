@@ -32,16 +32,7 @@
         "If the claim-signer key is ever shared across programs/clusters,",
         "upgrade the canonical bytes to include those fields BEFORE doing so."
       ],
-      "discriminator": [
-        29,
-        163,
-        209,
-        27,
-        78,
-        111,
-        44,
-        147
-      ],
+      "discriminator": [29, 163, 209, 27, 78, 111, 44, 147],
       "accounts": [
         {
           "name": "authority",
@@ -102,23 +93,17 @@
         },
         {
           "name": "system_program",
-          "docs": [
-            "Solana System Program · for new account allocation rent."
-          ],
+          "docs": ["Solana System Program · for new account allocation rent."],
           "address": "11111111111111111111111111111111"
         },
         {
           "name": "token_program",
-          "docs": [
-            "SPL Token program · for SPL Mint initialization."
-          ],
+          "docs": ["SPL Token program · for SPL Mint initialization."],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "token_metadata_program",
-          "docs": [
-            "Metaplex Token Metadata program · target of the CreateV1 CPI."
-          ],
+          "docs": ["Metaplex Token Metadata program · target of the CreateV1 CPI."],
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         }
       ],
@@ -138,10 +123,7 @@
         {
           "name": "quiz_state_hash",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         },
         {
@@ -155,10 +137,7 @@
         {
           "name": "nonce",
           "type": {
-            "array": [
-              "u8",
-              16
-            ]
+            "array": ["u8", 16]
           }
         }
       ]
@@ -167,16 +146,7 @@
   "events": [
     {
       "name": "StoneClaimed",
-      "discriminator": [
-        138,
-        131,
-        241,
-        101,
-        8,
-        187,
-        119,
-        216
-      ]
+      "discriminator": [138, 131, 241, 101, 8, 187, 119, 216]
     }
   ],
   "errors": [

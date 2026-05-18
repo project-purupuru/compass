@@ -8,7 +8,7 @@
 //   app/<route>/page.tsx → `export const metadata = pageMetadata("<slug>")`
 // Next.js shallow-merges per-route over root.
 
-import type { Metadata } from "next"
+import type { Metadata } from "next";
 
 export const SITE = {
   url: "https://purupuru.world",
@@ -25,21 +25,21 @@ export const SITE = {
   ogAlt: "purupuru · five elements, five guardians",
   themeColor: "#d4a80a",
   twitterCard: "summary_large_image" as const,
-} as const
+} as const;
 
 // Per-page copy (ALEXANDER R5). Title is rendered through the template
 // `%s · purupuru` defined in rootMetadata, EXCEPT when title.absolute is
 // supplied (used by /, /quiz, /today where the slug isn't the brand name).
-type PageSlug = "home" | "demo" | "preview" | "quiz" | "today"
+type PageSlug = "home" | "demo" | "preview" | "quiz" | "today";
 
 const PAGE_COPY: Record<
   PageSlug,
   {
-    title: string
-    titleAbsolute?: boolean // bypass the "%s · purupuru" template
-    description: string
-    path: string
-    noindex?: boolean
+    title: string;
+    titleAbsolute?: boolean; // bypass the "%s · purupuru" template
+    description: string;
+    path: string;
+    noindex?: boolean;
   }
 > = {
   home: {
@@ -72,11 +72,10 @@ const PAGE_COPY: Record<
   today: {
     title: "what leads today",
     titleAbsolute: true,
-    description:
-      "the five-element pulse of the purupuru world · a daily read that reads you back",
+    description: "the five-element pulse of the purupuru world · a daily read that reads you back",
     path: "/today",
   },
-}
+};
 
 // Root defaults · consumed by app/layout.tsx.
 // `images` is OMITTED from openGraph + twitter blocks: Next.js file convention
@@ -88,8 +87,7 @@ export const rootMetadata: Metadata = {
     template: "%s · purupuru",
     default: "purupuru · the world, breathing",
   },
-  description:
-    "a warm world of five elements and five guardians · collect, craft, discover",
+  description: "a warm world of five elements and five guardians · collect, craft, discover",
   applicationName: SITE.name,
   manifest: "/manifest.webmanifest",
   icons: {
@@ -101,16 +99,14 @@ export const rootMetadata: Metadata = {
     url: SITE.url,
     locale: "en_US",
     title: "purupuru · the world, breathing",
-    description:
-      "a warm world of five elements and five guardians · collect, craft, discover",
+    description: "a warm world of five elements and five guardians · collect, craft, discover",
   },
   twitter: {
     card: SITE.twitterCard,
     site: SITE.handle,
     creator: SITE.handle,
     title: "purupuru · the world, breathing",
-    description:
-      "a warm world of five elements and five guardians · collect, craft, discover",
+    description: "a warm world of five elements and five guardians · collect, craft, discover",
   },
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
@@ -119,15 +115,15 @@ export const rootMetadata: Metadata = {
     title: SITE.name,
     statusBarStyle: "black-translucent",
   },
-}
+};
 
 // Per-page override factory · keeps slug → metadata mapping single-line.
 // `images` is OMITTED — Next.js file convention at `app/opengraph-image.tsx`
 // auto-populates the OG image across all surfaces (single unified card).
 export function pageMetadata(slug: PageSlug): Metadata {
-  const page = PAGE_COPY[slug]
-  const title = page.titleAbsolute ? { absolute: page.title } : page.title
-  const flatTitle = typeof title === "string" ? title : title.absolute
+  const page = PAGE_COPY[slug];
+  const title = page.titleAbsolute ? { absolute: page.title } : page.title;
+  const flatTitle = typeof title === "string" ? title : title.absolute;
 
   return {
     title,
@@ -148,10 +144,8 @@ export function pageMetadata(slug: PageSlug): Metadata {
       title: flatTitle,
       description: page.description,
     },
-    ...(page.noindex
-      ? { robots: { index: false, follow: false } }
-      : undefined),
-  }
+    ...(page.noindex ? { robots: { index: false, follow: false } } : undefined),
+  };
 }
 
 // JSON-LD payload helper (consumed via <script type="application/ld+json">
@@ -165,8 +159,7 @@ export const jsonLdWebSite = {
       "@id": `${SITE.url}/#website`,
       url: SITE.url,
       name: SITE.name,
-      description:
-        "a warm world of five elements and five guardians · collect, craft, discover",
+      description: "a warm world of five elements and five guardians · collect, craft, discover",
       inLanguage: "en-US",
     },
     {
@@ -178,4 +171,4 @@ export const jsonLdWebSite = {
       sameAs: ["https://twitter.com/puruworld", "https://x.com/puruworld"],
     },
   ],
-} as const
+} as const;

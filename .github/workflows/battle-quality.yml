@@ -1,0 +1,105 @@
+name: battle-quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # battle-foundations cycle 2026-05-12: asset manifest validator + reducer tests
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests (vitest)
+        run: pnpm test
+      - name: Substrate guardrails
+        run: |
+          bash scripts/check-single-runtime.sh
+          bash scripts/check-world-discipline.sh
+          bash scripts/check-honeycomb-discipline.sh
+      - name: Asset manifest audit
+        # Validator exits 0 on green-or-expected-broken, non-zero on new
+        # 4xx/5xx. Exit 69 (EX_UNAVAILABLE) → warning, not failure.
+        run: pnpm assets:check || ([ $? = 69 ] && echo "::warning::network unavailable")
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Start dev server
+        run: pnpm start &
+
+      - name: Wait for server
+        run: |
+          until curl -sf http://localhost:3000/battle > /dev/null; do
+            sleep 2
+          done
+
+      - name: Lighthouse /battle
+        run: |
+          npx -p lighthouse@^11 lighthouse \
+            http://localhost:3000/battle \
+            --only-categories=performance \
+            --output=json \
+            --output-path=./lh.json \
+            --chrome-flags="--headless --no-sandbox"
+
+      - name: Assert Lighthouse thresholds (AC-15)
+        run: node scripts/assert-lighthouse.mjs ./lh.json
+
+  asset-rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run asset-sync rollback test
+        run: |
+          # Build 1-file test tarball
+          TESTDIR=$(mktemp -d)
+          mkdir -p "$TESTDIR/public/art-test"
+          echo "test-byte-content" > "$TESTDIR/public/art-test/test.png"
+          tar -czf /tmp/test-assets.tar.gz -C "$TESTDIR" public/
+          sha256sum /tmp/test-assets.tar.gz | awk '{print $1}' > /tmp/test-assets.tar.gz.sha256
+
+          # Happy-path sync
+          ASSETS_DIRS=art-test bash scripts/sync-assets.sh --url "file:///tmp/test-assets.tar.gz"
+          test -f public/art-test/test.png || (echo "FAIL: sync did not place file"; exit 1)
+
+          # Tamper sha → should abort
+          echo "0000000000000000000000000000000000000000000000000000000000000000" > /tmp/test-assets.tar.gz.sha256
+          if ASSETS_DIRS=art-test bash scripts/sync-assets.sh --url "file:///tmp/test-assets.tar.gz" 2>&1 | grep -q "sha256 mismatch"; then
+            echo "OK: sha-tamper aborted as expected"
+          else
+            echo "FAIL: sha-tamper did not trigger abort"
+            exit 1
+          fi
+          test -f public/art-test/test.png || (echo "FAIL: state lost after rollback"; exit 1)

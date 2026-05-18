@@ -28,8 +28,7 @@ export function breathPeriodMs(element: Element): number {
 }
 
 // Bitcoin/Solana base58 alphabet — excludes 0/O/I/l for readability.
-const BASE58_ALPHABET =
-  "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 export function syntheticAddress(seed: number): Wallet {
   // Solana-shape base58 wallet (~44 chars) generated deterministically from

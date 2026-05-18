@@ -1,0 +1,99 @@
+  /* CardBreathing — per-element constant micro-motion on cards.
+     Closes the "cards feel like cardboard" gap. Each element gets its
+     own breathing rhythm at non-coprime periods (3 / 4 / 4.5 / 5 / 6
+     seconds) so the visual never lines up — the row reads as organic,
+     not periodic.
+
+     Implementation: registered CSS custom properties (--breath-scale +
+     --breath-opacity) so the keyframes compose into the existing fan
+     transform without clobbering it. The .player-card transform is:
+       rotate(var(--fan-rotate)) translateY(var(--fan-y)) scale(var(--breath-scale))
+     The breathing modulates ONLY scale + opacity; fan transforms stay
+     intact. */
+
+  @property --breath-scale {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+  }
+  @property --breath-opacity {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+  }
+
+  /* Wood — long settle, slow exhale. The garden patient. (6s) */
+  @keyframes breathe-wood-cv {
+    0%, 100% { --breath-scale: 1; --breath-opacity: 0.96; }
+    50%      { --breath-scale: 1.012; --breath-opacity: 1; }
+  }
+
+  /* Fire — quick inhale, slower exhale. "NOW." (4s) */
+  @keyframes breathe-fire-cv {
+    0%, 100% { --breath-scale: 1; --breath-opacity: 0.93; }
+    25%      { --breath-scale: 1.018; --breath-opacity: 1; }
+    50%      { --breath-scale: 1.008; --breath-opacity: 0.97; }
+  }
+
+  /* Earth — heavy, barely-perceptible rise. (5.5s) */
+  @keyframes breathe-earth-cv {
+    0%, 100% { --breath-scale: 1; --breath-opacity: 0.95; }
+    50%      { --breath-scale: 1.008; --breath-opacity: 1; }
+  }
+
+  /* Metal — sharp spike then mechanical flutter. (4.5s) */
+  @keyframes breathe-metal-cv {
+    0%, 100% { --breath-scale: 1; --breath-opacity: 0.92; }
+    35%      { --breath-scale: 1.018; --breath-opacity: 1; }
+    42%      { --breath-scale: 1.005; --breath-opacity: 0.95; }
+    50%      { --breath-scale: 1.012; --breath-opacity: 0.98; }
+  }
+
+  /* Water — long inhale, short exhale — tidal. (5s) */
+  @keyframes breathe-water-cv {
+    0%, 100% { --breath-scale: 1; --breath-opacity: 0.94; }
+    60%      { --breath-scale: 1.016; --breath-opacity: 1; }
+    78%      { --breath-scale: 1.008; --breath-opacity: 0.97; }
+  }
+
+  /* Apply per-element. The non-coprime periods (3/4/4.5/5/6) ensure
+     the row never visually lines up — the eye reads it as alive. */
+  .player-card[data-element='wood']  { animation: breathe-wood-cv  6s   ease-in-out infinite; }
+  .player-card[data-element='fire']  { animation: breathe-fire-cv  4s   ease-in-out infinite; }
+  .player-card[data-element='earth'] { animation: breathe-earth-cv 5.5s ease-in-out infinite; }
+  .player-card[data-element='metal'] { animation: breathe-metal-cv 4.5s ease-in-out infinite; }
+  .player-card[data-element='water'] { animation: breathe-water-cv 5s   ease-in-out infinite; }
+
+  /* Opponent face-up cards breathe too, but offset by 1.5s so player
+     and opponent rows don't sync. */
+  .opponent-card.revealed[data-element='wood']  { animation: breathe-wood-cv  6s   ease-in-out -1.5s infinite; }
+  .opponent-card.revealed[data-element='fire']  { animation: breathe-fire-cv  4s   ease-in-out -1.5s infinite; }
+  .opponent-card.revealed[data-element='earth'] { animation: breathe-earth-cv 5.5s ease-in-out -1.5s infinite; }
+  .opponent-card.revealed[data-element='metal'] { animation: breathe-metal-cv 4.5s ease-in-out -1.5s infinite; }
+  .opponent-card.revealed[data-element='water'] { animation: breathe-water-cv 5s   ease-in-out -1.5s infinite; }
+
+  /* Suppress breathing during clash phases so the impact reads
+     cleanly. Also suppress on hover/select so the player can focus. */
+  .player-card.clashing-approach,
+  .player-card.clashing-impact,
+  .player-card.clashing-settle,
+  .player-card.disintegrating,
+  .opponent-card.clashing-approach,
+  .opponent-card.clashing-impact,
+  .opponent-card.clashing-settle,
+  .opponent-card.disintegrating {
+    animation: none !important;
+  }
+  @media (pointer: fine) {
+    .player-card:hover,
+    .player-card.selected {
+      animation-play-state: paused;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .player-card[data-element],
+    .opponent-card[data-element] {
+      animation: none !important;
+    }
+  }

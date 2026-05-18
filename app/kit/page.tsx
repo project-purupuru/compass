@@ -2,8 +2,8 @@ import Image from "next/image";
 import { ELEMENTS, type Element } from "@/lib/score";
 
 const ELEMENT_LABEL: Record<Element, { jp: string; en: string }> = {
-  wood:  { jp: "木", en: "Wood" },
-  fire:  { jp: "火", en: "Fire" },
+  wood: { jp: "木", en: "Wood" },
+  fire: { jp: "火", en: "Fire" },
   earth: { jp: "土", en: "Earth" },
   water: { jp: "水", en: "Water" },
   metal: { jp: "金", en: "Metal" },
@@ -34,9 +34,9 @@ export default function Home() {
             → /battle-v2 · cycle-1 wood vertical slice
           </a>
           <p className="max-w-xl text-base leading-puru-normal text-puru-ink-soft">
-            A live awareness layer fusing on-chain, IRL weather, and wuxing state.
-            This page renders the design tokens, brand fonts, and puruhani art
-            that ground the kit. The simulation surface lands in the next sprint.
+            A live awareness layer fusing on-chain, IRL weather, and wuxing state. This page renders
+            the design tokens, brand fonts, and puruhani art that ground the kit. The simulation
+            surface lands in the next sprint.
           </p>
         </header>
 
@@ -92,9 +92,7 @@ export default function Home() {
             <p className="font-puru-display text-2xl leading-puru-tight text-puru-ink-rich">
               text-2xl · display
             </p>
-            <p className="text-xl leading-puru-normal text-puru-ink-base">
-              text-xl · body
-            </p>
+            <p className="text-xl leading-puru-normal text-puru-ink-base">text-xl · body</p>
             <p className="text-base leading-puru-normal text-puru-ink-base">
               text-base · body — Inter via next/font
             </p>
@@ -139,9 +137,7 @@ export default function Home() {
         </section>
 
         <section className="flex flex-col gap-3 text-xs text-puru-ink-soft">
-          <h2 className="font-puru-mono text-xs uppercase tracking-[0.2em]">
-            Kit contents
-          </h2>
+          <h2 className="font-puru-mono text-xs uppercase tracking-[0.2em]">Kit contents</h2>
           <ul className="grid gap-1 leading-puru-relaxed">
             <li>· OKLCH wuxing palette × 4 shades, light + Old Horai dark</li>
             <li>· Per-element breathing rhythms, motion vocabulary keyframes</li>
@@ -152,8 +148,12 @@ export default function Home() {
             <li>· purupuru wordmark SVG (color + white variants)</li>
             <li>· 5 puruhani PNGs + 5 jani PNGs (sister characters)</li>
             <li>· 6 element-glow SVGs + harmony glow</li>
-            <li>· Card-system layers: 4 frames × 4 rarities, 6 backgrounds, 14 behavioral states</li>
-            <li>· tsuheji world map · grain pattern · 18 caretaker/jani/transcendence material configs</li>
+            <li>
+              · Card-system layers: 4 frames × 4 rarities, 6 backgrounds, 14 behavioral states
+            </li>
+            <li>
+              · tsuheji world map · grain pattern · 18 caretaker/jani/transcendence material configs
+            </li>
             <li>· Score read-adapter contract + deterministic mock at @/lib/score</li>
             <li>· Pixi.js v8, motion, lucide-react, clsx, tailwind-merge installed</li>
           </ul>

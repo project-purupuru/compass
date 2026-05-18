@@ -1,0 +1,189 @@
+{
+  "phase": "prd",
+  "document": "grimoires/loa/prd.md",
+  "timestamp": "2026-05-12T17:58:01Z",
+  "method": "manual-synthesis (scoring-engine bypass · #759 workaround)",
+  "confidence": "single-model (claude-opus-4-7)",
+  "cost_usd_total": 0.3145,
+  "review": {
+    "improvements": [
+      {
+        "id": "IMP-001",
+        "description": "Specify the AI opponent algorithm shape (decision tree vs. parameterized policy vs. LLM-backed) at PRD altitude rather than deferring to SDD Q-SDD-1, since the choice has major implications for determinism (§6.4), replayability, latency budgets (§6.3), and cost",
+        "rationale": "AC-12 requires seed-determinism and FR-13 requires replayability, but an LLM-backed AI fundamentally cannot satisfy determinism without caching. This is a PRD-altitude constraint, not an SDD detail. Leaving it open risks rework if SDD picks LLM and then discovers it breaks AC-5 replayability tests",
+        "location": "§5.2 FR-13, §11 Q-SDD-1",
+        "priority": "HIGH",
+        "confidence": 0.85
+      },
+      {
+        "id": "IMP-002",
+        "description": "Define a rollback/recovery strategy for the asset repo extraction when world-purupuru is hackathon-live. Specify what happens if the asset repo release is corrupt, the sync script fails mid-pull, or assets diverge between repos before sync completes",
+        "rationale": "R2 identifies cross-repo coordination as High likelihood risk but mitigation only sequences sprints. There's no defined rollback path or atomic-sync guarantee. With hackathon-live main (R8), a broken asset sync could break production. Sync script must be idempotent and have a documented dry-run/rollback flow",
+        "location": "§5.3 FR-16/FR-17, §8 R2",
+        "priority": "HIGH",
+        "confidence": 0.8
+      },
+      {
+        "id": "IMP-003",
+        "description": "Add explicit acceptance criteria for visual parity with world-purupuru. AC-7 verifies asset count but no AC verifies the rendered output matches. Specify either visual regression snapshots, side-by-side reference screenshots, or operator sign-off checkpoints per component",
+        "rationale": "G2 claims 'surface parity' as a primary goal but no metric verifies it. 'Parity' is the most subjective claim in the PRD and will be the largest source of rework if not pinned. Without a verification mechanism, /audit-sprint cannot assess G2",
+        "location": "§3 Acceptance metrics, §2.1 G2",
+        "priority": "HIGH",
+        "confidence": 0.9
+      },
+      {
+        "id": "IMP-004",
+        "description": "Specify error/failure UX for the battle flow: what happens if clash resolution throws, if AI opponent service fails, if asset fails to load, if localStorage is disabled (blocks AC-2 quiz-skip logic)",
+        "rationale": "No FR covers failure paths. ElementQuiz persistence via localStorage (FR-2) silently fails in private browsing. Effect services have error channels but no UX is specified for surfacing them. This is the kind of edge case that always bites at /audit-sprint",
+        "location": "§5 Functional requirements (missing FR)",
+        "priority": "HIGH",
+        "confidence": 0.85
+      },
+      {
+        "id": "IMP-005",
+        "description": "Define the BattleEvent schema and ordering contract referenced in AC-3. The PRD asserts 'all five phase transitions fire BattleEvent emissions in order' but does not enumerate the events, their payload shape, or which service owns emission",
+        "rationale": "AC-3 is the central end-to-end test and depends on an undefined contract. With FR-14 introducing new phases (clashing, disintegrating, result), the event surface is expanding but unspecified. SDD will need this; making it PRD-altitude prevents the substrate doctrine from being violated",
+        "location": "§3 AC-3, §5.2 FR-14",
+        "priority": "HIGH",
+        "confidence": 0.8
+      },
+      {
+        "id": "IMP-006",
+        "description": "Resolve Q-SDD-6 (test parity standard) at PRD level. AC-4 requires '≥6 invariants green' but G8 says 'every invariant has a corresponding compass test.' These are inconsistent — 6 vs all-of-them",
+        "rationale": "Internal inconsistency between G8 (all invariants) and AC-4 (≥6 invariants). The number 6 appears arbitrary vs purupuru-game's documented invariant set. This will cause audit ambiguity",
+        "location": "§3 AC-4, §2.2 G8, §11 Q-SDD-6",
+        "priority": "MEDIUM",
+        "confidence": 0.85
+      },
+      {
+        "id": "IMP-007",
+        "description": "Add a performance acceptance metric to §3 for the §6.3 budgets (1.5s initial paint, 100ms rearrange, 6s clash sequence). Currently they're stated as constraints but not in the AC table, so they won't be verified in /audit-sprint",
+        "rationale": "Non-functional requirements that don't appear in acceptance metrics historically slip. The cycle's done-bar is 'audit-passing slice' but audit can only check what's listed in AC",
+        "location": "§3 Acceptance metrics, §6.3",
+        "priority": "MEDIUM",
+        "confidence": 0.8
+      },
+      {
+        "id": "IMP-008",
+        "description": "Clarify the 'first-time-only' detection logic for ElementQuiz (FR-2, AC-2). Specify the localStorage key shape, what counts as 'completed' (partial vs full), and how the user re-takes the quiz if their element changes",
+        "rationale": "FR-2 says result persists in `localStorage.compass.element` but doesn't define schema (string? object with timestamp? versioned?). AC-2 tests 'subsequent visits skip' — but what if quiz was abandoned mid-flow? No re-take path is specified, blocking returning-user flexibility",
+        "location": "§5.1 FR-2, §3 AC-2",
+        "priority": "MEDIUM",
+        "confidence": 0.75
+      },
+      {
+        "id": "IMP-009",
+        "description": "Specify the AI difficulty/balance acceptance bar concretely. R6 mentions 'operator self-test 3 matches per element' but this isn't an AC. Define what 'fun to lose to' means operationally — e.g., AI win rate target band (40-60%?), or specific behavioral checks",
+        "rationale": "AC-5 only verifies AI personalities differ structurally, not that they're balanced or fun. R6 is flagged Medium likelihood but the mitigation isn't bound to an AC. Without a balance bar, AI sprint could pass /audit-sprint with an unplayable opponent",
+        "location": "§3 AC-5, §8 R6",
+        "priority": "MEDIUM",
+        "confidence": 0.75
+      },
+      {
+        "id": "IMP-010",
+        "description": "Define the version-tag contract between the asset repo and consuming repos (compass, world-purupuru). How is the pinned version stored? package.json field? lockfile? plain text? How does CI detect drift? Q-SDD-4 defers versioning scheme but the binding mechanism is also undefined",
+        "rationale": "FR-15–18 specify the sync but not how the consumer pins to a specific release. Without a pin mechanism, the two repos can silently drift (defeating AC-9). This is the core mechanic of the extraction strategy and deserves PRD-altitude specification",
+        "location": "§5.3 FR-15 through FR-18",
+        "priority": "MEDIUM",
+        "confidence": 0.8
+      }
+    ],
+    "summary": "10 improvements identified, 5 HIGH priority. Focus areas: AI determinism contract, cross-repo asset coordination resilience, visual parity verification, error/failure UX, and event schema specification. The PRD is unusually thorough but defers several PRD-altitude decisions to SDD that have cross-cutting verification implications."
+  },
+  "skeptic": {
+    "concerns": [
+      {
+        "id": "SKP-001",
+        "concern": "SvelteKit 5 runes to React translation is treated as a routine port, but the paradigm gap is severe",
+        "severity": "CRITICAL",
+        "severity_score": 850,
+        "why_matters": "Svelte 5's `$state`/`$derived`/`$effect` use fine-grained reactivity with implicit dependency tracking. React requires explicit dep arrays, memoization, and has different render semantics. 11 components with drag-and-drop, animations, and stream subscriptions will surface subtle bugs (stale closures, double-renders, effect ordering). The mitigation 'SDD will catalog patterns' is hand-wavy. Expect 2-3x the estimated LOC and time.",
+        "location": "Section 5.1 (FR-1 to FR-11), Risk R1, Section 6.1",
+        "recommendation": "Add a S0.5 spike sprint: port ONE complex component (BattleHand with drag) end-to-end and measure actual effort. Use that to recalibrate the 8-sprint estimate. Document concrete Svelte→React patterns BEFORE S3."
+      },
+      {
+        "id": "SKP-002",
+        "concern": "Cycle is wildly over-scoped: 11 components + 3 new Honeycomb services + new repo + cross-repo sync + dev panel refactor + determinism fix + tutorial + tests, all audit-gated",
+        "severity": "CRITICAL",
+        "severity_score": 880,
+        "why_matters": "S0-S8 = 9 sprints listed but the work spans surface migration, substrate growth, repo extraction across 3 repos, AI design, animation parity, and full audit on each. The LOC budget of +3,500 in compass is implausible for 11 ported components + 3 Effect services + tests. Predecessor cycle was much narrower. 'Full audit-passing slice' on every sprint compounds delay.",
+        "location": "Section 7.1, Section 9, AC-14",
+        "recommendation": "Split into two cycles: Cycle A = asset repo + Honeycomb growth + minimal playable (BattleField, Hand, Opponent, Result). Cycle B = polish surfaces (Quiz, Tutorial, HelpCarousel, ArenaSpeakers, EntryScreen, CardPetal tilt). Re-baseline LOC after S2."
+      },
+      {
+        "id": "SKP-003",
+        "concern": "AI opponent personality is unspecified at PRD level and deferred to SDD with three radically different options",
+        "severity": "HIGH",
+        "severity_score": 750,
+        "why_matters": "Q-SDD-1 lists hand-coded tree vs parameterized policy vs LLM call as open. These have order-of-magnitude differences in latency, cost, determinism, and replayability. AC-5 says 'no two element-AIs produce identical lineups' — trivially satisfiable by randomness. R6 'fun to lose to' has no measurable criterion. This is the heart of the game experience and it's a blank check.",
+        "location": "FR-13, Q-SDD-1, R6, AC-5",
+        "recommendation": "Decide algorithm shape in PRD before SDD. LLM-backed breaks determinism (conflicts with §6.4). Specify acceptance: AI must lose 40-60% against operator's median play across N matches per element."
+      },
+      {
+        "id": "SKP-004",
+        "concern": "Cross-repo asset sync via tarball releases and shell scripts is brittle and lacks failure handling",
+        "severity": "HIGH",
+        "severity_score": 720,
+        "why_matters": "scripts/sync-assets.sh has no specified behavior for: tag mismatch, network failure during CI, partial sync, conflicting local modifications, version drift between compass and world-purupuru. AC-8 'diff matches committed state' assumes a clean baseline that doesn't exist yet. World-purupuru is hackathon-live; breaking its asset path is a production risk.",
+        "location": "FR-15 to FR-17, AC-8, AC-9, R2",
+        "recommendation": "Spec the sync script contract: idempotent, atomic (temp dir + rename), lockfile with sha256 of release, fail-loud on mismatch. Add a rollback procedure. Ship to world-purupuru behind a feature flag first."
+      },
+      {
+        "id": "SKP-005",
+        "concern": "Visual parity in 2D with deferred Three.js may render the cycle's output anticlimactic relative to source experience",
+        "severity": "HIGH",
+        "severity_score": 650,
+        "why_matters": "World-purupuru's battle likely depends on shaders, particle FX, or 3D tilt for the 'feel'. D5 defers all of that to 'card-game-3d-202X'. The operator's mental model is 'the actual game' — if 2D parity doesn't deliver the felt experience, G1 ('visible playable solo') may pass AC but fail the operator's tacit bar. Risk of immediate follow-up rework.",
+        "location": "D5, G2, Section 6.1",
+        "recommendation": "Get explicit operator confirmation by reviewing world-purupuru live and tagging which visual elements are load-bearing for 'parity' vs nice-to-have. Document in PRD §2 what 2D parity excludes."
+      },
+      {
+        "id": "SKP-006",
+        "concern": "Test parity gap is dismissed too easily — 5 tests vs 204 with 'invariant-level parity' is hand-wavy",
+        "severity": "HIGH",
+        "severity_score": 670,
+        "why_matters": "AC-4 requires '≥6 invariants green' but purupuru-game has 204 tests for a reason: clash resolution has many edge cases (敗 stamping, simultaneous clashes, tiebreakers, condition interactions). FR-12 clash service WILL have bugs that only emerge under combinatorial test pressure. Q-SDD-6 punts the decision. Six invariant tests is not coverage.",
+        "location": "AC-4, G8, FR-12, R4, Q-SDD-6",
+        "recommendation": "Port the 204 tests as fixture-shared compatibility tests against the new Effect service. They are pure-logic tests; the port is mechanical. This is the cheapest insurance against clash-resolution drift."
+      },
+      {
+        "id": "SKP-007",
+        "concern": "Backtick hotkey collides with browser/IDE/extension conflicts and is dismissed as 'lossy'",
+        "severity": "MEDIUM",
+        "severity_score": 480,
+        "why_matters": "Backtick is consumed by: macOS app switching variants, browser dev console in some configs, IME for non-English keyboards, Chrome extensions. R9's 'accept lossy' attitude is fine for operator-only use but the PRD claims onboarding-friendly surfaces. ?dev=1 fallback is good but not documented to users.",
+        "location": "D3, FR-21, R9",
+        "recommendation": "Document the fallback in the help/console output. Consider Ctrl+` or Cmd+Shift+D as alternates. Confirm it doesn't conflict with operator's actual keyboard/IME setup."
+      },
+      {
+        "id": "SKP-008",
+        "concern": "ElementQuiz persistence in localStorage is fragile and assumes single-user single-device",
+        "severity": "MEDIUM",
+        "severity_score": 500,
+        "why_matters": "AC-2 'subsequent visits skip directly' depends on `localStorage.compass.element`. Private browsing, cleared storage, different device, multiple profiles, or storage quota errors all break the flow. No migration story when quiz content changes (Q-SDD-5). No way to retake. Tutorial flag (FR-10 'replayable from settings') has no settings surface in scope.",
+        "location": "FR-2, AC-2, FR-10",
+        "recommendation": "Specify behavior on storage failure (default to quiz). Add a tiny settings surface (or query param) to retake quiz and replay tutorial. Schema-version the localStorage key."
+      },
+      {
+        "id": "SKP-009",
+        "concern": "Whisper determinism fix (FR-24) is described but the seed-derivation contract is unspecified",
+        "severity": "MEDIUM",
+        "severity_score": 460,
+        "why_matters": "FR-24 says 'pass a deterministic counter derived from the phase-transition number + current battle seed' but doesn't specify the mixing function. If naive (e.g., seed + counter), adjacent transitions produce near-identical hash outputs and same whisper. Same caretaker whisper twice in a row breaks immersion. AC-12 only checks replay, not distribution.",
+        "location": "FR-24, AC-12, G7",
+        "recommendation": "Spec the hash: use a counter + seed → sha256 → modulo with rejection of immediate repeats. Add a test for whisper variety across a 10-transition sequence, not just replay equality."
+      },
+      {
+        "id": "SKP-010",
+        "concern": "S1 asset extraction blocks S2-S8 entirely, creating a single point of failure at cycle start",
+        "severity": "MEDIUM",
+        "severity_score": 580,
+        "why_matters": "Section 9 dependency graph shows S1 → S2 → everything else. Asset repo creation involves: GitHub org permissions, release CI, sync script in two repos, world-purupuru coordination (hackathon-live!). If S1 slips by a week, the whole cycle slips. R10 mitigation 'operator owns org' covers permissions but not the world-purupuru integration risk.",
+        "location": "Section 9, R2, R10",
+        "recommendation": "Decouple: let S2 (Honeycomb growth) run in parallel with S1 — it doesn't need final assets, just the import paths. Defer world-purupuru sync (FR-17/AC-9) to a separate post-S8 step so it doesn't block the cycle close."
+      }
+    ],
+    "summary": "10 concerns identified: 2 CRITICAL (Svelte→React translation complexity, cycle over-scope), 4 HIGH (AI opponent under-specified, asset sync brittleness, 2D parity risk, test coverage gap), 4 MEDIUM (hotkey conflicts, localStorage fragility, whisper determinism spec, S1 blocking)."
+  },
+  "note": "Opus produced parseable JSON output but flatline-orchestrator scoring engine could not extract items (issue #759 + 1.157.0 regression). Direct invocation captured findings verbatim."
+}

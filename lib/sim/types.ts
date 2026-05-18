@@ -10,12 +10,7 @@ export interface Vec2 {
   y: number;
 }
 
-export type HenloArchetype =
-  | "hopeful"
-  | "empty"
-  | "naughty"
-  | "loyal"
-  | "overstimulated";
+export type HenloArchetype = "hopeful" | "empty" | "naughty" | "loyal" | "overstimulated";
 
 export interface AvatarSeed {
   eyeKind: 0 | 1 | 2 | 3 | 4;

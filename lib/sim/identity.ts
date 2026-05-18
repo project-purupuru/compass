@@ -23,26 +23,50 @@ export const ARCHETYPE_FOR_ELEMENT: Record<Element, HenloArchetype> = {
 };
 
 const NAMES: readonly string[] = [
-  "Kaori", "Akane", "Ren", "Ruan", "Nemu",
-  "Hana", "Yumi", "Sora", "Aki", "Mei",
-  "Yuki", "Haru", "Kaze", "Iko", "Nori",
-  "Jun", "Tako", "Mochi", "Honi", "Komi",
-  "Suki", "Maki", "Riku", "Tora", "Niko",
-  "Kumo", "Hoshi", "Tsuki", "Kiri", "Ame",
+  "Kaori",
+  "Akane",
+  "Ren",
+  "Ruan",
+  "Nemu",
+  "Hana",
+  "Yumi",
+  "Sora",
+  "Aki",
+  "Mei",
+  "Yuki",
+  "Haru",
+  "Kaze",
+  "Iko",
+  "Nori",
+  "Jun",
+  "Tako",
+  "Mochi",
+  "Honi",
+  "Komi",
+  "Suki",
+  "Maki",
+  "Riku",
+  "Tora",
+  "Niko",
+  "Kumo",
+  "Hoshi",
+  "Tsuki",
+  "Kiri",
+  "Ame",
 ];
 
 const ELEMENT_WORDS: Record<Element, readonly string[]> = {
-  wood:  ["leaf", "sprout", "fern", "moss", "bark"],
-  fire:  ["ember", "cinder", "ash", "blaze", "kindle"],
+  wood: ["leaf", "sprout", "fern", "moss", "bark"],
+  fire: ["ember", "cinder", "ash", "blaze", "kindle"],
   earth: ["clay", "loam", "stone", "dust", "hearth"],
   metal: ["shine", "blade", "frost", "silver", "alloy"],
   water: ["tide", "mist", "rain", "drop", "river"],
 };
 
 const EPITHETS: Record<Element, readonly string[]> = {
-  wood:  ["the Hopeful", "of Sprouts", "the Patient", "of Pines"],
+  wood: ["the Hopeful", "of Sprouts", "the Patient", "of Pines"],
   earth: ["the Quiet", "of Hearth", "the Empty", "of Soil"],
-  fire:  ["the Bold", "of Embers", "the Wild", "the Bright"],
+  fire: ["the Bold", "of Embers", "the Wild", "the Bright"],
   metal: ["the Loyal", "of Frost", "the Sharp", "of Silver"],
   water: ["of Tides", "the Deep", "of Rain", "the Dreaming"],
 };
@@ -74,11 +98,7 @@ interface NameStyleOut {
   username: string;
 }
 
-function buildName(
-  seed: number,
-  primary: Element,
-  archetype: HenloArchetype,
-): NameStyleOut {
+function buildName(seed: number, primary: Element, archetype: HenloArchetype): NameStyleOut {
   const baseName = NAMES[pickN(seed, 2654435761, NAMES.length)];
   const styleIdx = pickN(seed, 1597334677, 100);
 
@@ -148,10 +168,7 @@ function buildAvatarSeed(seed: number, archetype: HenloArchetype): AvatarSeed {
   return { eyeKind, mouthKind, browTilt, dropletPos, bodyTilt };
 }
 
-export function identityFor(
-  seedIndex: number,
-  primary: Element,
-): PuruhaniIdentity {
+export function identityFor(seedIndex: number, primary: Element): PuruhaniIdentity {
   const trader: Wallet = syntheticAddress(seedIndex);
   const archetype = ARCHETYPE_FOR_ELEMENT[primary];
   const { displayName, username } = buildName(seedIndex, primary, archetype);

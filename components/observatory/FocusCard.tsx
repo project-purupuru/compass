@@ -84,7 +84,9 @@ export function FocusCard({
 
   useEffect(() => {
     if (!identity) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [identity, onClose]);
@@ -152,9 +154,7 @@ export function FocusCard({
             >
               {ELEMENT_KANJI[primary]}
             </span>
-            <span className="font-puru-mono text-sm capitalize text-puru-ink-rich">
-              {primary}
-            </span>
+            <span className="font-puru-mono text-sm capitalize text-puru-ink-rich">{primary}</span>
           </span>
         </div>
 

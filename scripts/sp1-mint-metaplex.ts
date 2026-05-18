@@ -32,40 +32,37 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-import { readFileSync, existsSync } from "node:fs"
-import { homedir } from "node:os"
-import { resolve } from "node:path"
+import { readFileSync, existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { resolve } from "node:path";
 
-import {
-  createNft,
-  mplTokenMetadata,
-} from "@metaplex-foundation/mpl-token-metadata"
+import { createNft, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
   keypairIdentity,
   percentAmount,
   publicKey,
   type PublicKey as UmiPublicKey,
-} from "@metaplex-foundation/umi"
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults"
-import { base58 } from "@metaplex-foundation/umi/serializers"
+} from "@metaplex-foundation/umi";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 
 // ── 1. Configuration ─────────────────────────────────────────────────
 
-const DEVNET_RPC = "https://api.devnet.solana.com"
+const DEVNET_RPC = "https://api.devnet.solana.com";
 
 // Metadata URI · GitHub raw URL pointing to our committed metadata JSON.
 // (For SPIKE: change branch to `main` after this script lands on main.)
 const METADATA_URI =
-  "https://raw.githubusercontent.com/project-purupuru/purupuru-ttrpg/feat/awareness-layer-spine/fixtures/spikes/sp1-metadata.json"
+  "https://raw.githubusercontent.com/project-purupuru/purupuru-ttrpg/feat/awareness-layer-spine/fixtures/spikes/sp1-metadata.json";
 
 // Solana CLI default keypair location · we use this as the mint authority + payer.
-const DEFAULT_KEYPAIR_PATH = resolve(homedir(), ".config/solana/id.json")
-const KEYPAIR_PATH = process.env.SOLANA_PAYER_KEYPAIR ?? DEFAULT_KEYPAIR_PATH
+const DEFAULT_KEYPAIR_PATH = resolve(homedir(), ".config/solana/id.json");
+const KEYPAIR_PATH = process.env.SOLANA_PAYER_KEYPAIR ?? DEFAULT_KEYPAIR_PATH;
 
 // ── 2. Argument parsing ──────────────────────────────────────────────
 
-const recipientPubkeyArg = process.argv[2]
+const recipientPubkeyArg = process.argv[2];
 
 if (!recipientPubkeyArg) {
   console.error(`
@@ -79,8 +76,8 @@ Where to find your Phantom devnet pubkey:
 
 Optional env:
   SOLANA_PAYER_KEYPAIR=/path/to/keypair.json  (defaults to ${DEFAULT_KEYPAIR_PATH})
-`)
-  process.exit(1)
+`);
+  process.exit(1);
 }
 
 if (!existsSync(KEYPAIR_PATH)) {
@@ -91,102 +88,100 @@ Run one of:
   solana-keygen new                                 # generate new default keypair
   solana airdrop 1                                  # fund it from devnet faucet
   export SOLANA_PAYER_KEYPAIR=/path/to/keypair.json # or point to existing
-`)
-  process.exit(1)
+`);
+  process.exit(1);
 }
 
 // ── 3. Set up Umi (Metaplex's modern SDK runtime) ────────────────────
 
-console.log("🔧 Setting up Umi...")
+console.log("🔧 Setting up Umi...");
 
-const umi = createUmi(DEVNET_RPC)
-umi.use(mplTokenMetadata()) // registers Token Metadata program + helpers
+const umi = createUmi(DEVNET_RPC);
+umi.use(mplTokenMetadata()); // registers Token Metadata program + helpers
 
 // Load the payer keypair · this account pays tx fees + becomes the mint authority.
 // (Sprint-3 · S3-T1 swaps to a sponsored-payer keypair · for SPIKE we use the local one.)
-const keypairBytes = JSON.parse(readFileSync(KEYPAIR_PATH, "utf-8")) as number[]
-const payerKeypair = umi.eddsa.createKeypairFromSecretKey(
-  new Uint8Array(keypairBytes),
-)
-umi.use(keypairIdentity(payerKeypair))
+const keypairBytes = JSON.parse(readFileSync(KEYPAIR_PATH, "utf-8")) as number[];
+const payerKeypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(keypairBytes));
+umi.use(keypairIdentity(payerKeypair));
 
-const payerPubkey: UmiPublicKey = umi.identity.publicKey
-console.log(`   Payer pubkey: ${payerPubkey.toString()}`)
+const payerPubkey: UmiPublicKey = umi.identity.publicKey;
+console.log(`   Payer pubkey: ${payerPubkey.toString()}`);
 
 // Recipient · operator's Phantom devnet wallet.
-let recipient: UmiPublicKey
+let recipient: UmiPublicKey;
 try {
-  recipient = publicKey(recipientPubkeyArg)
+  recipient = publicKey(recipientPubkeyArg);
 } catch {
-  console.error(`❌ Invalid Solana pubkey: ${recipientPubkeyArg}`)
-  process.exit(1)
+  console.error(`❌ Invalid Solana pubkey: ${recipientPubkeyArg}`);
+  process.exit(1);
 }
-console.log(`   Recipient: ${recipient.toString()}`)
+console.log(`   Recipient: ${recipient.toString()}`);
 
 // Wrap async work in main() so tsx's CJS default doesn't choke on top-level await.
 async function main() {
-// ── 4. Pre-flight balance check ──────────────────────────────────────
+  // ── 4. Pre-flight balance check ──────────────────────────────────────
 
-const balanceLamports = await umi.rpc.getBalance(payerPubkey)
-const balanceSol = Number(balanceLamports.basisPoints) / 1e9
-console.log(`   Payer balance: ${balanceSol.toFixed(4)} SOL`)
+  const balanceLamports = await umi.rpc.getBalance(payerPubkey);
+  const balanceSol = Number(balanceLamports.basisPoints) / 1e9;
+  console.log(`   Payer balance: ${balanceSol.toFixed(4)} SOL`);
 
-if (balanceSol < 0.01) {
-  console.error(`
+  if (balanceSol < 0.01) {
+    console.error(`
 ❌ Payer balance too low (need ≥0.01 SOL for mint)
 
 Run: solana airdrop 1
-`)
-  process.exit(1)
-}
+`);
+    process.exit(1);
+  }
 
-// ── 5. Generate the mint keypair (fresh per run) ─────────────────────
+  // ── 5. Generate the mint keypair (fresh per run) ─────────────────────
 
-// In Metaplex, the mint is itself a keypair · generated fresh for each NFT.
-// The mint pubkey becomes the unique on-chain identity of this NFT.
-const mintSigner = generateSigner(umi)
-console.log(`\n🪨 Mint pubkey (this becomes the NFT's on-chain ID):`)
-console.log(`   ${mintSigner.publicKey.toString()}`)
+  // In Metaplex, the mint is itself a keypair · generated fresh for each NFT.
+  // The mint pubkey becomes the unique on-chain identity of this NFT.
+  const mintSigner = generateSigner(umi);
+  console.log(`\n🪨 Mint pubkey (this becomes the NFT's on-chain ID):`);
+  console.log(`   ${mintSigner.publicKey.toString()}`);
 
-// ── 6. Build + send the createNft transaction ────────────────────────
+  // ── 6. Build + send the createNft transaction ────────────────────────
 
-console.log(`\n🌬 Sending createNft transaction to devnet...`)
-console.log(`   Metadata URI: ${METADATA_URI}`)
+  console.log(`\n🌬 Sending createNft transaction to devnet...`);
+  console.log(`   Metadata URI: ${METADATA_URI}`);
 
-try {
-  const result = await createNft(umi, {
-    mint: mintSigner,
-    name: "Genesis Stone · Fire",
-    symbol: "PGS",
-    uri: METADATA_URI,
-    sellerFeeBasisPoints: percentAmount(0), // 0% royalty · this isn't a marketplace flow
-    tokenOwner: recipient, // ← the NFT lands in operator's Phantom
-    isCollection: false,
-  }).sendAndConfirm(umi, {
-    confirm: { commitment: "confirmed" },
-  })
+  try {
+    const result = await createNft(umi, {
+      mint: mintSigner,
+      name: "Genesis Stone · Fire",
+      symbol: "PGS",
+      uri: METADATA_URI,
+      sellerFeeBasisPoints: percentAmount(0), // 0% royalty · this isn't a marketplace flow
+      tokenOwner: recipient, // ← the NFT lands in operator's Phantom
+      isCollection: false,
+    }).sendAndConfirm(umi, {
+      confirm: { commitment: "confirmed" },
+    });
 
-  // Convert signature bytes → base58 string for explorer link.
-  // Umi returns signature as Uint8Array · we encode to base58 for the explorer URL.
-  const [signatureString] = base58.deserialize(result.signature)
+    // Convert signature bytes → base58 string for explorer link.
+    // Umi returns signature as Uint8Array · we encode to base58 for the explorer URL.
+    const [signatureString] = base58.deserialize(result.signature);
 
-  console.log(`\n✅ MINT CONFIRMED`)
-  console.log(`   Tx signature: ${signatureString}`)
-  console.log(
-    `   Solana Explorer: https://explorer.solana.com/tx/${signatureString}?cluster=devnet`,
-  )
-  console.log(
-    `   Token Explorer:  https://explorer.solana.com/address/${mintSigner.publicKey.toString()}?cluster=devnet`,
-  )
-} catch (err) {
-  console.error(`\n❌ MINT FAILED`)
-  console.error(err)
-  process.exit(1)
-}
+    console.log(`\n✅ MINT CONFIRMED`);
+    console.log(`   Tx signature: ${signatureString}`);
+    console.log(
+      `   Solana Explorer: https://explorer.solana.com/tx/${signatureString}?cluster=devnet`,
+    );
+    console.log(
+      `   Token Explorer:  https://explorer.solana.com/address/${mintSigner.publicKey.toString()}?cluster=devnet`,
+    );
+  } catch (err) {
+    console.error(`\n❌ MINT FAILED`);
+    console.error(err);
+    process.exit(1);
+  }
 
-// ── 7. Verification instructions ─────────────────────────────────────
+  // ── 7. Verification instructions ─────────────────────────────────────
 
-console.log(`
+  console.log(`
 ═══════════════════════════════════════════════════════════════════════
   VERIFY · Phantom collectibles tab
 ═══════════════════════════════════════════════════════════════════════
@@ -206,11 +201,11 @@ console.log(`
      curl -I "${METADATA_URI}"
 
 ═══════════════════════════════════════════════════════════════════════
-`)
+`);
 }
 
 // Run main · catch + log failures so we get clean stack traces.
 main().catch((err) => {
-  console.error("\n❌ Script failed:", err)
-  process.exit(1)
-})
+  console.error("\n❌ Script failed:", err);
+  process.exit(1);
+});

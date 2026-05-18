@@ -7,55 +7,53 @@
 // v0 stretch (S3-T8): SCORE_API_URL set → reads real Score for "aliveness from
 // prior collection" (existing PurupuruGenesis Base mints become historical feed).
 
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
-import { resolveScoreAdapter } from "@purupuru/world-sources"
-import { renderAmbient } from "@purupuru/medium-blink"
+import { resolveScoreAdapter } from "@purupuru/world-sources";
+import { renderAmbient } from "@purupuru/medium-blink";
 
-import { ACTION_CORS_HEADERS, getBaseUrl } from "@/lib/blink/cors"
+import { ACTION_CORS_HEADERS, getBaseUrl } from "@/lib/blink/cors";
 
 // Cache the aggregate snapshot for 60s · matches BLINK_DESCRIPTOR cache strategy.
-export const revalidate = 60
+export const revalidate = 60;
 
 const todayElementFromDistribution = (
   dist: Awaited<ReturnType<ReturnType<typeof resolveScoreAdapter>["getElementDistribution"]>>,
 ): "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER" => {
-  let dominant: keyof typeof dist = "wood"
-  let max = -Infinity
+  let dominant: keyof typeof dist = "wood";
+  let max = -Infinity;
   for (const k of Object.keys(dist) as Array<keyof typeof dist>) {
     if (dist[k] > max) {
-      max = dist[k]
-      dominant = k
+      max = dist[k];
+      dominant = k;
     }
   }
   // lib/score uses lowercase · translate to canonical uppercase.
-  return dominant.toUpperCase() as "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER"
-}
+  return dominant.toUpperCase() as "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER";
+};
 
 export async function GET(request: Request) {
-  const baseUrl = getBaseUrl(request)
-  const score = resolveScoreAdapter()
+  const baseUrl = getBaseUrl(request);
+  const score = resolveScoreAdapter();
 
   try {
-    const dist = await score.getElementDistribution()
-    const todayElement = todayElementFromDistribution(dist)
+    const dist = await score.getElementDistribution();
+    const todayElement = todayElementFromDistribution(dist);
 
     // v0 ambient stats · derived from mock or real Score. Mint count is the
     // sum of distribution entries (matches observatory's ActivityRail mint
     // counter on origin/main). Per-element delta intentionally NOT computed —
     // observatory's KpiStrip exposes `dominant element`, NOT a percent surge,
     // so we don't fabricate a number here that the click-through can't honor.
-    const mintCount = Math.round(
-      Object.values(dist).reduce((sum, v) => sum + v, 0),
-    )
+    const mintCount = Math.round(Object.values(dist).reduce((sum, v) => sum + v, 0));
 
     const response = renderAmbient({
       todayElement,
       mintCount,
       config: { baseUrl },
-    })
+    });
 
-    return NextResponse.json(response, { headers: ACTION_CORS_HEADERS })
+    return NextResponse.json(response, { headers: ACTION_CORS_HEADERS });
   } catch (error) {
     // Fail-graceful · serve a static ambient response if Score path fails.
     return NextResponse.json(
@@ -76,10 +74,10 @@ export async function GET(request: Request) {
         },
       },
       { headers: ACTION_CORS_HEADERS },
-    )
+    );
   }
 }
 
 export async function OPTIONS() {
-  return new Response(null, { headers: ACTION_CORS_HEADERS })
+  return new Response(null, { headers: ACTION_CORS_HEADERS });
 }

@@ -1,6 +1,41 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import noUnregisteredMutation from "./eslint-rules/no-unregistered-mutation.mjs";
+
+// ─── Registry doctrine enforcement ─────────────────────────────────
+// See grimoires/loa/proposals/registry-doctrine-2026-05-12.md
+const registryDoctrineRules = {
+  files: ["**/*.{ts,tsx,js,jsx,mjs}"],
+  plugins: {
+    purupuru: {
+      rules: {
+        "no-unregistered-mutation": noUnregisteredMutation,
+      },
+    },
+  },
+  rules: {
+    "purupuru/no-unregistered-mutation": [
+      "error",
+      {
+        forbiddenIdentifiers: [
+          // activity stream (refactored to MutationGuard 2026-05-12)
+          "extras",
+          // VFX scheduler internal active list
+          "active",
+        ],
+        // The registry's own files are allowed to mutate their closure-captured state
+        allowedFiles: [
+          "lib/registry/",
+          "lib/activity/index.ts",
+          "lib/vfx/scheduler.ts",
+          "lib/audio/engine.ts",
+          "lib/camera/parallax-engine.ts",
+        ],
+      },
+    ],
+  },
+};
 
 // ─── Substrate-purity boundary enforcement (S2-T7 · per SDD HIGH-1) ────
 //
@@ -92,6 +127,7 @@ const eslintConfig = defineConfig([
   ]),
   substrateBoundaryRules,
   mediumBlinkBoundaryRules,
+  registryDoctrineRules,
   {
     rules: {
       "@typescript-eslint/no-unused-vars": [

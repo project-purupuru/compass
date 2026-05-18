@@ -63,17 +63,18 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 @font-face {
-  font-family: 'FOT-Yuruka Std';
-  src: url('/fonts/fot-yuruka-std.woff2') format('woff2'),
-       url('/fonts/fot-yuruka-std.ttf') format('truetype');
+  font-family: "FOT-Yuruka Std";
+  src:
+    url("/fonts/fot-yuruka-std.woff2") format("woff2"),
+    url("/fonts/fot-yuruka-std.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'ZCOOL KuaiLe';
-  src: url('/fonts/zcool-kuaile.woff2') format('woff2');
+  font-family: "ZCOOL KuaiLe";
+  src: url("/fonts/zcool-kuaile.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -89,106 +90,106 @@
   color-scheme: light dark;
 
   /* ── Cloud surfaces (warm cream, not void) — canonical world-purupuru ── */
-  --puru-cloud-bright: oklch(0.97 0.010 90);
-  --puru-cloud-base:   oklch(0.94 0.015 90);
-  --puru-cloud-dim:    oklch(0.88 0.020 90);
-  --puru-cloud-deep:   oklch(0.78 0.025 85);
-  --puru-cloud-shadow: oklch(0.65 0.030 85);
+  --puru-cloud-bright: oklch(0.97 0.01 90);
+  --puru-cloud-base: oklch(0.94 0.015 90);
+  --puru-cloud-dim: oklch(0.88 0.02 90);
+  --puru-cloud-deep: oklch(0.78 0.025 85);
+  --puru-cloud-shadow: oklch(0.65 0.03 85);
 
   /* ── Ink (brush-on-paper) ──────────────────────────────────────────── */
-  --puru-ink-rich:  oklch(0.18 0.020 260);
-  --puru-ink-base:  oklch(0.25 0.015 260);
-  --puru-ink-soft:  oklch(0.35 0.012 260);
-  --puru-ink-dim:   oklch(0.45 0.010 260);
+  --puru-ink-rich: oklch(0.18 0.02 260);
+  --puru-ink-base: oklch(0.25 0.015 260);
+  --puru-ink-soft: oklch(0.35 0.012 260);
+  --puru-ink-dim: oklch(0.45 0.01 260);
   --puru-ink-ghost: oklch(0.42 0.008 260);
 
   /* ── Honey accent ──────────────────────────────────────────────────── */
-  --puru-honey-bright: oklch(0.88 0.160 85);
-  --puru-honey-base:   oklch(0.82 0.140 85);
-  --puru-honey-dim:    oklch(0.70 0.120 85);
-  --puru-honey-tint:   oklch(0.95 0.030 85);
+  --puru-honey-bright: oklch(0.88 0.16 85);
+  --puru-honey-base: oklch(0.82 0.14 85);
+  --puru-honey-dim: oklch(0.7 0.12 85);
+  --puru-honey-tint: oklch(0.95 0.03 85);
 
   /* ── Terracotta (kiln material) ────────────────────────────────────── */
-  --puru-terra-bright: oklch(0.70 0.130 45);
-  --puru-terra-base:   oklch(0.60 0.150 45);
-  --puru-terra-dim:    oklch(0.48 0.120 45);
-  --puru-terra-tint:   oklch(0.95 0.020 45);
+  --puru-terra-bright: oklch(0.7 0.13 45);
+  --puru-terra-base: oklch(0.6 0.15 45);
+  --puru-terra-dim: oklch(0.48 0.12 45);
+  --puru-terra-tint: oklch(0.95 0.02 45);
 
   /* ── Sakura (rare) ─────────────────────────────────────────────────── */
-  --puru-sakura-bright: oklch(0.80 0.120 350);
-  --puru-sakura-base:   oklch(0.72 0.100 350);
-  --puru-sakura-dim:    oklch(0.58 0.080 350);
-  --puru-sakura-tint:   oklch(0.94 0.020 350);
+  --puru-sakura-bright: oklch(0.8 0.12 350);
+  --puru-sakura-base: oklch(0.72 0.1 350);
+  --puru-sakura-dim: oklch(0.58 0.08 350);
+  --puru-sakura-tint: oklch(0.94 0.02 350);
 
   /* ── Element — Wood 木 ─────────────────────────────────────────────── */
-  --puru-wood-tint:   oklch(0.95 0.020 145);
-  --puru-wood-pastel: oklch(0.82 0.080 145);
-  --puru-wood-base:   var(--puru-wood-pastel);
-  --puru-wood-dim:    oklch(0.66 0.114 112.7);
-  --puru-wood-vivid:  oklch(0.81 0.144 112.7);
+  --puru-wood-tint: oklch(0.95 0.02 145);
+  --puru-wood-pastel: oklch(0.82 0.08 145);
+  --puru-wood-base: var(--puru-wood-pastel);
+  --puru-wood-dim: oklch(0.66 0.114 112.7);
+  --puru-wood-vivid: oklch(0.81 0.144 112.7);
 
   /* ── Element — Fire 火 ─────────────────────────────────────────────── */
-  --puru-fire-tint:   oklch(0.95 0.018 45);
-  --puru-fire-pastel: oklch(0.80 0.080 45);
-  --puru-fire-base:   var(--puru-fire-pastel);
-  --puru-fire-dim:    oklch(0.49 0.151 28.4);
-  --puru-fire-vivid:  oklch(0.64 0.181 28.4);
+  --puru-fire-tint: oklch(0.95 0.018 45);
+  --puru-fire-pastel: oklch(0.8 0.08 45);
+  --puru-fire-base: var(--puru-fire-pastel);
+  --puru-fire-dim: oklch(0.49 0.151 28.4);
+  --puru-fire-vivid: oklch(0.64 0.181 28.4);
 
   /* ── Element — Earth 土 ────────────────────────────────────────────── */
-  --puru-earth-tint:   oklch(0.96 0.020 85);
-  --puru-earth-pastel: oklch(0.88 0.120 85);
-  --puru-earth-base:   var(--puru-earth-pastel);
-  --puru-earth-dim:    oklch(0.70 0.123 83.8);
-  --puru-earth-vivid:  oklch(0.85 0.153 83.8);
+  --puru-earth-tint: oklch(0.96 0.02 85);
+  --puru-earth-pastel: oklch(0.88 0.12 85);
+  --puru-earth-base: var(--puru-earth-pastel);
+  --puru-earth-dim: oklch(0.7 0.123 83.8);
+  --puru-earth-vivid: oklch(0.85 0.153 83.8);
 
   /* ── Element — Water 水 ────────────────────────────────────────────── */
-  --puru-water-tint:   oklch(0.96 0.015 230);
-  --puru-water-pastel: oklch(0.88 0.060 230);
-  --puru-water-base:   var(--puru-water-pastel);
-  --puru-water-dim:    oklch(0.38 0.150 266.2);
-  --puru-water-vivid:  oklch(0.53 0.180 266.2);
+  --puru-water-tint: oklch(0.96 0.015 230);
+  --puru-water-pastel: oklch(0.88 0.06 230);
+  --puru-water-base: var(--puru-water-pastel);
+  --puru-water-dim: oklch(0.38 0.15 266.2);
+  --puru-water-vivid: oklch(0.53 0.18 266.2);
 
   /* ── Element — Metal 金 ────────────────────────────────────────────── */
-  --puru-metal-tint:   oklch(0.95 0.015 310);
-  --puru-metal-pastel: oklch(0.82 0.060 310);
-  --puru-metal-base:   var(--puru-metal-pastel);
-  --puru-metal-dim:    oklch(0.37 0.096 309.7);
-  --puru-metal-vivid:  oklch(0.52 0.126 309.7);
+  --puru-metal-tint: oklch(0.95 0.015 310);
+  --puru-metal-pastel: oklch(0.82 0.06 310);
+  --puru-metal-base: var(--puru-metal-pastel);
+  --puru-metal-dim: oklch(0.37 0.096 309.7);
+  --puru-metal-vivid: oklch(0.52 0.126 309.7);
 
   /* ── Card back ─────────────────────────────────────────────────────── */
-  --puru-back-deep:   oklch(0.70 0.120 85);
-  --puru-back-base:   oklch(0.82 0.140 85);
-  --puru-back-bright: oklch(0.88 0.160 85);
+  --puru-back-deep: oklch(0.7 0.12 85);
+  --puru-back-base: oklch(0.82 0.14 85);
+  --puru-back-bright: oklch(0.88 0.16 85);
 
   /* ── Contrast — text on vivid element backgrounds ──────────────────── */
-  --puru-on-vivid: oklch(0.97 0.010 90);
-  --puru-on-honey: oklch(0.22 0.020 85);
+  --puru-on-vivid: oklch(0.97 0.01 90);
+  --puru-on-honey: oklch(0.22 0.02 85);
 
   /* ── Surface (ceramic / tile / track) ──────────────────────────────── */
-  --puru-surface-border:           oklch(0.90 0.020 85);
-  --puru-surface-highlight:        oklch(1 0 0 / 0.4);
+  --puru-surface-border: oklch(0.9 0.02 85);
+  --puru-surface-highlight: oklch(1 0 0 / 0.4);
   --puru-surface-highlight-strong: oklch(1 0 0 / 0.5);
-  --puru-surface-track:            oklch(0.93 0.020 85);
-  --puru-surface-track-shadow:     oklch(0.7 0.02 85 / 0.15);
-  --puru-surface-shadow-sm:        oklch(0.62 0.03 85 / 0.16);
-  --puru-surface-shadow-md:        oklch(0.55 0.04 85 / 0.22);
+  --puru-surface-track: oklch(0.93 0.02 85);
+  --puru-surface-track-shadow: oklch(0.7 0.02 85 / 0.15);
+  --puru-surface-shadow-sm: oklch(0.62 0.03 85 / 0.16);
+  --puru-surface-shadow-md: oklch(0.55 0.04 85 / 0.22);
 
   /* ── Ghost card ────────────────────────────────────────────────────── */
-  --puru-ghost-border: oklch(0.88 0.020 90);
-  --puru-ghost-bg:     oklch(0.96 0.008 90);
+  --puru-ghost-border: oklch(0.88 0.02 90);
+  --puru-ghost-bg: oklch(0.96 0.008 90);
   --puru-ghost-shadow: oklch(0.88 0.015 85 / 0.3);
-  --puru-ghost-hint:   oklch(0.60 0.008 260 / 0.35);
+  --puru-ghost-hint: oklch(0.6 0.008 260 / 0.35);
 
   /* ── Disabled state (solid, not opacity) ───────────────────────────── */
   --puru-disabled-fg: oklch(0.52 0.008 260);
-  --puru-disabled-bg: oklch(0.90 0.012 90);
+  --puru-disabled-bg: oklch(0.9 0.012 90);
 
   /* ── Overlay scrim ─────────────────────────────────────────────────── */
-  --overlay-scrim-dark:   oklch(0.06 0.008 85 / 0.92);
+  --overlay-scrim-dark: oklch(0.06 0.008 85 / 0.92);
   --overlay-scrim-medium: oklch(0.15 0.01 85 / 0.5);
-  --overlay-scrim-light:  oklch(0.95 0.01 90 / 0.72);
-  --overlay-blur:         12px;
-  --overlay-blur-subtle:  8px;
+  --overlay-scrim-light: oklch(0.95 0.01 90 / 0.72);
+  --overlay-blur: 12px;
+  --overlay-blur-subtle: 8px;
 
   /* Ceremony veil — the Hades-pattern dimmed sanctum. Operator decision
      2026-05-11 (post-glow-iter): light mode is NOT a bright room — it's
@@ -202,103 +203,149 @@
 
   /* ── Spacing (4px grid) ────────────────────────────────────────────── */
   --space-2xs: 2px;
-  --space-xs:  4px;
+  --space-xs: 4px;
   --space-1_5: 6px;
-  --space-sm:  8px;
-  --space-2:   var(--space-sm);
+  --space-sm: 8px;
+  --space-2: var(--space-sm);
   --space-2_5: 10px;
-  --space-3:   12px;
-  --space-md:  16px;
-  --space-5:   20px;
-  --space-lg:  24px;
-  --space-8:   32px;
-  --space-xl:  40px;
+  --space-3: 12px;
+  --space-md: 16px;
+  --space-5: 20px;
+  --space-lg: 24px;
+  --space-8: 32px;
+  --space-xl: 40px;
   --space-2xl: 64px;
   --space-3xl: 96px;
 
   /* ── Radii ─────────────────────────────────────────────────────────── */
-  --radius-sm:   6px;
-  --radius-md:   12px;
-  --radius-lg:   20px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
   --radius-full: 9999px;
 
   /* ── Easing curves ─────────────────────────────────────────────────── */
-  --ease-puru-in:      cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-puru-out:     cubic-bezier(0.0, 0, 0.2, 1);
-  --ease-puru-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-puru-settle:  cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-puru-in: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-puru-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-puru-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-puru-settle: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-puru-breathe: cubic-bezier(0.45, 0.05, 0.55, 0.95);
-  --ease-puru-flow:    cubic-bezier(0.22, 1.2, 0.36, 1);
-  --ease-puru-emit:    cubic-bezier(0.22, 1.0, 0.36, 1);
-  --ease-puru-crack:   cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-puru-flow: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-puru-emit: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-puru-crack: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* ── Durations ─────────────────────────────────────────────────────── */
-  --duration-press:    80ms;
-  --duration-tap:      120ms;
-  --duration-instant:  100ms;
-  --duration-fast:     200ms;
-  --duration-normal:   400ms;
-  --duration-slow:     700ms;
-  --duration-ritual:   1200ms;
-  --duration-breathe:  3000ms;
+  --duration-press: 80ms;
+  --duration-tap: 120ms;
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 400ms;
+  --duration-slow: 700ms;
+  --duration-ritual: 1200ms;
+  --duration-breathe: 3000ms;
   --duration-workshop: 250ms;
 
   /* ── Pack ceremony timing (puru-dur-* canonical) ───────────────────── */
-  --puru-dur-snap:         220ms;
-  --puru-dur-crack:        240ms;
-  --puru-dur-can-reveal:   420ms;
-  --puru-dur-pulse:        600ms;
-  --puru-dur-emit:         620ms;
-  --puru-dur-settle:       900ms;
+  --puru-dur-snap: 220ms;
+  --puru-dur-crack: 240ms;
+  --puru-dur-can-reveal: 420ms;
+  --puru-dur-pulse: 600ms;
+  --puru-dur-emit: 620ms;
+  --puru-dur-settle: 900ms;
   --puru-dur-pack-breathe: 3.2s;
 
   /* ── Per-element breathing rhythms ─────────────────────────────────── */
-  --breath-wood:  6s;
-  --breath-fire:  4s;
+  --breath-wood: 6s;
+  --breath-fire: 4s;
   --breath-earth: 5.5s;
   --breath-metal: 4.5s;
   --breath-water: 5s;
 
   /* ── Elevation ─────────────────────────────────────────────────────── */
-  --shadow-card:        0 2px 8px oklch(0.70 0.02 85 / 0.12);
-  --shadow-card-hover:  0 8px 24px oklch(0.65 0.03 85 / 0.18);
-  --shadow-card-depth:  0 1px 0 oklch(0.88 0.015 85), 0 2px 0 oklch(0.85 0.015 85), 0 3px 0 oklch(0.82 0.015 85), 0 4px 10px oklch(0.5 0.02 85 / 0.18);
-  --shadow-pack:        0 4px 16px oklch(0.60 0.04 85 / 0.20);
-  --shadow-modal:       0 16px 48px oklch(0.50 0.03 85 / 0.25);
-  --shadow-tile:        0 2px 4px var(--puru-surface-shadow-sm), 0 1px 1px var(--puru-surface-shadow-sm), inset 0 1px 0 var(--puru-surface-highlight);
-  --shadow-tile-hover:  0 4px 12px var(--puru-surface-shadow-md), 0 1px 2px var(--puru-surface-shadow-sm), inset 0 1px 0 var(--puru-surface-highlight-strong);
+  --shadow-card: 0 2px 8px oklch(0.7 0.02 85 / 0.12);
+  --shadow-card-hover: 0 8px 24px oklch(0.65 0.03 85 / 0.18);
+  --shadow-card-depth:
+    0 1px 0 oklch(0.88 0.015 85), 0 2px 0 oklch(0.85 0.015 85), 0 3px 0 oklch(0.82 0.015 85),
+    0 4px 10px oklch(0.5 0.02 85 / 0.18);
+  --shadow-pack: 0 4px 16px oklch(0.6 0.04 85 / 0.2);
+  --shadow-modal: 0 16px 48px oklch(0.5 0.03 85 / 0.25);
+  --shadow-tile:
+    0 2px 4px var(--puru-surface-shadow-sm), 0 1px 1px var(--puru-surface-shadow-sm),
+    inset 0 1px 0 var(--puru-surface-highlight);
+  --shadow-tile-hover:
+    0 4px 12px var(--puru-surface-shadow-md), 0 1px 2px var(--puru-surface-shadow-sm),
+    inset 0 1px 0 var(--puru-surface-highlight-strong);
 
   /* Tsuheji continent backdrop — felt-not-seen treatment used by the
      observatory canvas wrapper. Mirrors purupuru.world's hero map.
      Tuned 2026-05-10 — was reading too prominent at 0.19/0.4; dropped
      to a near-watermark wash so the canvas (sprites + pentagram) wins
      the eye and the continent registers only on a second look. */
-  --puru-continent-opacity:    0.18;
-  --puru-continent-saturate:   0.38;
+  --puru-continent-opacity: 0.18;
+  --puru-continent-saturate: 0.38;
   --puru-continent-brightness: 1;
   /* Rim shadows — for surfaces flush against a viewport edge that need
      to project a music-player-class drop into the canvas pane on their
      ONE open side. -2px spread keeps the falloff tight to the
      projecting edge so the shadow reads as directional, not as a glow. */
-  --shadow-rim-bottom:  0 8px 20px -2px var(--puru-surface-shadow-md), 0 2px 4px -1px var(--puru-surface-shadow-sm), inset 0 1px 0 var(--puru-surface-highlight-strong);
-  --shadow-rim-left:    -8px 0 20px -2px var(--puru-surface-shadow-md), -2px 0 4px -1px var(--puru-surface-shadow-sm), inset 0 1px 0 var(--puru-surface-highlight-strong);
-  --surface-glaze:      inset 0 1px 0 var(--puru-surface-highlight);
+  --shadow-rim-bottom:
+    0 8px 20px -2px var(--puru-surface-shadow-md), 0 2px 4px -1px var(--puru-surface-shadow-sm),
+    inset 0 1px 0 var(--puru-surface-highlight-strong);
+  --shadow-rim-left:
+    -8px 0 20px -2px var(--puru-surface-shadow-md), -2px 0 4px -1px var(--puru-surface-shadow-sm),
+    inset 0 1px 0 var(--puru-surface-highlight-strong);
+  --surface-glaze: inset 0 1px 0 var(--puru-surface-highlight);
 
   /* ── Element vivid aliases ─────────────────────────────────────────── */
-  --element-wood:  var(--puru-wood-vivid);
-  --element-fire:  var(--puru-fire-vivid);
+  --element-wood: var(--puru-wood-vivid);
+  --element-fire: var(--puru-fire-vivid);
   --element-earth: var(--puru-earth-vivid);
   --element-water: var(--puru-water-vivid);
   --element-metal: var(--puru-metal-vivid);
 
   /* ── Semantic surface aliases ──────────────────────────────────────── */
-  --surface-base:   var(--puru-cloud-base);
+  --surface-base: var(--puru-cloud-base);
   --surface-raised: var(--puru-cloud-bright);
 
   /* ── Touch / safe area ─────────────────────────────────────────────── */
   --touch-target-min: 44px;
-  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ──────────────────────────────────────────────────────────────────
+     DARK-MODE DOCTRINE — read before adding battle/lock styles.
+
+     1. NEVER hardcode oklch lightness > 0.85 as a background unless you
+        also write a [data-theme='old-horai'] + @media prefers-dark
+        counterpart. The cloud-* tokens already swap; use them.
+     2. SVGs with black fill (like /brand/purupuru-wordmark.svg) need a
+        dark-mode `filter: invert(1) brightness(1.05)` rule or a
+        white-fill alternate.
+     3. Per-element vivid + dim shades already swap with theme — prefer
+        `var(--puru-fire-vivid)` over baked oklch literals.
+     4. `oklch(from var(--token) l c h / 0.5)` is the canonical pattern
+        for surfaces — pulls L/C/H from the token, only fixes alpha.
+        Stays theme-aware automatically.
+     5. The quiz screen is the reference. If a screen reads cleanly
+        there but fails on lock or battle, the screen-specific CSS is
+        the culprit, not the design system.
+     ────────────────────────────────────────────────────────────────── */
+
+  /* ── Legacy alias tokens — world-purupuru tokens.css canonical names.
+       Several battle-styles modules (CardPetal, ComboDiscoveryToast,
+       BattleScene, Tutorial, HelpCarousel, TurnClock) were ported with
+       the world-purupuru naming intact (--font-mono, --font-card,
+       --puru-honey-rich, etc.) but the compass globals only exposes the
+       Tailwind-utility-friendly --font-puru-* shapes. Without these
+       aliases those modules silently fall back to default sans-serif /
+       inherit colors, which is why the petal felt off in dark mode.
+       Source: world-purupuru/sites/world/src/lib/tokens.css:246-249 +
+       :76 for honey-rich (was always missing — map to base). */
+  --font-body: var(--font-puru-body);
+  --font-display: var(--font-puru-display);
+  --font-card: var(--font-puru-card);
+  --font-cn: var(--font-puru-cn);
+  --font-mono: var(--font-puru-mono);
+  --puru-honey-rich: var(--puru-honey-base);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -310,171 +357,175 @@
   /* Continent backdrop — bump brightness so the warm-toned PNG reads
      against the dark cloud-base, drop opacity hard so it stays as a
      near-watermark wash (matching the light-theme tuning of 2026-05-10). */
-  --puru-continent-opacity:    0.14;
-  --puru-continent-saturate:   0.5;
+  --puru-continent-opacity: 0.14;
+  --puru-continent-saturate: 0.5;
   --puru-continent-brightness: 1.15;
 
   --puru-cloud-bright: oklch(0.24 0.015 80);
-  --puru-cloud-base:   oklch(0.20 0.012 80);
-  --puru-cloud-dim:    oklch(0.14 0.010 80);
-  --puru-cloud-deep:   oklch(0.10 0.008 80);
+  --puru-cloud-base: oklch(0.2 0.012 80);
+  --puru-cloud-dim: oklch(0.14 0.01 80);
+  --puru-cloud-deep: oklch(0.1 0.008 80);
   --puru-cloud-shadow: oklch(0.06 0.006 80);
 
-  --puru-ink-rich:  oklch(0.90 0.010 85);
-  --puru-ink-base:  oklch(0.84 0.012 85);
-  --puru-ink-soft:  oklch(0.72 0.010 85);
-  --puru-ink-dim:   oklch(0.62 0.010 85);
+  --puru-ink-rich: oklch(0.9 0.01 85);
+  --puru-ink-base: oklch(0.84 0.012 85);
+  --puru-ink-soft: oklch(0.72 0.01 85);
+  --puru-ink-dim: oklch(0.62 0.01 85);
   --puru-ink-ghost: oklch(0.58 0.008 85);
 
-  --puru-honey-bright: oklch(0.90 0.180 85);
-  --puru-honey-base:   oklch(0.84 0.160 85);
-  --puru-honey-dim:    oklch(0.72 0.130 85);
-  --puru-honey-tint:   oklch(0.28 0.035 80);
+  --puru-honey-bright: oklch(0.9 0.18 85);
+  --puru-honey-base: oklch(0.84 0.16 85);
+  --puru-honey-dim: oklch(0.72 0.13 85);
+  --puru-honey-tint: oklch(0.28 0.035 80);
 
-  --puru-sakura-bright: oklch(0.82 0.140 350);
-  --puru-sakura-base:   oklch(0.74 0.120 350);
-  --puru-sakura-dim:    oklch(0.60 0.090 350);
-  --puru-sakura-tint:   oklch(0.20 0.025 350);
+  --puru-sakura-bright: oklch(0.82 0.14 350);
+  --puru-sakura-base: oklch(0.74 0.12 350);
+  --puru-sakura-dim: oklch(0.6 0.09 350);
+  --puru-sakura-tint: oklch(0.2 0.025 350);
 
-  --puru-wood-tint:   oklch(0.25 0.030 140);
-  --puru-wood-pastel: oklch(0.75 0.100 140);
-  --puru-wood-dim:    oklch(0.70 0.140 112.7);
-  --puru-wood-vivid:  oklch(0.85 0.170 112.7);
+  --puru-wood-tint: oklch(0.25 0.03 140);
+  --puru-wood-pastel: oklch(0.75 0.1 140);
+  --puru-wood-dim: oklch(0.7 0.14 112.7);
+  --puru-wood-vivid: oklch(0.85 0.17 112.7);
 
-  --puru-fire-tint:   oklch(0.25 0.025 40);
-  --puru-fire-pastel: oklch(0.73 0.100 40);
-  --puru-fire-dim:    oklch(0.55 0.170 28.4);
-  --puru-fire-vivid:  oklch(0.70 0.200 28.4);
+  --puru-fire-tint: oklch(0.25 0.025 40);
+  --puru-fire-pastel: oklch(0.73 0.1 40);
+  --puru-fire-dim: oklch(0.55 0.17 28.4);
+  --puru-fire-vivid: oklch(0.7 0.2 28.4);
 
-  --puru-earth-tint:   oklch(0.25 0.025 82);
-  --puru-earth-pastel: oklch(0.80 0.140 82);
-  --puru-earth-dim:    oklch(0.73 0.150 83.8);
-  --puru-earth-vivid:  oklch(0.88 0.180 83.8);
+  --puru-earth-tint: oklch(0.25 0.025 82);
+  --puru-earth-pastel: oklch(0.8 0.14 82);
+  --puru-earth-dim: oklch(0.73 0.15 83.8);
+  --puru-earth-vivid: oklch(0.88 0.18 83.8);
 
-  --puru-water-tint:   oklch(0.20 0.020 225);
-  --puru-water-pastel: oklch(0.70 0.080 225);
-  --puru-water-dim:    oklch(0.45 0.170 266.2);
-  --puru-water-vivid:  oklch(0.60 0.200 266.2);
+  --puru-water-tint: oklch(0.2 0.02 225);
+  --puru-water-pastel: oklch(0.7 0.08 225);
+  --puru-water-dim: oklch(0.45 0.17 266.2);
+  --puru-water-vivid: oklch(0.6 0.2 266.2);
 
-  --puru-metal-tint:   oklch(0.22 0.020 305);
-  --puru-metal-pastel: oklch(0.72 0.080 305);
-  --puru-metal-dim:    oklch(0.43 0.120 309.7);
-  --puru-metal-vivid:  oklch(0.58 0.150 309.7);
+  --puru-metal-tint: oklch(0.22 0.02 305);
+  --puru-metal-pastel: oklch(0.72 0.08 305);
+  --puru-metal-dim: oklch(0.43 0.12 309.7);
+  --puru-metal-vivid: oklch(0.58 0.15 309.7);
 
-  --puru-surface-border:           oklch(0.30 0.012 80);
-  --puru-surface-highlight:        oklch(1 0 0 / 0.06);
+  --puru-surface-border: oklch(0.3 0.012 80);
+  --puru-surface-highlight: oklch(1 0 0 / 0.06);
   --puru-surface-highlight-strong: oklch(1 0 0 / 0.08);
-  --puru-surface-track:            oklch(0.24 0.010 80);
-  --puru-surface-track-shadow:     oklch(0.05 0.008 80 / 0.3);
-  --puru-surface-shadow-sm:        oklch(0.02 0.008 80 / 0.42);
-  --puru-surface-shadow-md:        oklch(0.02 0.008 80 / 0.55);
+  --puru-surface-track: oklch(0.24 0.01 80);
+  --puru-surface-track-shadow: oklch(0.05 0.008 80 / 0.3);
+  --puru-surface-shadow-sm: oklch(0.02 0.008 80 / 0.42);
+  --puru-surface-shadow-md: oklch(0.02 0.008 80 / 0.55);
 
   --puru-ghost-border: oklch(0.28 0.012 80);
-  --puru-ghost-bg:     oklch(0.17 0.008 80);
+  --puru-ghost-bg: oklch(0.17 0.008 80);
   --puru-ghost-shadow: oklch(0.05 0.008 80 / 0.4);
 
   --puru-disabled-fg: oklch(0.42 0.008 85);
-  --puru-disabled-bg: oklch(0.24 0.010 80);
+  --puru-disabled-bg: oklch(0.24 0.01 80);
 
-  --overlay-scrim-dark:   oklch(0.04 0.006 80 / 0.95);
+  --overlay-scrim-dark: oklch(0.04 0.006 80 / 0.95);
   --overlay-scrim-medium: oklch(0.08 0.008 80 / 0.6);
-  --overlay-scrim-light:  oklch(0.12 0.01 80 / 0.82);
+  --overlay-scrim-light: oklch(0.12 0.01 80 / 0.82);
 
   /* Ceremony veil — true shadow in dark mode. Core slightly elevated
      so the focal vignette still reads against absolute dim at edges. */
   --ceremony-veil-core: oklch(0.06 0.006 80 / 0.96);
   --ceremony-veil-edge: oklch(0.03 0.004 80 / 0.99);
 
-  --shadow-card:       0 2px 8px oklch(0.05 0.008 80 / 0.40);
-  --shadow-card-hover: 0 8px 24px oklch(0.03 0.008 80 / 0.50);
-  --shadow-card-depth: 0 1px 0 oklch(0.08 0.008 80), 0 2px 0 oklch(0.06 0.008 80), 0 3px 0 oklch(0.04 0.008 80), 0 4px 10px oklch(0.02 0.008 80 / 0.50);
-  --shadow-pack:       0 4px 16px oklch(0.04 0.008 80 / 0.45);
-  --shadow-modal:      0 16px 48px oklch(0.02 0.008 80 / 0.60);
+  --shadow-card: 0 2px 8px oklch(0.05 0.008 80 / 0.4);
+  --shadow-card-hover: 0 8px 24px oklch(0.03 0.008 80 / 0.5);
+  --shadow-card-depth:
+    0 1px 0 oklch(0.08 0.008 80), 0 2px 0 oklch(0.06 0.008 80), 0 3px 0 oklch(0.04 0.008 80),
+    0 4px 10px oklch(0.02 0.008 80 / 0.5);
+  --shadow-pack: 0 4px 16px oklch(0.04 0.008 80 / 0.45);
+  --shadow-modal: 0 16px 48px oklch(0.02 0.008 80 / 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     /* Continent — keep in sync with [data-theme="old-horai"] above. */
-    --puru-continent-opacity:    0.14;
-    --puru-continent-saturate:   0.5;
+    --puru-continent-opacity: 0.14;
+    --puru-continent-saturate: 0.5;
     --puru-continent-brightness: 1.15;
 
     --puru-cloud-bright: oklch(0.24 0.015 80);
-    --puru-cloud-base:   oklch(0.20 0.012 80);
-    --puru-cloud-dim:    oklch(0.14 0.010 80);
-    --puru-cloud-deep:   oklch(0.10 0.008 80);
+    --puru-cloud-base: oklch(0.2 0.012 80);
+    --puru-cloud-dim: oklch(0.14 0.01 80);
+    --puru-cloud-deep: oklch(0.1 0.008 80);
     --puru-cloud-shadow: oklch(0.06 0.006 80);
 
-    --puru-ink-rich:  oklch(0.90 0.010 85);
-    --puru-ink-base:  oklch(0.84 0.012 85);
-    --puru-ink-soft:  oklch(0.72 0.010 85);
-    --puru-ink-dim:   oklch(0.62 0.010 85);
+    --puru-ink-rich: oklch(0.9 0.01 85);
+    --puru-ink-base: oklch(0.84 0.012 85);
+    --puru-ink-soft: oklch(0.72 0.01 85);
+    --puru-ink-dim: oklch(0.62 0.01 85);
     --puru-ink-ghost: oklch(0.58 0.008 85);
 
-    --puru-honey-bright: oklch(0.90 0.180 85);
-    --puru-honey-base:   oklch(0.84 0.160 85);
-    --puru-honey-dim:    oklch(0.72 0.130 85);
-    --puru-honey-tint:   oklch(0.28 0.035 80);
+    --puru-honey-bright: oklch(0.9 0.18 85);
+    --puru-honey-base: oklch(0.84 0.16 85);
+    --puru-honey-dim: oklch(0.72 0.13 85);
+    --puru-honey-tint: oklch(0.28 0.035 80);
 
-    --puru-sakura-bright: oklch(0.82 0.140 350);
-    --puru-sakura-base:   oklch(0.74 0.120 350);
-    --puru-sakura-dim:    oklch(0.60 0.090 350);
-    --puru-sakura-tint:   oklch(0.20 0.025 350);
+    --puru-sakura-bright: oklch(0.82 0.14 350);
+    --puru-sakura-base: oklch(0.74 0.12 350);
+    --puru-sakura-dim: oklch(0.6 0.09 350);
+    --puru-sakura-tint: oklch(0.2 0.025 350);
 
-    --puru-wood-tint:   oklch(0.25 0.030 140);
-    --puru-wood-pastel: oklch(0.75 0.100 140);
-    --puru-wood-dim:    oklch(0.70 0.140 112.7);
-    --puru-wood-vivid:  oklch(0.85 0.170 112.7);
+    --puru-wood-tint: oklch(0.25 0.03 140);
+    --puru-wood-pastel: oklch(0.75 0.1 140);
+    --puru-wood-dim: oklch(0.7 0.14 112.7);
+    --puru-wood-vivid: oklch(0.85 0.17 112.7);
 
-    --puru-fire-tint:   oklch(0.25 0.025 40);
-    --puru-fire-pastel: oklch(0.73 0.100 40);
-    --puru-fire-dim:    oklch(0.55 0.170 28.4);
-    --puru-fire-vivid:  oklch(0.70 0.200 28.4);
+    --puru-fire-tint: oklch(0.25 0.025 40);
+    --puru-fire-pastel: oklch(0.73 0.1 40);
+    --puru-fire-dim: oklch(0.55 0.17 28.4);
+    --puru-fire-vivid: oklch(0.7 0.2 28.4);
 
-    --puru-earth-tint:   oklch(0.25 0.025 82);
-    --puru-earth-pastel: oklch(0.80 0.140 82);
-    --puru-earth-dim:    oklch(0.73 0.150 83.8);
-    --puru-earth-vivid:  oklch(0.88 0.180 83.8);
+    --puru-earth-tint: oklch(0.25 0.025 82);
+    --puru-earth-pastel: oklch(0.8 0.14 82);
+    --puru-earth-dim: oklch(0.73 0.15 83.8);
+    --puru-earth-vivid: oklch(0.88 0.18 83.8);
 
-    --puru-water-tint:   oklch(0.20 0.020 225);
-    --puru-water-pastel: oklch(0.70 0.080 225);
-    --puru-water-dim:    oklch(0.45 0.170 266.2);
-    --puru-water-vivid:  oklch(0.60 0.200 266.2);
+    --puru-water-tint: oklch(0.2 0.02 225);
+    --puru-water-pastel: oklch(0.7 0.08 225);
+    --puru-water-dim: oklch(0.45 0.17 266.2);
+    --puru-water-vivid: oklch(0.6 0.2 266.2);
 
-    --puru-metal-tint:   oklch(0.22 0.020 305);
-    --puru-metal-pastel: oklch(0.72 0.080 305);
-    --puru-metal-dim:    oklch(0.43 0.120 309.7);
-    --puru-metal-vivid:  oklch(0.58 0.150 309.7);
+    --puru-metal-tint: oklch(0.22 0.02 305);
+    --puru-metal-pastel: oklch(0.72 0.08 305);
+    --puru-metal-dim: oklch(0.43 0.12 309.7);
+    --puru-metal-vivid: oklch(0.58 0.15 309.7);
 
-    --puru-surface-border:           oklch(0.30 0.012 80);
-    --puru-surface-highlight:        oklch(1 0 0 / 0.06);
+    --puru-surface-border: oklch(0.3 0.012 80);
+    --puru-surface-highlight: oklch(1 0 0 / 0.06);
     --puru-surface-highlight-strong: oklch(1 0 0 / 0.08);
-    --puru-surface-track:            oklch(0.24 0.010 80);
-    --puru-surface-track-shadow:     oklch(0.05 0.008 80 / 0.3);
-    --puru-surface-shadow-sm:        oklch(0.02 0.008 80 / 0.42);
-    --puru-surface-shadow-md:        oklch(0.02 0.008 80 / 0.55);
+    --puru-surface-track: oklch(0.24 0.01 80);
+    --puru-surface-track-shadow: oklch(0.05 0.008 80 / 0.3);
+    --puru-surface-shadow-sm: oklch(0.02 0.008 80 / 0.42);
+    --puru-surface-shadow-md: oklch(0.02 0.008 80 / 0.55);
 
     --puru-ghost-border: oklch(0.28 0.012 80);
-    --puru-ghost-bg:     oklch(0.17 0.008 80);
+    --puru-ghost-bg: oklch(0.17 0.008 80);
     --puru-ghost-shadow: oklch(0.05 0.008 80 / 0.4);
 
     --puru-disabled-fg: oklch(0.42 0.008 85);
-    --puru-disabled-bg: oklch(0.24 0.010 80);
+    --puru-disabled-bg: oklch(0.24 0.01 80);
 
-    --overlay-scrim-dark:   oklch(0.04 0.006 80 / 0.95);
+    --overlay-scrim-dark: oklch(0.04 0.006 80 / 0.95);
     --overlay-scrim-medium: oklch(0.08 0.008 80 / 0.6);
-    --overlay-scrim-light:  oklch(0.12 0.01 80 / 0.82);
+    --overlay-scrim-light: oklch(0.12 0.01 80 / 0.82);
 
     /* Ceremony veil — true shadow in dark mode (mirrors the explicit
        [data-theme="old-horai"] block above). */
     --ceremony-veil-core: oklch(0.06 0.006 80 / 0.96);
     --ceremony-veil-edge: oklch(0.03 0.004 80 / 0.99);
 
-    --shadow-card:       0 2px 8px oklch(0.05 0.008 80 / 0.40);
-    --shadow-card-hover: 0 8px 24px oklch(0.03 0.008 80 / 0.50);
-    --shadow-card-depth: 0 1px 0 oklch(0.08 0.008 80), 0 2px 0 oklch(0.06 0.008 80), 0 3px 0 oklch(0.04 0.008 80), 0 4px 10px oklch(0.02 0.008 80 / 0.50);
-    --shadow-pack:       0 4px 16px oklch(0.04 0.008 80 / 0.45);
-    --shadow-modal:      0 16px 48px oklch(0.02 0.008 80 / 0.60);
+    --shadow-card: 0 2px 8px oklch(0.05 0.008 80 / 0.4);
+    --shadow-card-hover: 0 8px 24px oklch(0.03 0.008 80 / 0.5);
+    --shadow-card-depth:
+      0 1px 0 oklch(0.08 0.008 80), 0 2px 0 oklch(0.06 0.008 80), 0 3px 0 oklch(0.04 0.008 80),
+      0 4px 10px oklch(0.02 0.008 80 / 0.5);
+    --shadow-pack: 0 4px 16px oklch(0.04 0.008 80 / 0.45);
+    --shadow-modal: 0 16px 48px oklch(0.02 0.008 80 / 0.6);
   }
 }
 
@@ -485,45 +536,45 @@
 
 @theme {
   /* Element vivids */
-  --color-puru-wood-vivid:  var(--puru-wood-vivid);
-  --color-puru-fire-vivid:  var(--puru-fire-vivid);
+  --color-puru-wood-vivid: var(--puru-wood-vivid);
+  --color-puru-fire-vivid: var(--puru-fire-vivid);
   --color-puru-earth-vivid: var(--puru-earth-vivid);
   --color-puru-water-vivid: var(--puru-water-vivid);
   --color-puru-metal-vivid: var(--puru-metal-vivid);
 
   /* Element dims */
-  --color-puru-wood-dim:  var(--puru-wood-dim);
-  --color-puru-fire-dim:  var(--puru-fire-dim);
+  --color-puru-wood-dim: var(--puru-wood-dim);
+  --color-puru-fire-dim: var(--puru-fire-dim);
   --color-puru-earth-dim: var(--puru-earth-dim);
   --color-puru-water-dim: var(--puru-water-dim);
   --color-puru-metal-dim: var(--puru-metal-dim);
 
   /* Element pastels */
-  --color-puru-wood-pastel:  var(--puru-wood-pastel);
-  --color-puru-fire-pastel:  var(--puru-fire-pastel);
+  --color-puru-wood-pastel: var(--puru-wood-pastel);
+  --color-puru-fire-pastel: var(--puru-fire-pastel);
   --color-puru-earth-pastel: var(--puru-earth-pastel);
   --color-puru-water-pastel: var(--puru-water-pastel);
   --color-puru-metal-pastel: var(--puru-metal-pastel);
 
   /* Element tints */
-  --color-puru-wood-tint:  var(--puru-wood-tint);
-  --color-puru-fire-tint:  var(--puru-fire-tint);
+  --color-puru-wood-tint: var(--puru-wood-tint);
+  --color-puru-fire-tint: var(--puru-fire-tint);
   --color-puru-earth-tint: var(--puru-earth-tint);
   --color-puru-water-tint: var(--puru-water-tint);
   --color-puru-metal-tint: var(--puru-metal-tint);
 
   /* Cloud surfaces (warm-dark stack — five levels, brightness only) */
   --color-puru-cloud-bright: var(--puru-cloud-bright);
-  --color-puru-cloud-base:   var(--puru-cloud-base);
-  --color-puru-cloud-dim:    var(--puru-cloud-dim);
-  --color-puru-cloud-deep:   var(--puru-cloud-deep);
+  --color-puru-cloud-base: var(--puru-cloud-base);
+  --color-puru-cloud-dim: var(--puru-cloud-dim);
+  --color-puru-cloud-deep: var(--puru-cloud-deep);
   --color-puru-cloud-shadow: var(--puru-cloud-shadow);
 
   /* Surface chrome (borders, glaze, tracks) — depth without brightness shifts */
-  --color-puru-surface-border:           var(--puru-surface-border);
-  --color-puru-surface-highlight:        var(--puru-surface-highlight);
+  --color-puru-surface-border: var(--puru-surface-border);
+  --color-puru-surface-highlight: var(--puru-surface-highlight);
   --color-puru-surface-highlight-strong: var(--puru-surface-highlight-strong);
-  --color-puru-surface-track:            var(--puru-surface-track);
+  --color-puru-surface-track: var(--puru-surface-track);
 
   /* Honey-tint for active pill / chip backgrounds */
   --color-puru-honey-tint: var(--puru-honey-tint);
@@ -532,56 +583,57 @@
      `shadow-puru-rim-bottom` / `shadow-puru-rim-left`.
      Rim variants project only on the open edge for surfaces flush
      against a viewport boundary (KpiStrip → bottom; rails → left). */
-  --shadow-puru-tile:       var(--shadow-tile);
+  --shadow-puru-tile: var(--shadow-tile);
   --shadow-puru-tile-hover: var(--shadow-tile-hover);
   --shadow-puru-rim-bottom: var(--shadow-rim-bottom);
-  --shadow-puru-rim-left:   var(--shadow-rim-left);
+  --shadow-puru-rim-left: var(--shadow-rim-left);
 
   /* Ink */
-  --color-puru-ink-rich:  var(--puru-ink-rich);
-  --color-puru-ink-base:  var(--puru-ink-base);
-  --color-puru-ink-soft:  var(--puru-ink-soft);
-  --color-puru-ink-dim:   var(--puru-ink-dim);
+  --color-puru-ink-rich: var(--puru-ink-rich);
+  --color-puru-ink-base: var(--puru-ink-base);
+  --color-puru-ink-soft: var(--puru-ink-soft);
+  --color-puru-ink-dim: var(--puru-ink-dim);
   --color-puru-ink-ghost: var(--puru-ink-ghost);
 
   /* Honey + Terra + Sakura accents */
-  --color-puru-honey-bright:  var(--puru-honey-bright);
-  --color-puru-honey-base:    var(--puru-honey-base);
-  --color-puru-honey-dim:     var(--puru-honey-dim);
-  --color-puru-terra-base:    var(--puru-terra-base);
-  --color-puru-sakura-base:   var(--puru-sakura-base);
+  --color-puru-honey-bright: var(--puru-honey-bright);
+  --color-puru-honey-base: var(--puru-honey-base);
+  --color-puru-honey-dim: var(--puru-honey-dim);
+  --color-puru-terra-base: var(--puru-terra-base);
+  --color-puru-sakura-base: var(--puru-sakura-base);
 
   /* Radius tokens */
-  --radius-puru-sm:   var(--radius-sm);
-  --radius-puru-md:   var(--radius-md);
-  --radius-puru-lg:   var(--radius-lg);
+  --radius-puru-sm: var(--radius-sm);
+  --radius-puru-md: var(--radius-md);
+  --radius-puru-lg: var(--radius-lg);
   --radius-puru-full: var(--radius-full);
 
   /* ── Font stacks → font-puru-{body,display,card,cn,mono} utilities ──
      --font-inter and --font-geist-mono are injected by next/font in layout.tsx.
      var() fallbacks let the stack work even if next/font isn't configured. */
-  --font-puru-body:    var(--font-inter, 'Inter'), system-ui, -apple-system, sans-serif;
-  --font-puru-display: 'FOT-Yuruka Std', 'Zen Maru Gothic', var(--font-inter, 'Inter'), system-ui, sans-serif;
-  --font-puru-card:    'Noto Serif JP', serif;
-  --font-puru-cn:      'ZCOOL KuaiLe', 'Noto Serif JP', serif;
-  --font-puru-mono:    var(--font-geist-mono, 'Geist Mono'), ui-monospace, monospace;
+  --font-puru-body: var(--font-inter, "Inter"), system-ui, -apple-system, sans-serif;
+  --font-puru-display:
+    "FOT-Yuruka Std", "Zen Maru Gothic", var(--font-inter, "Inter"), system-ui, sans-serif;
+  --font-puru-card: "Noto Serif JP", serif;
+  --font-puru-cn: "ZCOOL KuaiLe", "Noto Serif JP", serif;
+  --font-puru-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, monospace;
 
   /* ── Typography — fluid scale (4px grid, clamp) ───────────────────── */
-  --text-2xs:     clamp(0.5625rem, 0.54rem + 0.08vw, 0.625rem);   /* 9→10  */
-  --text-caption: clamp(0.625rem, 0.6rem + 0.08vw, 0.6875rem);    /* 10→11 */
-  --text-xs:      clamp(0.6875rem, 0.65rem + 0.1vw, 0.75rem);     /* 11→12 */
-  --text-sm:      clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem);    /* 13→14 */
-  --text-base:    clamp(0.875rem, 0.83rem + 0.15vw, 1rem);        /* 14→16 */
-  --text-lg:      clamp(1rem, 0.95rem + 0.2vw, 1.125rem);         /* 16→18 */
-  --text-xl:      clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);     /* 18→20 */
-  --text-2xl:     clamp(1.375rem, 1.25rem + 0.4vw, 1.75rem);      /* 22→28 */
-  --text-3xl:     clamp(1.75rem, 1.5rem + 0.8vw, 2.5rem);         /* 28→40 display */
+  --text-2xs: clamp(0.5625rem, 0.54rem + 0.08vw, 0.625rem); /* 9→10  */
+  --text-caption: clamp(0.625rem, 0.6rem + 0.08vw, 0.6875rem); /* 10→11 */
+  --text-xs: clamp(0.6875rem, 0.65rem + 0.1vw, 0.75rem); /* 11→12 */
+  --text-sm: clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem); /* 13→14 */
+  --text-base: clamp(0.875rem, 0.83rem + 0.15vw, 1rem); /* 14→16 */
+  --text-lg: clamp(1rem, 0.95rem + 0.2vw, 1.125rem); /* 16→18 */
+  --text-xl: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem); /* 18→20 */
+  --text-2xl: clamp(1.375rem, 1.25rem + 0.4vw, 1.75rem); /* 22→28 */
+  --text-3xl: clamp(1.75rem, 1.5rem + 0.8vw, 2.5rem); /* 28→40 display */
 
   /* ── Typography — line heights (override Tailwind defaults) ───────── */
-  --leading-puru-tight:   1.3;  /* headings, Yuruka display */
-  --leading-puru-normal:  1.5;  /* body, Inter */
-  --leading-puru-relaxed: 1.7;  /* Noto Serif JP, mixed script */
-  --leading-puru-loose:   2.0;  /* pure CJK blocks */
+  --leading-puru-tight: 1.3; /* headings, Yuruka display */
+  --leading-puru-normal: 1.5; /* body, Inter */
+  --leading-puru-relaxed: 1.7; /* Noto Serif JP, mixed script */
+  --leading-puru-loose: 2; /* pure CJK blocks */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -589,60 +641,125 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 @keyframes purupuru-place {
-  0%   { transform: scale(0.95) rotate(-1deg); }
-  40%  { transform: scale(1.03) rotate(0.5deg); }
-  70%  { transform: scale(0.99) rotate(-0.2deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0% {
+    transform: scale(0.95) rotate(-1deg);
+  }
+  40% {
+    transform: scale(1.03) rotate(0.5deg);
+  }
+  70% {
+    transform: scale(0.99) rotate(-0.2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 @keyframes honey-burst {
-  0%   { transform: scale(0); opacity: 0.8; }
-  50%  { transform: scale(1.5); opacity: 0.4; }
-  100% { transform: scale(2); opacity: 0; }
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes tide-flow {
-  0%   { transform: translateX(-10px); }
-  50%  { transform: translateX(10px); }
-  100% { transform: translateX(-10px); }
+  0% {
+    transform: translateX(-10px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(-10px);
+  }
 }
 
 @keyframes breathe {
-  0%, 100% { transform: scale(1);     opacity: 0.95; }
-  50%      { transform: scale(1.015); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.015);
+    opacity: 1;
+  }
 }
 
 /* Fire: quick inhale, slower exhale */
 @keyframes breathe-fire {
-  0%, 100% { transform: scale(1);     opacity: 0.93; }
-  30%      { transform: scale(1.02);  opacity: 1; }
-  50%      { transform: scale(1.015); opacity: 0.98; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.93;
+  }
+  30% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.015);
+    opacity: 0.98;
+  }
 }
 
 /* Water: long inhale, short exhale — tidal */
 @keyframes breathe-water {
-  0%, 100% { transform: scale(1);     opacity: 0.94; }
-  65%      { transform: scale(1.018); opacity: 1; }
-  80%      { transform: scale(1.01);  opacity: 0.97; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  65% {
+    transform: scale(1.018);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1.01);
+    opacity: 0.97;
+  }
 }
 
 /* Metal: sharp spike, mechanical flutter */
 @keyframes breathe-metal {
-  0%, 100% { transform: scale(1);     opacity: 0.92; }
-  40%      { transform: scale(1.02);  opacity: 1; }
-  45%      { transform: scale(1.008); opacity: 0.96; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  40% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(1.008);
+    opacity: 0.96;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Body + reset (Tailwind 4 already provides preflight; this layer is supplemental)
    ───────────────────────────────────────────────────────────────────────────── */
 
-html, body {
+html,
+body {
   height: 100dvh;
   overflow: hidden;
   background: var(--puru-cloud-base);
@@ -656,16 +773,31 @@ body {
   overscroll-behavior-y: none;
 }
 
-a { color: inherit; text-decoration: none; }
-button { font: inherit; border: none; background: none; cursor: pointer; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
 
 :focus-visible {
   outline: 2px solid var(--puru-honey-base);
   outline-offset: 2px;
 }
-:focus:not(:focus-visible) { outline: none; }
+:focus:not(:focus-visible) {
+  outline: none;
+}
 
-button, a, [role="button"], [tabindex] { touch-action: manipulation; }
+button,
+a,
+[role="button"],
+[tabindex] {
+  touch-action: manipulation;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Brand press — asymmetric squash on interactive surfaces
@@ -696,13 +828,26 @@ button, a, [role="button"], [tabindex] { touch-action: manipulation; }
    notification badge. The accent uses currentColor so callers tint it
    per element via the row's color context. */
 @keyframes puru-row-fresh-edge {
-  0%   { transform: scaleY(0); opacity: 0; }
-  18%  { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  18% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
 }
 @keyframes puru-row-fresh-settle {
-  0%   { background-color: color-mix(in oklch, currentColor 8%, transparent); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: color-mix(in oklch, currentColor 8%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 .puru-row-fresh::before {
   content: "";
@@ -725,8 +870,15 @@ button, a, [role="button"], [tabindex] { touch-action: manipulation; }
    ActivityRail / WeatherTile headers. Two-channel: scale + opacity so
    it reads as a heartbeat, not a flash. */
 @keyframes puru-live-pulse {
-  0%, 100% { transform: scale(1);   opacity: 0.55; }
-  50%      { transform: scale(1.4); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
 }
 .puru-live-dot {
   animation: puru-live-pulse 1.6s var(--ease-puru-breathe) infinite;
@@ -736,17 +888,50 @@ button, a, [role="button"], [tabindex] { touch-action: manipulation; }
    Per-letter zubora (PuruWordmark.svelte:124–137) requires inline SVG paths;
    this is the lightweight whole-glyph version for img-based wordmarks. */
 @keyframes wordmark-drift {
-  0%, 100% { transform: translate(0, 0); }
-  25%      { transform: translate(0.6px, -0.9px); }
-  50%      { transform: translate(-0.4px, -0.4px); }
-  75%      { transform: translate(0.4px, 0.2px); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(0.6px, -0.9px);
+  }
+  50% {
+    transform: translate(-0.4px, -0.4px);
+  }
+  75% {
+    transform: translate(0.4px, 0.2px);
+  }
 }
 .puru-wordmark-drift {
   animation: wordmark-drift 3.2s var(--ease-puru-breathe) infinite;
 }
 
+/* Card Layer System — default positioning for the CardStack primitive.
+   `:where()` has zero specificity so any consumer class (.card-art,
+   .card-back, .petal-art-stack) trivially overrides. */
+:where(.card-stack) {
+  position: relative;
+}
+:where(.card-stack-layer) {
+  user-select: none;
+}
+
+/* Visual Center Lifting (视觉中心上移) — ZCOOL designer Zheng Qingke's
+   adjustment for dense kanji radicals on mobile screens. Shifts the
+   visible mass of the glyph up by ~6% so the bottom whitespace reads
+   correctly when the glyph sits alongside non-CJK type. Apply via
+   `.kanji-lift` to any element rendering 木火土金水 etc.
+   Source: dig wuxing/East-Asian-UI 2026-05-12, ZCOOL community doctrine. */
+.kanji-lift {
+  display: inline-block;
+  transform: translateY(-0.06em);
+  line-height: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
     transition-duration: 0.01ms;

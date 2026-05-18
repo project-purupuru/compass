@@ -16,9 +16,7 @@ export function InvocationExample() {
       <button onClick={() => trigger({ _tag: "TriggerStoneClaim", element: "fire" })}>
         trigger fire claim
       </button>
-      <button onClick={() => trigger({ _tag: "ResetPopulation" })}>
-        reset population
-      </button>
+      <button onClick={() => trigger({ _tag: "ResetPopulation" })}>reset population</button>
       <button onClick={() => trigger({ _tag: "ShiftWeather", toElement: "water" })}>
         shift weather → water
       </button>

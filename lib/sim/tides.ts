@@ -40,9 +40,7 @@ function rotate(v: Vec2, deg: number): Vec2 {
  * vertex, with a small tangent rotation so the flow curves around
  * the diagram. Returns a frozen lookup safe to share across frames.
  */
-export function tideUnitVectorsFor(
-  geometry: PentagramGeometry,
-): Record<Element, Vec2> {
+export function tideUnitVectorsFor(geometry: PentagramGeometry): Record<Element, Vec2> {
   const out = {} as Record<Element, Vec2>;
   const elements = Object.keys(NEXT_IN_GENERATION) as Element[];
   for (const el of elements) {
@@ -78,7 +76,7 @@ const TIDE_PHASE_OFFSET: Record<Element, number> = {
 export function tideMagnitude(element: Element, tMs: number): number {
   const t = tMs / 1000;
   const phase = TIDE_PHASE_OFFSET[element];
-  const base = Math.sin(t / 14 + phase) * 0.3;          // ±0.3
+  const base = Math.sin(t / 14 + phase) * 0.3; // ±0.3
   const overtone = Math.sin(t / 6.7 + phase * 0.7) * 0.1; // ±0.1
   return 1 + base + overtone;
 }

@@ -46,7 +46,9 @@ export const ConstructHandoff = S.Struct({
   // Recommended tier
   persona: S.optional(S.NullOr(S.String.pipe(S.maxLength(64)))),
   output_refs: S.optional(S.Array(S.String)),
-  evidence: S.optional(S.Array(S.String.pipe(S.minLength(1), S.maxLength(1024))).pipe(S.maxItems(256))),
+  evidence: S.optional(
+    S.Array(S.String.pipe(S.minLength(1), S.maxLength(1024))).pipe(S.maxItems(256)),
+  ),
 
   // Optional tier
   domain: S.optional(S.NullOr(S.String.pipe(S.maxLength(64)))),

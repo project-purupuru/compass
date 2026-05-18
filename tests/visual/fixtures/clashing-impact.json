@@ -1,0 +1,11 @@
+{
+  "phase": "clashing",
+  "visibleClashIdx": 2,
+  "activeClashPhase": "impact",
+  "stamps": [0, 1, 2],
+  "animState": "hitstop",
+  "lastPlayed": "wood",
+  "lastGenerated": "fire",
+  "lastOvercome": "earth",
+  "_note": "Mid-clash with 3rd pair impacting. Animation state set to hitstop for visible flash."
+}

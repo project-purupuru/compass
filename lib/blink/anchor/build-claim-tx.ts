@@ -9,7 +9,7 @@
 // fresh mint keypair (the new NFT's address). User wallet adds the third sig
 // (authority) at submit time via Phantom.
 
-import * as anchor from "@coral-xyz/anchor"
+import * as anchor from "@coral-xyz/anchor";
 import {
   Ed25519Program,
   Keypair,
@@ -17,7 +17,7 @@ import {
   SystemProgram,
   Transaction,
   type Connection,
-} from "@solana/web3.js"
+} from "@solana/web3.js";
 
 import {
   buildClaimMessage,
@@ -27,7 +27,7 @@ import {
   type Element,
   type QuizStateHash,
   type SolanaPubkey,
-} from "@purupuru/peripheral-events"
+} from "@purupuru/peripheral-events";
 
 import {
   deriveMasterEditionPda,
@@ -37,25 +37,25 @@ import {
   SPL_TOKEN_PROGRAM_ID,
   SYSVAR_INSTRUCTIONS_PUBKEY,
   TOKEN_METADATA_PROGRAM_ID,
-} from "./program"
+} from "./program";
 
 export interface BuildClaimTxParams {
-  connection: Connection
-  sponsoredPayer: Keypair
-  claimSignerSecret: Uint8Array
-  authority: PublicKey
-  archetype: Element
-  weather: Element
-  quizStateHash: QuizStateHash
-  nonce: ClaimNonce
-  cluster: 0 | 1 // 0=devnet · 1=mainnet
+  connection: Connection;
+  sponsoredPayer: Keypair;
+  claimSignerSecret: Uint8Array;
+  authority: PublicKey;
+  archetype: Element;
+  weather: Element;
+  quizStateHash: QuizStateHash;
+  nonce: ClaimNonce;
+  cluster: 0 | 1; // 0=devnet · 1=mainnet
 }
 
 export interface BuildClaimTxResult {
-  base64Tx: string
-  mintPubkey: string
-  expiresAt: number
-  claimMessage: ClaimMessage
+  base64Tx: string;
+  mintPubkey: string;
+  expiresAt: number;
+  claimMessage: ClaimMessage;
 }
 
 export async function buildClaimGenesisStoneTx(
@@ -71,10 +71,10 @@ export async function buildClaimGenesisStoneTx(
     quizStateHash,
     nonce,
     cluster,
-  } = params
+  } = params;
 
   if (sponsoredPayer.publicKey.equals(authority)) {
-    throw new Error("sponsored-payer pubkey must not equal authority wallet")
+    throw new Error("sponsored-payer pubkey must not equal authority wallet");
   }
 
   // 1. Build canonical ClaimMessage + sign off-chain.
@@ -86,19 +86,19 @@ export async function buildClaimGenesisStoneTx(
     quizStateHash,
     cluster,
     nonce,
-  })
-  const signed = signClaimMessage(claimMessage, claimSignerSecret)
+  });
+  const signed = signClaimMessage(claimMessage, claimSignerSecret);
 
   // 2. Build Ed25519Program ix · runtime verifies sig before our program runs.
   const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
     publicKey: signed.signerPubkey,
     message: Buffer.from(signed.messageBytes),
     signature: signed.signature,
-  })
+  });
 
   // 3. Build claim_genesis_stone ix via Anchor's typed builder.
-  const program = getPurupuruProgram(connection, sponsoredPayer)
-  const mintKeypair = Keypair.generate()
+  const program = getPurupuruProgram(connection, sponsoredPayer);
+  const mintKeypair = Keypair.generate();
 
   const claimIx = await program.methods
     .claimGenesisStone(
@@ -122,29 +122,29 @@ export async function buildClaimGenesisStoneTx(
       tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
-    .instruction()
+    .instruction();
 
   // 4. Assemble tx · feePayer = sponsored-payer · fresh blockhash.
-  const tx = new Transaction()
-  tx.feePayer = sponsoredPayer.publicKey
-  tx.add(ed25519Ix)
-  tx.add(claimIx)
+  const tx = new Transaction();
+  tx.feePayer = sponsoredPayer.publicKey;
+  tx.add(ed25519Ix);
+  tx.add(claimIx);
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed")
-  tx.recentBlockhash = blockhash
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
 
   // 5. Partial-sign with both server-held keypairs · authority slot stays empty.
-  tx.partialSign(sponsoredPayer, mintKeypair)
+  tx.partialSign(sponsoredPayer, mintKeypair);
 
   const serialized = tx.serialize({
     requireAllSignatures: false,
     verifySignatures: false,
-  })
+  });
 
   return {
     base64Tx: serialized.toString("base64"),
     mintPubkey: mintKeypair.publicKey.toBase58(),
     expiresAt: claimMessage.expiresAt,
     claimMessage,
-  }
+  };
 }

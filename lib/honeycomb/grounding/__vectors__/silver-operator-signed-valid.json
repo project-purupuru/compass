@@ -1,0 +1,18 @@
+{
+  "_test_purpose": "silver operator-blessed via activation receipt · no UTC yet · should VALIDATE",
+  "_expected_outcome": "valid",
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000002",
+    "artifact_path": "grimoires/loa/context/taste-tokens/honey-mist-pulse.md",
+    "tier": "silver",
+    "grounding_status": "grounded",
+    "blessed_by": "operator",
+    "operator_signed": true,
+    "asserted_at": "2026-05-16T15:35:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "operator_signature_at": "2026-05-16T15:34:50Z",
+      "activation_context": "session-13-promote-pass-1"
+    }
+  }
+}

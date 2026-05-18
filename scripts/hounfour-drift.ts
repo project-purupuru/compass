@@ -56,8 +56,7 @@ function structuralDiff(vendored: unknown, upstream: unknown): { changes: string
 }
 
 async function main() {
-  const portFiles = readdirSync("lib/domain")
-    .filter((f) => f.endsWith(".hounfour-port.ts"));
+  const portFiles = readdirSync("lib/domain").filter((f) => f.endsWith(".hounfour-port.ts"));
 
   const reports: DriftReport[] = [];
   const failures: DriftFailure[] = [];
@@ -83,7 +82,10 @@ async function main() {
       // Verify pinned SHA still resolves (BB-004 hardening 2)
       await fetchUpstream(schemaPath, pinnedSha);
     } catch (e) {
-      failures.push({ schema: file, reason: `pinned SHA ${pinnedSha} unreachable: ${(e as Error).message}` });
+      failures.push({
+        schema: file,
+        reason: `pinned SHA ${pinnedSha} unreachable: ${(e as Error).message}`,
+      });
       continue;
     }
 

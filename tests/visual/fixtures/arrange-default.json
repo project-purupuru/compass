@@ -1,0 +1,12 @@
+{
+  "phase": "arrange",
+  "weather": "wood",
+  "playerElement": "wood",
+  "selectedIndex": null,
+  "visibleClashIdx": -1,
+  "activeClashPhase": null,
+  "stamps": [],
+  "dyingP1": [],
+  "dyingP2": [],
+  "_note": "Patch is applied via __PURU_DEV__.injectSnapshot AFTER a deterministic match has been initialized via begin-match + choose-element."
+}

@@ -49,8 +49,8 @@
 //                              badge color)
 //   pill-active-bg  #16181c
 
-import { cookies } from "next/headers"
-import { THEME_COOKIE, type ResolvedTheme } from "@/lib/theme/resolve"
+import { cookies } from "next/headers";
+import { THEME_COOKIE, type ResolvedTheme } from "@/lib/theme/resolve";
 import {
   Bell,
   Bot,
@@ -75,24 +75,24 @@ import {
   Upload,
   User as UserIcon,
   X as CloseIcon,
-} from "lucide-react"
+} from "lucide-react";
 
-import { BlinkPreview } from "@/components/blink/blink-preview"
-import { pageMetadata } from "@/lib/seo/metadata"
-import "@/components/blink/blink-styles.css"
+import { BlinkPreview } from "@/components/blink/blink-preview";
+import { pageMetadata } from "@/lib/seo/metadata";
+import "@/components/blink/blink-styles.css";
 
-export const metadata = pageMetadata("demo")
+export const metadata = pageMetadata("demo");
 
 interface PageProps {
-  searchParams: Promise<{ url?: string; style?: string }>
+  searchParams: Promise<{ url?: string; style?: string }>;
 }
 
-const STYLE_PRESETS = ["default", "x-dark", "x-light"] as const
-type StylePreset = (typeof STYLE_PRESETS)[number]
+const STYLE_PRESETS = ["default", "x-dark", "x-light"] as const;
+type StylePreset = (typeof STYLE_PRESETS)[number];
 
 // Loose icon-component type · covers both Lucide forward-ref components
 // and our custom inline SVG glyphs (e.g. ViewsGlyph) without TS friction.
-type IconType = React.ComponentType<{ size?: number; strokeWidth?: number }>
+type IconType = React.ComponentType<{ size?: number; strokeWidth?: number }>;
 
 // X palette · referenced as CSS custom properties so a single
 // theme-scoped style block on <main> drives the whole tree without
@@ -111,7 +111,7 @@ const XC = {
   accent: "var(--x-accent)",
   accentText: "var(--x-accent-text)",
   pillActiveBg: "var(--x-pill-active-bg)",
-} as const
+} as const;
 
 // Real hex values for both modes. The CSSProperties object below
 // gets spread onto <main style={...}> so the cascade lights up.
@@ -127,7 +127,7 @@ const X_LIGHT = {
   "--x-accent": "#1d9bf0",
   "--x-accent-text": "#ffffff",
   "--x-pill-active-bg": "#eff3f4",
-} as const
+} as const;
 
 const X_DARK = {
   "--x-bg": "#000000",
@@ -142,10 +142,10 @@ const X_DARK = {
   // On dark, the Post button (text on accent) stays white — matches X.
   "--x-accent-text": "#ffffff",
   "--x-pill-active-bg": "#16181c",
-} as const
+} as const;
 
 function xPaletteFor(theme: ResolvedTheme): React.CSSProperties {
-  return (theme === "old-horai" ? X_DARK : X_LIGHT) as React.CSSProperties
+  return (theme === "old-horai" ? X_DARK : X_LIGHT) as React.CSSProperties;
 }
 
 // X brand mark (operator-provided 2026-05-10).
@@ -163,56 +163,38 @@ function XMark({ size = 28 }: { size?: number }) {
       <title>X</title>
       <path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z" />
     </svg>
-  )
+  );
 }
 
 // Verified badge · X's blue checkmark.
 function VerifiedBadge({ size = 18 }: { size?: number }) {
   return (
-    <svg
-      viewBox="0 0 22 22"
-      width={size}
-      height={size}
-      aria-label="verified"
-      className="shrink-0"
-    >
+    <svg viewBox="0 0 22 22" width={size} height={size} aria-label="verified" className="shrink-0">
       <path
         fill={XC.accent}
         d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"
       />
     </svg>
-  )
+  );
 }
 
 // Official X SuperGrok glyph (X.com 2026 source · operator-paste).
 // Used in left-nav + next to every post (the small "Grok" diamond on X).
 function SuperGrokIcon({ size = 26 }: { size?: number; strokeWidth?: number }) {
   return (
-    <svg
-      viewBox="0 0 33 32"
-      width={size}
-      height={size}
-      aria-hidden
-      fill="currentColor"
-    >
+    <svg viewBox="0 0 33 32" width={size} height={size} aria-hidden fill="currentColor">
       <path d="M12.745 20.54l10.97-8.19c.539-.4 1.307-.244 1.564.38 1.349 3.288.746 7.241-1.938 9.955-2.683 2.714-6.417 3.31-9.83 1.954l-3.728 1.745c5.347 3.697 11.84 2.782 15.898-1.324 3.219-3.255 4.216-7.692 3.284-11.693l.008.009c-1.351-5.878.332-8.227 3.782-13.031L33 0l-4.54 4.59v-.014L12.743 20.544m-2.263 1.987c-3.837-3.707-3.175-9.446.1-12.755 2.42-2.449 6.388-3.448 9.852-1.979l3.72-1.737c-.67-.49-1.53-1.017-2.515-1.387-4.455-1.854-9.789-.931-13.41 2.728-3.483 3.523-4.579 8.94-2.697 13.561 1.405 3.454-.899 5.898-3.22 8.364C1.49 30.2.666 31.074 0 32l10.478-9.466" />
     </svg>
-  )
+  );
 }
 
 // Official X Premium+ verified-badge-ish glyph (X.com 2026 source · operator-paste).
 function PremiumIcon({ size = 26 }: { size?: number; strokeWidth?: number }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden
-      fill="currentColor"
-    >
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden fill="currentColor">
       <path d="M8.52 3.59c.8-1.1 2.04-1.84 3.48-1.84s2.68.74 3.49 1.84c1.34-.21 2.74.14 3.76 1.16s1.37 2.42 1.16 3.77c1.1.8 1.84 2.04 1.84 3.48s-.74 2.68-1.84 3.48c.21 1.34-.14 2.75-1.16 3.77s-2.42 1.37-3.76 1.16c-.8 1.1-2.05 1.84-3.49 1.84s-2.68-.74-3.48-1.84c-1.34.21-2.75-.14-3.77-1.16-1.01-1.02-1.37-2.42-1.16-3.77-1.09-.8-1.84-2.04-1.84-3.48s.75-2.68 1.84-3.48c-.21-1.35.14-2.75 1.16-3.77s2.43-1.37 3.77-1.16zm3.48.16c-.85 0-1.66.53-2.12 1.43l-.38.77-.82-.27c-.96-.32-1.91-.12-2.51.49-.6.6-.8 1.54-.49 2.51l.27.81-.77.39c-.9.46-1.43 1.27-1.43 2.12s.53 1.66 1.43 2.12l.77.39-.27.81c-.31.97-.11 1.91.49 2.51.6.61 1.55.81 2.51.49l.82-.27.38.77c.46.9 1.27 1.43 2.12 1.43s1.66-.53 2.12-1.43l.39-.77.82.27c.96.32 1.9.12 2.51-.49.6-.6.8-1.55.48-2.51l-.26-.81.76-.39c.91-.46 1.43-1.27 1.43-2.12s-.52-1.66-1.43-2.12l-.77-.39.27-.81c.32-.97.12-1.91-.48-2.51-.61-.61-1.55-.81-2.51-.49l-.82.27-.39-.77c-.46-.9-1.27-1.43-2.12-1.43zm4.74 5.68l-6.2 6.77-3.74-3.74 1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36z" />
     </svg>
-  )
+  );
 }
 
 // Small Grok glyph for per-post header (smaller size variant of SuperGrokIcon).
@@ -221,7 +203,7 @@ function GrokDiamond({ size = 18 }: { size?: number }) {
     <span style={{ color: XC.textSecondary, display: "inline-flex" }}>
       <SuperGrokIcon size={size} />
     </span>
-  )
+  );
 }
 
 // @puruworld avatar · operator's profile picture (IMG_8637.png · 2026-05-10).
@@ -236,19 +218,11 @@ function PuruAvatar({ size = 40 }: { size?: number }) {
       className="shrink-0 rounded-full object-cover"
       style={{ width: size, height: size }}
     />
-  )
+  );
 }
 
 // Image-backed avatar · used for character art + brand logos.
-function ImageAvatar({
-  src,
-  alt,
-  size = 40,
-}: {
-  src: string
-  alt: string
-  size?: number
-}) {
+function ImageAvatar({ src, alt, size = 40 }: { src: string; alt: string; size?: number }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -259,7 +233,7 @@ function ImageAvatar({
       className="shrink-0 rounded-full object-cover"
       style={{ width: size, height: size }}
     />
-  )
+  );
 }
 
 // Left-nav row · pill-active variant matches current X.
@@ -270,9 +244,9 @@ function NavItem({
   label,
   active = false,
 }: {
-  Icon: IconType
-  label: string
-  active?: boolean
+  Icon: IconType;
+  label: string;
+  active?: boolean;
 }) {
   return (
     <div
@@ -287,7 +261,7 @@ function NavItem({
         {label}
       </span>
     </div>
-  )
+  );
 }
 
 // Action rail metric · current X format (icon + count, K abbreviation).
@@ -296,34 +270,25 @@ function Metric({
   count,
   color = XC.textSecondary,
 }: {
-  Icon: IconType
-  count: string
-  color?: string
+  Icon: IconType;
+  count: string;
+  color?: string;
 }) {
   return (
-    <div
-      className="flex items-center gap-1.5 text-[13px]"
-      style={{ color }}
-    >
+    <div className="flex items-center gap-1.5 text-[13px]" style={{ color }}>
       <Icon size={18} strokeWidth={1.75} />
       {count && <span>{count}</span>}
     </div>
-  )
+  );
 }
 
 // View-count glyph: a small bar chart silhouette.
 function ViewsGlyph({ size = 18 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M8.75 21V3h2v18zM18 21V8.5h2V21zM4 21l.004-10h2L6 21zM13.5 21v-7h2v7z" />
     </svg>
-  )
+  );
 }
 
 // Reusable post row (neighbors above/below the focal post).
@@ -341,14 +306,14 @@ function Post({
   body,
   metrics,
 }: {
-  avatar: React.ReactNode
-  name: string
-  handle: string
-  time: string
-  verified?: boolean
-  automatedBy?: string
-  body: React.ReactNode
-  metrics: { reply: string; repost: string; like: string; views: string }
+  avatar: React.ReactNode;
+  name: string;
+  handle: string;
+  time: string;
+  verified?: boolean;
+  automatedBy?: string;
+  body: React.ReactNode;
+  metrics: { reply: string; repost: string; like: string; views: string };
 }) {
   return (
     <article
@@ -364,32 +329,20 @@ function Post({
              flex auto-shrinks the items. */
           <>
             <div className="flex items-center gap-x-1 text-[15px]">
-              <span
-                className="font-bold whitespace-nowrap"
-                style={{ color: XC.textPrimary }}
-              >
+              <span className="font-bold whitespace-nowrap" style={{ color: XC.textPrimary }}>
                 {name}
               </span>
               {verified && <VerifiedBadge size={16} />}
-              <span
-                className="whitespace-nowrap"
-                style={{ color: XC.textSecondary }}
-              >
+              <span className="whitespace-nowrap" style={{ color: XC.textSecondary }}>
                 @{handle}
               </span>
               <span style={{ color: XC.textSecondary }}>·</span>
-              <span
-                className="whitespace-nowrap"
-                style={{ color: XC.textSecondary }}
-              >
+              <span className="whitespace-nowrap" style={{ color: XC.textSecondary }}>
                 {time}
               </span>
               <div className="ml-auto flex items-center gap-3 shrink-0">
                 <GrokDiamond size={16} />
-                <MoreHorizontal
-                  size={18}
-                  style={{ color: XC.textSecondary }}
-                />
+                <MoreHorizontal size={18} style={{ color: XC.textSecondary }} />
               </div>
             </div>
             <div
@@ -398,8 +351,7 @@ function Post({
             >
               <Bot size={14} strokeWidth={1.75} />
               <span>
-                Automated by{" "}
-                <span style={{ color: XC.accent }}>@{automatedBy}</span>
+                Automated by <span style={{ color: XC.accent }}>@{automatedBy}</span>
               </span>
             </div>
           </>
@@ -416,10 +368,7 @@ function Post({
             <span style={{ color: XC.textSecondary }}>{time}</span>
             <div className="ml-auto flex items-center gap-3">
               <GrokDiamond size={16} />
-              <MoreHorizontal
-                size={18}
-                style={{ color: XC.textSecondary }}
-              />
+              <MoreHorizontal size={18} style={{ color: XC.textSecondary }} />
             </div>
           </div>
         )}
@@ -432,7 +381,7 @@ function Post({
         <PostActionRail metrics={metrics} />
       </div>
     </article>
-  )
+  );
 }
 
 // 5-item action rail (reply · repost · like · views · bookmark + share).
@@ -440,7 +389,7 @@ function Post({
 function PostActionRail({
   metrics,
 }: {
-  metrics: { reply: string; repost: string; like: string; views: string }
+  metrics: { reply: string; repost: string; like: string; views: string };
 }) {
   return (
     <div className="mt-4 flex items-center max-w-[440px]">
@@ -457,37 +406,18 @@ function PostActionRail({
         <Metric Icon={ViewsGlyph} count={metrics.views} />
       </div>
       <div className="flex items-center gap-3">
-        <BookmarkPlus
-          size={18}
-          strokeWidth={1.75}
-          style={{ color: XC.textSecondary }}
-        />
-        <Upload
-          size={18}
-          strokeWidth={1.75}
-          style={{ color: XC.textSecondary }}
-        />
+        <BookmarkPlus size={18} strokeWidth={1.75} style={{ color: XC.textSecondary }} />
+        <Upload size={18} strokeWidth={1.75} style={{ color: XC.textSecondary }} />
       </div>
     </div>
-  )
+  );
 }
 
 // Today's News item · 3 stacked avatars + meta.
-function NewsItem({
-  headline,
-  meta,
-  hues,
-}: {
-  headline: string
-  meta: string
-  hues: number[]
-}) {
+function NewsItem({ headline, meta, hues }: { headline: string; meta: string; hues: number[] }) {
   return (
     <div className="px-4 py-3 cursor-pointer">
-      <div
-        className="text-[15px] font-bold leading-[1.3]"
-        style={{ color: XC.textPrimary }}
-      >
+      <div className="text-[15px] font-bold leading-[1.3]" style={{ color: XC.textPrimary }}>
         {headline}
       </div>
       <div className="mt-2 flex items-center gap-2">
@@ -508,18 +438,10 @@ function NewsItem({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
-function Trend({
-  category,
-  topic,
-  meta,
-}: {
-  category: string
-  topic: string
-  meta?: string
-}) {
+function Trend({ category, topic, meta }: { category: string; topic: string; meta?: string }) {
   return (
     <div className="px-4 py-2 cursor-pointer flex justify-between items-start">
       <div>
@@ -533,21 +455,14 @@ function Trend({
           {topic}
         </div>
         {meta && (
-          <div
-            className="text-[13px] mt-0.5"
-            style={{ color: XC.textSecondary }}
-          >
+          <div className="text-[13px] mt-0.5" style={{ color: XC.textSecondary }}>
             {meta}
           </div>
         )}
       </div>
-      <MoreHorizontal
-        size={16}
-        style={{ color: XC.textSecondary }}
-        className="shrink-0 mt-1"
-      />
+      <MoreHorizontal size={16} style={{ color: XC.textSecondary }} className="shrink-0 mt-1" />
     </div>
-  )
+  );
 }
 
 function FollowSuggestion({
@@ -556,10 +471,10 @@ function FollowSuggestion({
   handle,
   verified = false,
 }: {
-  src: string
-  name: string
-  handle: string
-  verified?: boolean
+  src: string;
+  name: string;
+  handle: string;
+  verified?: boolean;
 }) {
   return (
     <div className="px-4 py-3 flex items-center gap-3">
@@ -574,10 +489,7 @@ function FollowSuggestion({
           </div>
           {verified && <VerifiedBadge size={16} />}
         </div>
-        <div
-          className="text-[14px] truncate"
-          style={{ color: XC.textSecondary }}
-        >
+        <div className="text-[14px] truncate" style={{ color: XC.textSecondary }}>
           @{handle}
         </div>
       </div>
@@ -592,17 +504,16 @@ function FollowSuggestion({
         Follow
       </button>
     </div>
-  )
+  );
 }
 
 export default async function DemoPage({ searchParams }: PageProps) {
-  const params = await searchParams
+  const params = await searchParams;
   // `||` (not `??`) so empty string from a misconfigured env var also falls
   // back · prevents the `new URL()` invalid-URL crash in @dialectlabs/blinks
   // when NEXT_PUBLIC_APP_URL is set but blank.
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  const targetUrl = params.url || `${baseUrl}/api/actions/quiz/start`
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const targetUrl = params.url || `${baseUrl}/api/actions/quiz/start`;
 
   // Theme resolution priority for the X chrome:
   //   1. ?style=x-dark | x-light — explicit operator override (kept
@@ -612,7 +523,7 @@ export default async function DemoPage({ searchParams }: PageProps) {
   //      weather feed lands · cookie is the SSR-readable signal
   //   3. x-light default — matches the prior behavior on cold
   //      first visit before the inline ThemeBoot script can run
-  const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value
+  const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
   const resolvedTheme: ResolvedTheme =
     params.style === "x-dark"
       ? "old-horai"
@@ -620,15 +531,14 @@ export default async function DemoPage({ searchParams }: PageProps) {
         ? "day-horai"
         : cookieTheme === "old-horai"
           ? "old-horai"
-          : "day-horai"
+          : "day-horai";
 
   // Pass through to the focal Blink card · `default` lets BlinkPreview
   // pick its own surface; `x-dark`/`x-light` force a Blink-side flip.
   // We intentionally don't auto-flip the Blink — the cream/honey card
   // is the focal artifact and its warmth is the contrast we want
   // against either chrome.
-  const stylePreset: StylePreset =
-    STYLE_PRESETS.find((p) => p === params.style) ?? "default"
+  const stylePreset: StylePreset = STYLE_PRESETS.find((p) => p === params.style) ?? "default";
 
   return (
     <main
@@ -650,9 +560,7 @@ export default async function DemoPage({ searchParams }: PageProps) {
           which is the right behavior for an X-faithful render. */}
       <div className="mx-auto flex max-w-[1280px] min-w-[1280px]">
         {/* ────────────── LEFT SIDEBAR · 275px ────────────── */}
-        <aside
-          className="flex flex-col w-[275px] shrink-0 sticky top-0 h-dvh px-4 py-1 items-stretch"
-        >
+        <aside className="flex flex-col w-[275px] shrink-0 sticky top-0 h-dvh px-4 py-1 items-stretch">
           <div className="px-4 py-3" style={{ color: XC.textPrimary }}>
             <XMark size={30} />
           </div>
@@ -686,17 +594,11 @@ export default async function DemoPage({ searchParams }: PageProps) {
               >
                 purupuru
               </div>
-              <div
-                className="text-[13px] truncate"
-                style={{ color: XC.textSecondary }}
-              >
+              <div className="text-[13px] truncate" style={{ color: XC.textSecondary }}>
                 @puruworld
               </div>
             </div>
-            <MoreHorizontal
-              size={18}
-              style={{ color: XC.textSecondary }}
-            />
+            <MoreHorizontal size={18} style={{ color: XC.textSecondary }} />
           </div>
         </aside>
 
@@ -772,7 +674,12 @@ export default async function DemoPage({ searchParams }: PageProps) {
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-3" style={{ color: XC.accent }}>
                   <ImageIcon size={20} strokeWidth={1.75} />
-                  <span className="text-[13px] font-bold border rounded px-1" style={{ borderColor: XC.accent }}>GIF</span>
+                  <span
+                    className="text-[13px] font-bold border rounded px-1"
+                    style={{ borderColor: XC.accent }}
+                  >
+                    GIF
+                  </span>
                   <ListChecks size={20} strokeWidth={1.75} />
                   <Smile size={20} strokeWidth={1.75} />
                   <CalendarClock size={20} strokeWidth={1.75} />
@@ -805,13 +712,7 @@ export default async function DemoPage({ searchParams }: PageProps) {
 
           {/* Neighbor post above · Eileen (project lead). */}
           <Post
-            avatar={
-              <ImageAvatar
-                src="/brand/characters/bear-02.png"
-                alt="eileen"
-                size={40}
-              />
-            }
+            avatar={<ImageAvatar src="/brand/characters/bear-02.png" alt="eileen" size={40} />}
             name="eileen"
             handle="eileenbtc"
             time="3h"
@@ -840,11 +741,7 @@ export default async function DemoPage({ searchParams }: PageProps) {
                   and metal is waking up slow." */}
           <Post
             avatar={
-              <ImageAvatar
-                src="/brand/characters/chibi-kaori.png"
-                alt="tsuheji winds"
-                size={40}
-              />
+              <ImageAvatar src="/brand/characters/chibi-kaori.png" alt="tsuheji winds" size={40} />
             }
             name="tsuheji winds"
             handle="tsuhejiwinds"
@@ -872,16 +769,10 @@ export default async function DemoPage({ searchParams }: PageProps) {
                 <span style={{ color: XC.textSecondary }}>2h</span>
                 <div className="ml-auto flex items-center gap-3">
                   <GrokDiamond size={16} />
-                  <MoreHorizontal
-                    size={18}
-                    style={{ color: XC.textSecondary }}
-                  />
+                  <MoreHorizontal size={18} style={{ color: XC.textSecondary }} />
                 </div>
               </div>
-              <p
-                className="mt-0.5 text-[15px] leading-[1.35]"
-                style={{ color: XC.textPrimary }}
-              >
+              <p className="mt-0.5 text-[15px] leading-[1.35]" style={{ color: XC.textPrimary }}>
                 eight questions to read you back.
               </p>
 
@@ -899,22 +790,14 @@ export default async function DemoPage({ searchParams }: PageProps) {
                 <BlinkPreview url={targetUrl} stylePreset={stylePreset} />
               </div>
 
-              <PostActionRail
-                metrics={{ reply: "48", repost: "23", like: "412", views: "8.4K" }}
-              />
+              <PostActionRail metrics={{ reply: "48", repost: "23", like: "412", views: "8.4K" }} />
             </div>
           </article>
 
           {/* Neighbor posts below */}
           {/* Gumi (artist) · post body matches the drawing/wood-season copy. */}
           <Post
-            avatar={
-              <ImageAvatar
-                src="/brand/characters/bear-03.png"
-                alt="gumi"
-                size={40}
-              />
-            }
+            avatar={<ImageAvatar src="/brand/characters/bear-03.png" alt="gumi" size={40} />}
             name="gumi"
             handle="gumibrews"
             time="5h"
@@ -923,13 +806,7 @@ export default async function DemoPage({ searchParams }: PageProps) {
           />
           {/* Zerker (builder/dev) · threshold copy fits the technical voice. */}
           <Post
-            avatar={
-              <ImageAvatar
-                src="/brand/characters/bear-01.png"
-                alt="zerker"
-                size={40}
-              />
-            }
+            avatar={<ImageAvatar src="/brand/characters/bear-01.png" alt="zerker" size={40} />}
             name="zerker"
             handle="zksoju"
             time="8h"
@@ -956,21 +833,12 @@ export default async function DemoPage({ searchParams }: PageProps) {
           </div>
 
           {/* Today's News */}
-          <div
-            className="rounded-2xl"
-            style={{ backgroundColor: XC.surface }}
-          >
+          <div className="rounded-2xl" style={{ backgroundColor: XC.surface }}>
             <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-              <div
-                className="text-[20px] font-bold"
-                style={{ color: XC.textPrimary }}
-              >
+              <div className="text-[20px] font-bold" style={{ color: XC.textPrimary }}>
                 Today&apos;s News
               </div>
-              <CloseIcon
-                size={18}
-                style={{ color: XC.textSecondary }}
-              />
+              <CloseIcon size={18} style={{ color: XC.textSecondary }} />
             </div>
             <NewsItem
               headline="Solana Frontier hackathon enters final 48 hours"
@@ -990,48 +858,21 @@ export default async function DemoPage({ searchParams }: PageProps) {
           </div>
 
           {/* What's happening */}
-          <div
-            className="rounded-2xl py-3"
-            style={{ backgroundColor: XC.surface }}
-          >
-            <div
-              className="px-4 text-[20px] font-bold pb-2"
-              style={{ color: XC.textPrimary }}
-            >
+          <div className="rounded-2xl py-3" style={{ backgroundColor: XC.surface }}>
+            <div className="px-4 text-[20px] font-bold pb-2" style={{ color: XC.textPrimary }}>
               What&apos;s happening
             </div>
-            <Trend
-              category="Crypto · Trending"
-              topic="$SOL"
-              meta="Trending with Solana, Phantom"
-            />
-            <Trend
-              category="Web3 · Trending"
-              topic="#SolanaFrontier"
-              meta="8,742 posts"
-            />
-            <Trend
-              category="Trending"
-              topic="Genesis Stones"
-              meta="1,247 posts"
-            />
-            <div
-              className="px-4 pt-2 text-[15px] cursor-pointer"
-              style={{ color: XC.accent }}
-            >
+            <Trend category="Crypto · Trending" topic="$SOL" meta="Trending with Solana, Phantom" />
+            <Trend category="Web3 · Trending" topic="#SolanaFrontier" meta="8,742 posts" />
+            <Trend category="Trending" topic="Genesis Stones" meta="1,247 posts" />
+            <div className="px-4 pt-2 text-[15px] cursor-pointer" style={{ color: XC.accent }}>
               Show more
             </div>
           </div>
 
           {/* Who to follow */}
-          <div
-            className="rounded-2xl py-3"
-            style={{ backgroundColor: XC.surface }}
-          >
-            <div
-              className="px-4 text-[20px] font-bold pb-2"
-              style={{ color: XC.textPrimary }}
-            >
+          <div className="rounded-2xl py-3" style={{ backgroundColor: XC.surface }}>
+            <div className="px-4 text-[20px] font-bold pb-2" style={{ color: XC.textPrimary }}>
               Who to follow
             </div>
             <FollowSuggestion
@@ -1052,23 +893,17 @@ export default async function DemoPage({ searchParams }: PageProps) {
               handle="colosseum"
               verified
             />
-            <div
-              className="px-4 pt-2 text-[15px] cursor-pointer"
-              style={{ color: XC.accent }}
-            >
+            <div className="px-4 pt-2 text-[15px] cursor-pointer" style={{ color: XC.accent }}>
               Show more
             </div>
           </div>
 
-          <div
-            className="px-4 text-[13px] leading-[1.4]"
-            style={{ color: XC.textTertiary }}
-          >
-            Terms of Service · Privacy Policy · Cookie Policy · Accessibility ·
-            Ads info · More · © 2026 X Corp.
+          <div className="px-4 text-[13px] leading-[1.4]" style={{ color: XC.textTertiary }}>
+            Terms of Service · Privacy Policy · Cookie Policy · Accessibility · Ads info · More · ©
+            2026 X Corp.
           </div>
         </aside>
       </div>
     </main>
-  )
+  );
 }

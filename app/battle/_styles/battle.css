@@ -1,0 +1,166 @@
+/*
+ * Battle UI · world-purupuru fidelity layer
+ *
+ * Composes the Svelte-scoped <style> blocks from world-purupuru's
+ * battle components into a single global stylesheet. Each compass
+ * TSX component renders the same DOM/classes/data-attrs as its
+ * Svelte counterpart, so these styles apply 1:1.
+ *
+ * Source: ~/Documents/GitHub/world-purupuru/sites/world/src/lib/battle/
+ *         ~/Documents/GitHub/world-purupuru/sites/world/src/lib/scenes/BattleScene.svelte
+ *
+ * Imported by app/battle/_scene/BattleScene.tsx.
+ *
+ * NOTE: All CSS variables (--puru-*, --space-*, --duration-*, --ease-puru-*)
+ * are defined in app/globals.css (compass's existing token system).
+ */
+
+/* Missing tokens compass doesn't have but battle CSS expects */
+:root {
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 96px;
+
+  --text-2xs: 0.625rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 3rem;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  --font-body: var(--font-puru-body, system-ui);
+  --font-display: var(--font-puru-display, system-ui);
+  --font-card: var(--font-puru-card, serif);
+  --font-mono: var(--font-puru-mono, ui-monospace);
+
+  --shadow-card: 0 2px 8px oklch(0.70 0.02 85 / 0.12);
+  --shadow-card-hover: 0 8px 24px oklch(0.65 0.03 85 / 0.18);
+  --shadow-card-depth:
+    0 1px 0 oklch(0.88 0.015 85),
+    0 2px 0 oklch(0.85 0.015 85),
+    0 3px 0 oklch(0.82 0.015 85),
+    0 4px 10px oklch(0.5 0.02 85 / 0.18);
+
+  --duration-tap: 80ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BattleScene · orchestrator
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./BattleScene.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   EntryScreen · title gate
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./EntryScreen.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ElementQuiz · one-screen scene picker
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ElementQuiz.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   BattleField · the arena (the most complex surface)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./BattleField.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   BattleHand · player's 5-card row
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./BattleHand.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   CardPetal · expanded card view (modal scrim)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./CardPetal.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   OpponentZone · opponent lineup with clash animations
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./OpponentZone.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   TurnClock · 5-pip turn indicator
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./TurnClock.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ArenaSpeakers · caretaker portraits + speech bubbles
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ArenaSpeakers.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ResultScreen · match end
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ResultScreen.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   HelpCarousel · onboarding hints
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./HelpCarousel.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   Tutorial · first-time tutorial overlay
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./Tutorial.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ComboDiscoveryToast · first-time combo ceremony
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ComboDiscoveryToast.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   DevConsole · dev-only HUD (scrubber + event log + snapshot view)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./DevConsole.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   CardBreathing · per-element micro-motion (cardboard → alive)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./CardBreathing.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ClashOrb · impact bloom (the consequence beat made visible)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ClashOrb.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   ClashVfx · per-element collision particles at clash midpoint
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./ClashVfx.css";
+
+/* ═══════════════════════════════════════════════════════════════
+   CardFoil · iridescent overlay (CSS-shader-style)
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "./CardFoil.css";

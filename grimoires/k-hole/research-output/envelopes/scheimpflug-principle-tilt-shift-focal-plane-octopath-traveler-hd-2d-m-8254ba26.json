@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "scheimpflug-principle-tilt-shift-focal-plane-octopath-traveler-hd-2d-m-8254ba26",
+  "ref": {
+    "name": "Scheimpflug principle tilt-shift focal plane Octopath Traveler HD-2D miniature diorama · @react-three/postprocessing TiltShift DoF effect implementation · tilt-shift postprocess for isometric/3-quarte",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "scheimpflug-principle-tilt-shift-focal-plane-octopath-traveler-hd-2d-m"
+  },
+  "resonance": {
+    "strength": 0.95,
+    "evidence": [
+      "*Poimandres' `@react-three/postprocessing` library dominates the React ecosystem's HD-2D aesthetic not through optical simulation, but by utilizing a \"fake\" screen-space `<TiltShift />` pass that ignores the Z-depth buffer entirely. For a camera at `[0, 2.8, 5.4]` pitched downward at 27.4 degrees, the diorama illusion is achieved counter-intuitively: by setting `rotation={0}`, `offset={-0.05}`, and a tight `focusArea={0.25}`. By keeping the blur's rotation flat against a pitched camera, the horizontal unblurred strip visually maps directly across the isometric ground floor, bypassing the need ",
+      "*Andrew Kensler established the physically accurate alternative in his paper \"Tilt-Shift Rendering Using a Thin Lens Model,\" calculating the exact Circle of Confusion required when the lens, sensor, and focus planes intersect at the Scheimpflug line. Kenneth Lamar subsequently ported Kensler's ray-traced math into WebGL to solve the \"tall object problem\"—a visual glitch where screen-space blur incorrectly softens the tops of tall buildings that originate in the focused middle strip. Lamar's custom shader replaces standard scalar focus distances with an arbitrary 3D plane equation (`distance = ",
+      "*Tomoya Asano pioneered this visual signature at Square Enix, merging 16-bit sprites with modern 3D bloom and tilt-shift, but the underlying optical math relies on solutions originally built for industrial machine vision. In high-speed manufacturing, physical \"Scheimpflug adapters\" and algorithmic laser triangulation are used to inspect fast-moving, slanted semiconductor wafers without requiring tiny, light-starved apertures. MIT Media Lab's Ramesh Raskar applies similar non-parallel focal models in computational photography; the optical math required to make an RPG town look like a tabletop t"
+    ]
+  },
+  "why": {
+    "design": "Dig on \"Scheimpflug principle tilt-shift focal plane Octopath Traveler HD-2D miniature diorama · @react-three/postprocessing TiltShift DoF effect implementation · tilt-shift postprocess for isometric/3-quarter view 3D scene · how to tilt focal plane to match ground plane in r3f · convergence: Scheimpflug DoF parameters that work for compass camera at PerspectiveCamera position [0, 2.8, 5.4] fov 42 looking at warm Ghibli scene\" surfaced 42 sources at +++ depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-session-2026-05-16-T4-scheimpflug.md",
+    "ratified_at": "2026-05-17",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "`Kenneth Lamar TWGL TiltShiftRendering implementation`",
+    "`Three.js PerspectiveCamera.setViewOffset oblique frustum`",
+    "`Oculus Pentacam Scheimpflug medical imaging`",
+    "`Brian A. Barsky UC Berkeley non-parallel focal plane rendering`"
+  ]
+}

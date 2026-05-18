@@ -60,3 +60,203 @@ grimoires/loa/a2a/cost-ledger.jsonl
 
 # Stale Next.js build cache directories — see ride hygiene flag
 .next.OLD*
+
+# User context files (discovery inputs, uploaded docs, extracted content)
+# These are user-specific inputs that should never be committed
+# The README.md is tracked to explain the directory's purpose
+grimoires/loa/context/*
+!grimoires/loa/context/README.md
+
+# ck semantic search state (embeddings cache, indexes)
+# Large machine-specific files that rebuild automatically
+.ck/
+
+# Agent trajectory logs (reasoning audit trails)
+# JSONL format logs for development/debugging, not needed in version control
+grimoires/loa/a2a/trajectory/*.jsonl
+
+# Pending feedback (temporary file for failed GitHub submissions)
+# Kept in case /feedback fails to submit - automatically retried on next invocation
+grimoires/loa/analytics/pending-feedback.json
+
+# Permission audit log (user-specific HITL approval history)
+# Used by /permission-audit to suggest settings.json additions
+grimoires/loa/analytics/permission-requests.jsonl
+
+# Server audit reports (contain sensitive deployment info)
+grimoires/loa/deployment/SERVER-REALITY-AUDIT.md
+
+# Memory schema files (cross-session knowledge, project-specific)
+# Contains facts, decisions, learnings, errors, preferences
+# The README.md is tracked to explain the directory's purpose
+grimoires/loa/memory/*
+!grimoires/loa/memory/README.md
+
+# =============================================================================
+# LOA TEMPLATE EXCLUSIONS
+# =============================================================================
+# These files are ALWAYS excluded from the template repository.
+# They are generated per-project and must never be committed to the main loa repo.
+
+# Generated documentation artifacts (all PRD, SDD, sprint files)
+# Uses glob patterns to catch both base files (prd.md) and feature variants (prd-*.md)
+grimoires/loa/prd*.md
+grimoires/loa/sdd*.md
+grimoires/loa/sprint*.md
+grimoires/loa/NOTES.md
+grimoires/loa/BEAUVOIR.md
+grimoires/loa/SOUL.md
+grimoires/loa/decisions.yaml
+
+# User config (copy from .loa.config.yaml.example)
+.loa.config.yaml
+# But DO track config files inside eval fixtures (needed for CI)
+!evals/fixtures/**/.loa.config.yaml
+
+# Sprint Ledger (project-specific cycle/sprint history)
+# Created by /plan-and-analyze, tracks development cycles per-project
+grimoires/loa/ledger.json
+# Planning-artifact backups (ledger/sprint/prd/sdd, any depth, any -bak variant).
+# Use git tags / cycle archive directories for rollback; never commit .bak files.
+# See cycle-098 NOTES decision-trail for the convention rationale.
+grimoires/loa/**/ledger.json*.bak
+grimoires/loa/**/ledger.json.*-bak
+grimoires/loa/**/sprint*.md*.bak
+grimoires/loa/**/sprint*.md.*-bak
+grimoires/loa/**/prd*.md*.bak
+grimoires/loa/**/prd*.md.*-bak
+grimoires/loa/**/sdd*.md*.bak
+grimoires/loa/**/sdd*.md.*-bak
+
+# Archived development cycles (project-specific history)
+grimoires/loa/archive/
+
+# Agent-to-Agent communication (sprint-specific, generated)
+# README.md files are kept to explain the directory purpose
+grimoires/loa/a2a/*
+!grimoires/loa/a2a/README.md
+!grimoires/loa/a2a/trajectory/
+grimoires/loa/a2a/trajectory/*
+!grimoires/loa/a2a/trajectory/README.md
+# Compound learning state (project-specific, generated per-project)
+!grimoires/loa/a2a/compound/
+grimoires/loa/a2a/compound/*.json
+grimoires/loa/a2a/compound/review-markers/*
+!grimoires/loa/a2a/compound/.gitkeep
+!grimoires/loa/a2a/compound/review-markers/.gitkeep
+# Subagent reports (runtime outputs; directory is committed as an empty
+# placeholder so subagent write targets exist at framework mount time)
+!grimoires/loa/a2a/subagent-reports/
+grimoires/loa/a2a/subagent-reports/*.md
+!grimoires/loa/a2a/subagent-reports/.gitkeep
+
+# Deployment artifacts (project-specific)
+grimoires/loa/deployment/*
+!grimoires/loa/deployment/README.md
+
+# Reality extraction (codebase-specific)
+grimoires/loa/reality/*
+!grimoires/loa/reality/README.md
+
+# Analytics (usage tracking, developer-specific)
+grimoires/loa/analytics/*
+!grimoires/loa/analytics/README.md
+
+# Research files (project-specific discoveries)
+grimoires/loa/research/*
+!grimoires/loa/research/README.md
+
+# Ground truth (generated codebase analysis, project-specific)
+grimoires/loa/ground-truth/*
+!grimoires/loa/ground-truth/README.md
+
+# Vision registry (speculative insights captured per-project)
+grimoires/loa/visions/entries/*
+!grimoires/loa/visions/entries/.gitkeep
+grimoires/loa/visions/index.md
+
+# Feedback files (developer feedback, project-specific)
+grimoires/loa/feedback/*
+!grimoires/loa/feedback/README.md
+
+# Invariants (generated per-project)
+grimoires/loa/invariants.yaml
+
+# Public grimoires (project-specific outputs, not template content)
+# Only README.md files and research documents are tracked
+# Research documents contain reusable framework insights
+grimoires/pub/**/*
+!grimoires/pub/**/README.md
+# Re-include research markdown files (framework improvement research)
+!grimoires/pub/research/
+grimoires/pub/research/*
+!grimoires/pub/research/README.md
+!grimoires/pub/research/*.md
+
+# =============================================================================
+# LOA CONSTRUCTS (licensed skills, user-specific)
+# =============================================================================
+# Constructs packs and skills are downloaded per-user with individual licenses.
+# These should NOT be committed to version control:
+# - Licenses are user-specific (contain watermarks, user_id)
+# - Content is copyrighted and licensed per-user
+# - Users should install via /skill-pack-install command
+.claude/constructs/
+
+# Development-specific docs (not part of template)
+docs/planning/
+docs/proposals/
+docs/research/
+docs/mockups/
+docs/screenshots/
+
+# =============================================================================
+# PROJECT-SPECIFIC EXCLUSIONS (for repos that use loa as a base)
+# =============================================================================
+# Beads graph memory (sprint task tracking)
+# For the template repo, .beads/ is fully excluded.
+# Project repos that want team-visible sprint state can remove this line
+# and selectively ignore runtime files below instead.
+.beads/
+
+# Beads runtime files (never commit, even if .beads/ is tracked)
+# .beads/daemon.lock
+# .beads/.local_version
+# .beads/beads.db
+# .beads/*.meta.json
+
+# Eval results (run-specific, gitignored except baselines and .gitkeep)
+evals/results/*
+!evals/results/.gitkeep
+
+# Application artifacts (app/)
+app/src/
+app/tests/
+app/config/
+app/package.json
+app/package-lock.json
+app/tsconfig.json
+app/ecosystem.config.js
+
+# cycle-106 sprint-1 T1.6: framework template hygiene (zone boundaries).
+# Framework's own operator history must NOT track into the template.
+# Each operator's working tree keeps these locally; git ignores them.
+# Declared as project-zone in grimoires/loa/zones.yaml.
+grimoires/loa/cycles/
+grimoires/loa/NOTES.md
+grimoires/loa/handoffs/
+grimoires/loa/a2a/
+grimoires/loa/visions/
+grimoires/loa/memory/
+grimoires/loa/legacy/
+grimoires/loa/context/
+grimoires/loa/ledger.json.bak*
+# NOT gitignored (still tracked):
+#   grimoires/loa/zones.yaml          (project-authored, version-controlled)
+#   grimoires/loa/runbooks/           (framework-shipped runbooks)
+#   grimoires/loa/known-failures.md   (shared zone)
+#   grimoires/loa/ledger.json         (project sprint ledger)
+
+# Asset library sync artifacts (S0 T0.5 onward)
+.assets-backup-*/
+public/art-test/

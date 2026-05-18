@@ -5,13 +5,7 @@
   "description": "Structured artifact emitted at every construct boundary crossing in a composition. Three-tier field policy (required / recommended / optional) per PRD FR-3.1abc. See grimoires/loa/sdd.md §2.4.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "construct_slug",
-    "output_type",
-    "verdict",
-    "invocation_mode",
-    "cycle_id"
-  ],
+  "required": ["construct_slug", "output_type", "verdict", "invocation_mode", "cycle_id"],
   "properties": {
     "construct_slug": {
       "type": "string",

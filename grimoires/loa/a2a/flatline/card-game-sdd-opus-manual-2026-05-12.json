@@ -1,0 +1,188 @@
+{
+  "phase": "sdd",
+  "document": "grimoires/loa/sdd.md",
+  "timestamp": "2026-05-12T18:20:06Z",
+  "method": "manual-synthesis (scoring-engine bypass · #759 / loa#863)",
+  "confidence": "single-model (claude-opus-4-7)",
+  "cost_usd_total": 0.32989999999999997,
+  "review": {
+    "improvements": [
+      {
+        "id": "IMP-001",
+        "description": "Define a concrete error handling and recovery strategy for localStorage failures, asset 404s, and corrupted match state (resolve deferred OP-7)",
+        "rationale": "OP-7 explicitly defers error UX, but Match service persists to localStorage and the asset sync can fail. Without a defined error boundary contract, S2-S7 implementers will invent inconsistent behaviors. The MatchSnapshot type doesn't model error states, which means error handling can't be unit-tested deterministically.",
+        "location": "Section 3.3 (Match service) + Section 11 OP-7",
+        "priority": "HIGH",
+        "confidence": 0.85
+      },
+      {
+        "id": "IMP-002",
+        "description": "Specify the localStorage schema, versioning/migration strategy, and SSR-safety pattern for compass.match persistence",
+        "rationale": "Section 3.3 mentions persisting playerElement and hasSeenTutorial to localStorage.compass.match but doesn't define the JSON schema, how schema changes are migrated, or how Next.js App Router server components avoid hydration mismatches when reading client-only storage. This will cause hydration bugs in S3.",
+        "location": "Section 3.3 Match service",
+        "priority": "HIGH",
+        "confidence": 0.88
+      },
+      {
+        "id": "IMP-003",
+        "description": "Define explicit rollback/recovery behavior in sync-assets.sh when extraction partially completes (e.g., art swaps but brand fails)",
+        "rationale": "The script does sequential rm -rf + mv per directory. If the second mv fails mid-loop, the repo is left with mixed asset versions and no rollback. The 'rollback contract per FR-19.5' is referenced but not implemented. Add a transactional staging pattern (all-or-nothing swap) or backup-before-replace.",
+        "location": "Section 6.5 sync-assets.sh",
+        "priority": "HIGH",
+        "confidence": 0.9
+      },
+      {
+        "id": "IMP-004",
+        "description": "Specify the exhaustive list of MatchPhase transition rules (which commands are valid in which phases, what happens on invalid commands)",
+        "rationale": "Section 3.3 lists 10 phases and 7 commands but doesn't define the state machine transitions. Without a transition table, the implementer in S1 will guess (e.g., is 'reset-match' valid mid-clash? does 'choose-element' from 'result' phase work?). This is critical for deterministic replay (AC-12) and for testing.",
+        "location": "Section 3.3 Match service",
+        "priority": "HIGH",
+        "confidence": 0.87
+      },
+      {
+        "id": "IMP-005",
+        "description": "Define behavioral fingerprint test methodology more precisely: sample size justification, seed-sweep range, statistical significance threshold, and population mean baseline computation",
+        "rationale": "Section 3.2 specifies '50 matches per element-AI' and assertions like 'avgLineupVariance < populationMean' but doesn't define populationMean (across what set?), the seed range, or how to handle flaky thresholds (e.g., 0.7 boundary). AC-5 falsifiability requires reproducible statistical bounds.",
+        "location": "Section 3.2 Opponent service tests",
+        "priority": "MEDIUM",
+        "confidence": 0.82
+      },
+      {
+        "id": "IMP-006",
+        "description": "Specify how the Lighthouse and axe-core CI gates handle pre-existing baseline violations vs. regressions introduced this cycle",
+        "rationale": "Section 9.1/9.2 assert zero violations and Performance≥80, but if compass's current /battle already fails these (which is likely given new surface area), every PR is blocked. Define a baseline-snapshot pattern or scope thresholds to only the new components introduced in this cycle.",
+        "location": "Section 9.1 + 9.2",
+        "priority": "MEDIUM",
+        "confidence": 0.8
+      },
+      {
+        "id": "IMP-007",
+        "description": "Add a contract for how the S0 spike's LOC ratio extrapolates to the 'projection > AC-14' recalibration trigger — specifically, what scope-reduction options are pre-approved",
+        "rationale": "Section 5.4 says 'pause cycle, present options [recalibrate / split / reduce scope]' but doesn't pre-define which FRs are reducible. When projection fails the gate, the operator faces an ambiguous decision under time pressure. Pre-tier FRs (must-have vs nice-to-have) for fast scope cuts.",
+        "location": "Section 5.4 + 5.5",
+        "priority": "MEDIUM",
+        "confidence": 0.78
+      },
+      {
+        "id": "IMP-008",
+        "description": "Document the Match service's event ordering guarantees and back-pressure semantics for the Stream interface",
+        "rationale": "Section 3.3 exposes Stream<MatchEvent> consumed by useMatch (Section 4.2) which re-reads current snapshot on every event. This creates a race: if events arrive faster than React renders, the snapshot read may skip intermediate states. Specify whether Stream is buffered, dropping, or back-pressured, and whether order is total or per-fiber.",
+        "location": "Section 3.3 + 4.2",
+        "priority": "MEDIUM",
+        "confidence": 0.75
+      },
+      {
+        "id": "IMP-009",
+        "description": "Specify the interaction between Garden grace (chain bonus carry) and Forge auto-counter when both elements are simultaneously active in a clash",
+        "rationale": "Section 3.1 lists both invariants independently. Garden grace fires when Garden survives; Forge auto-counters opponent element. If a Garden card and a Forge card are both in the same lineup and clash against different opponents, the resolution order matters for chainBonusAtRoundEnd. Define precedence or assert mutual exclusivity.",
+        "location": "Section 3.1 Clash implementation rules",
+        "priority": "MEDIUM",
+        "confidence": 0.72
+      },
+      {
+        "id": "IMP-010",
+        "description": "Add a definition for how the merged Guide component's hint-mode dismissal state is keyed (per-component vs global vs per-phase) and stored",
+        "rationale": "Q-SDD-8 merges HelpCarousel + Tutorial into Guide.tsx with progressive disclosure, and playability check #10 asserts dismissal persists. But Section 4.4 just says ~400 LOC without specifying the persistence key shape. OP-5 also leaves trigger timing open. Without this, S6 implementer will invent storage keys that conflict with S3's element persistence.",
+        "location": "Section 2.3 Q-SDD-8 + Section 4.4 FR-9+10 row",
+        "priority": "LOW",
+        "confidence": 0.7
+      }
+    ],
+    "summary": "10 improvements identified, 4 HIGH priority, 5 MEDIUM, 1 LOW. Focus areas: error handling gaps, state machine specification, asset sync robustness, and test methodology rigor."
+  },
+  "skeptic": {
+    "concerns": [
+      {
+        "id": "SKP-001",
+        "concern": "S0 spike gate is binary but has no escape valve for partial calibration",
+        "severity": "HIGH",
+        "severity_score": 700,
+        "why_matters": "The spike could reveal that drag-reorder works fine but motion layout animations cost 3x LOC, or that BattleField alone is tractable but quiz/result aren't. A single GO/NO-GO oversimplifies. Operator will likely push GO under sunk-cost pressure even with yellow signals.",
+        "location": "Section 5.4 · S0 Gates",
+        "recommendation": "Define yellow-light criteria with specific recalibration triggers (e.g., 'if LOC projection 7500-9500, drop FR-5 holographic tilt or FR-8 spatial audio'). Pre-commit to which features get cut at which projection thresholds."
+      },
+      {
+        "id": "SKP-002",
+        "concern": "Behavioral fingerprint tests (AC-5) are statistical, not deterministic, and will flake",
+        "severity": "HIGH",
+        "severity_score": 720,
+        "why_matters": "Tests like 'frontRowAggressionRate(50 matches) >= 0.7' against a parameterized policy can land at 0.68 on a different seed sweep and fail CI. The opponent.live.ts is deterministic-per-seed but the aggregate statistic across 50 seeds may not be tightly bounded. No seed-fixing strategy for the test sweep is specified.",
+        "location": "Section 3.2 · Opponent behavioral fingerprint tests",
+        "recommendation": "Fix the 50-seed test sweep to a hardcoded list of seeds, compute the EXACT expected rate for those seeds, and assert exact equality. Or define tolerance bands with statistical justification (binomial CI). Otherwise these tests will be quarantined within 2 sprints."
+      },
+      {
+        "id": "SKP-003",
+        "concern": "Match phase machine has 10 phases and BattlePhase consumer audit relies on grep+manual",
+        "severity": "HIGH",
+        "severity_score": 650,
+        "why_matters": "The never-assert pattern is correct but enforcement is 'grep verifies' — this is not enforcement. New consumers added later (or string-equality checks like `phase === 'clashing'`) will silently break. Adding 7 new phases simultaneously is a typing minefield.",
+        "location": "Section 3.3 · BattlePhase consumer audit (R11)",
+        "recommendation": "Add an ESLint rule or TypeScript exhaustiveness lint to enforce never-assertion on all BattlePhase switches. Add a unit test that imports every module touching BattlePhase and asserts coverage. Manual grep is not a contract."
+      },
+      {
+        "id": "SKP-004",
+        "concern": "Asset sync via tarball+sha has no rollback for partial failures mid-extraction",
+        "severity": "MEDIUM",
+        "severity_score": 550,
+        "why_matters": "The script does atomic swap per-directory, but if it crashes between art/ and brand/ swaps, repo is in mixed-version state. No transaction. No lock file. CI running sync concurrently with dev would race.",
+        "location": "Section 6.5 · sync-assets.sh",
+        "recommendation": "Stage ALL directories first, then swap all-or-nothing. Add a flock-based lock. Write a version-stamp file (.assets-synced-version) at end of swap so partial state is detectable."
+      },
+      {
+        "id": "SKP-005",
+        "concern": "LOC budget of +7,500 is the only quantitative complexity gate and is easily gamed/missed",
+        "severity": "HIGH",
+        "severity_score": 680,
+        "why_matters": "LOC is a poor proxy for complexity. 2,280 LOC of React + 3,500 LOC of Honeycomb growth = 5,780 plus tests = 'matching 6,000-7,500'. The math has no margin and excludes the dev console (4 tabs, ~600 LOC), Guide merge (~400), sync scripts, assert-lighthouse.mjs, playability checklist E2E specs. Real number will be 9,000-11,000.",
+        "location": "Section 4.4 · Total estimated React surface",
+        "recommendation": "Re-tally including dev console, scripts, E2E specs, manifest tooling, and 30% buffer. If projection exceeds 7,500, raise AC-14 NOW rather than at S0. Or split into two cycles cleanly."
+      },
+      {
+        "id": "SKP-006",
+        "concern": "Garden grace, R3 transcendence, and Forge auto-counter interactions are not specified for collision cases",
+        "severity": "HIGH",
+        "severity_score": 660,
+        "why_matters": "What happens when a Forge card faces a Void card mirroring a Garden card during a Metal Precise condition with chain bonus carryover? The 25+ invariant tests are listed individually but multi-invariant interaction matrix isn't defined. INVARIANTS.md is referenced but not embedded — if the prototype's behavior is itself ambiguous in these corners, compass tests will encode whatever the implementer guesses.",
+        "location": "Section 3.1 · Clash implementation rules",
+        "recommendation": "Before S1, enumerate the 5x5x5 interaction matrix (element × condition × special-card-type) and resolve precedence rules in writing. Add a decision-precedence test class beyond per-rule tests."
+      },
+      {
+        "id": "SKP-007",
+        "concern": "Whisper determinism fix uses a mutable counter that breaks under concurrent Effect fibers",
+        "severity": "MEDIUM",
+        "severity_score": 580,
+        "why_matters": "`let whisperCounter = 0` in match.live.ts module scope is not fiber-safe and not per-match. Two simultaneous matches (test parallelism, multi-tab) share state. Counter is also not persisted to MatchSnapshot in the snippet shown, contradicting the claim that 'Counter persisted in MatchSnapshot.whisperCounter so replay reproduces'.",
+        "location": "Section 8.2 · Whisper determinism fix",
+        "recommendation": "Move counter into Ref<MatchSnapshot> as a field. Increment via Ref.update atomically. Reset on begin-match. Add a parallel-match test to verify isolation."
+      },
+      {
+        "id": "SKP-008",
+        "concern": "Sprint plan has no buffer sprint; 7 sequential sprints with hard cross-dependencies",
+        "severity": "HIGH",
+        "severity_score": 670,
+        "why_matters": "S1 ships Match service; S2-S7 all consume it. If S1 has a bug discovered in S4, do we pause S4 or hack-patch? S6 asset extraction is a sprint of its own with external repo creation — what if release tarball is malformed? S7 is doing dev panel + whisper fix + Lighthouse + axe + playability simultaneously, the riskiest combo last.",
+        "location": "Section 10 · Sprint task contracts",
+        "recommendation": "Add a buffer sprint S6.5 or S7.5. Move whisper determinism to S1 (it's substrate-level). Move Lighthouse + axe CI setup to S0 alongside the spike so failures surface early, not at gate."
+      },
+      {
+        "id": "SKP-009",
+        "concern": "Tutorial/Guide merge (Q-SDD-8) collapses two FRs into one but progressive-disclosure UX is underspecified",
+        "severity": "MEDIUM",
+        "severity_score": 520,
+        "why_matters": "'First-match shows teach-by-doing tutorial; subsequent matches show hint-mode' — but OP-5 in §11 admits the actual trigger logic is unresolved. This is a UX-critical interaction sitting in 'open implementation questions' AFTER being declared a Phase 3 resolved decision. Either it's resolved or it isn't.",
+        "location": "Section 2.3 Q-SDD-8 vs Section 11 OP-5",
+        "recommendation": "Resolve OP-5 before S6 starts. Document the exact state machine: (post-quiz first-match → tutorial overlay; lock-in #2+ → hint-mode; explicit settings re-trigger). Otherwise S6 will design this from scratch under deadline pressure."
+      },
+      {
+        "id": "SKP-010",
+        "concern": "Asset library extraction at S6 is too late and creates a giant late-cycle risk concentration",
+        "severity": "HIGH",
+        "severity_score": 690,
+        "why_matters": "S2-S5 develop against 'local copies still' of assets. S6 swaps to synced assets. If the manifest format, sha verification, or atomic swap reveals issues, you've already built 4 sprints of UI against the wrong asset paths. Path conventions ('public/art/cards/...') must be IDENTICAL between local copies and synced, but this isn't asserted anywhere. PRD D10 said S6 not S1 — but the sync mechanism could have been validated standalone at S0.",
+        "location": "Section 6 · Asset extraction at S6",
+        "recommendation": "At S0, validate the sync-assets.sh against a TEST tarball (even of 1 file) to prove the contract works. Lock asset path conventions in S1 and add a CI check that compass-local asset paths match purupuru-assets manifest paths. Don't discover the contract is wrong at S6."
+      }
+    ],
+    "summary": "10 concerns identified, 0 CRITICAL, 6 HIGH, 4 MEDIUM. Primary risk themes: (1) statistical/flaky test design in behavioral fingerprints and Lighthouse, (2) late-cycle concentration of risk at S6/S7 (asset extraction + audit gates), (3) LOC budget likely undercounted by 20-40%, (4) underspecified interaction matrices for clash invariants and Guide progressive disclosure, (5) enforcement-by-grep patterns that don't actually enforce."
+  }
+}

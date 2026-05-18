@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config"
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -9,11 +9,6 @@ export default defineConfig({
       "packages/*/src/**/*.{test,spec}.{ts,tsx}",
       "packages/*/__tests__/**/*.{test,spec}.{ts,tsx}",
     ],
-    exclude: [
-      "node_modules/**",
-      "**/.claude/**",
-      "**/programs/**",
-      "**/.next/**",
-    ],
+    exclude: ["node_modules/**", "**/.claude/**", "**/programs/**", "**/.next/**"],
   },
-})
+});

@@ -26,7 +26,7 @@ import {
   type WalletBadge,
   type WalletProfile,
   type WalletSignals,
-} from "../../../lib/score/index"
+} from "../../../lib/score/index";
 
 export type {
   ScoreElement,
@@ -36,7 +36,7 @@ export type {
   WalletBadge,
   WalletProfile,
   WalletSignals,
-}
+};
 
 // ── lowercase ↔ uppercase Element translation ─────────────────────────
 //
@@ -49,34 +49,34 @@ export const scoreElementToCanonical = (
 ): "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER" => {
   switch (e) {
     case "wood":
-      return "WOOD"
+      return "WOOD";
     case "fire":
-      return "FIRE"
+      return "FIRE";
     case "earth":
-      return "EARTH"
+      return "EARTH";
     case "metal":
-      return "METAL"
+      return "METAL";
     case "water":
-      return "WATER"
+      return "WATER";
   }
-}
+};
 
 export const canonicalToScoreElement = (
   e: "WOOD" | "FIRE" | "EARTH" | "METAL" | "WATER",
 ): ScoreElement => {
   switch (e) {
     case "WOOD":
-      return "wood"
+      return "wood";
     case "FIRE":
-      return "fire"
+      return "fire";
     case "EARTH":
-      return "earth"
+      return "earth";
     case "METAL":
-      return "metal"
+      return "metal";
     case "WATER":
-      return "water"
+      return "water";
   }
-}
+};
 
 // ── HTTP adapter for real score-puru API ──────────────────────────────
 //
@@ -84,56 +84,56 @@ export const canonicalToScoreElement = (
 // SDD r2 §7.1 stretch · v0 stretch only (gates on SCORE_API_URL env)
 
 interface RealAdapterConfig {
-  apiUrl: string
-  apiKey?: string
+  apiUrl: string;
+  apiKey?: string;
 }
 
 const buildRealAdapter = (config: RealAdapterConfig): ScoreReadAdapter => {
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = {};
   if (config.apiKey) {
-    headers["Authorization"] = `Bearer ${config.apiKey}`
+    headers["Authorization"] = `Bearer ${config.apiKey}`;
   }
 
   const fetchJson = async <T>(path: string): Promise<T> => {
-    const res = await fetch(`${config.apiUrl}${path}`, { headers })
+    const res = await fetch(`${config.apiUrl}${path}`, { headers });
     if (!res.ok) {
-      throw new Error(`Score API error: ${res.status} ${path}`)
+      throw new Error(`Score API error: ${res.status} ${path}`);
     }
-    return res.json() as Promise<T>
-  }
+    return res.json() as Promise<T>;
+  };
 
   return {
     async getWalletProfile(address) {
       try {
-        return await fetchJson<WalletProfile | null>(`/wallet/${address}`)
+        return await fetchJson<WalletProfile | null>(`/wallet/${address}`);
       } catch {
         // graceful fallback to mock on transient API errors
-        return mockScoreAdapter.getWalletProfile(address)
+        return mockScoreAdapter.getWalletProfile(address);
       }
     },
     async getWalletBadges(address) {
       try {
-        return await fetchJson<WalletBadge[]>(`/wallet/${address}/badges`)
+        return await fetchJson<WalletBadge[]>(`/wallet/${address}/badges`);
       } catch {
-        return mockScoreAdapter.getWalletBadges(address)
+        return mockScoreAdapter.getWalletBadges(address);
       }
     },
     async getWalletSignals(address) {
       try {
-        return await fetchJson<WalletSignals | null>(`/wallet/${address}/signals`)
+        return await fetchJson<WalletSignals | null>(`/wallet/${address}/signals`);
       } catch {
-        return mockScoreAdapter.getWalletSignals(address)
+        return mockScoreAdapter.getWalletSignals(address);
       }
     },
     async getElementDistribution() {
       try {
-        return await fetchJson<ElementDistribution>(`/ecosystem/elements`)
+        return await fetchJson<ElementDistribution>(`/ecosystem/elements`);
       } catch {
-        return mockScoreAdapter.getElementDistribution()
+        return mockScoreAdapter.getElementDistribution();
       }
     },
-  }
-}
+  };
+};
 
 // ── Hybrid resolver ───────────────────────────────────────────────────
 //
@@ -144,24 +144,24 @@ const buildRealAdapter = (config: RealAdapterConfig): ScoreReadAdapter => {
 // Loose type · accepts NodeJS.ProcessEnv (any Record<string, string|undefined>)
 // while still hinting the two keys we actually read.
 export type ResolveScoreAdapterEnv = Record<string, string | undefined> & {
-  SCORE_API_URL?: string | undefined
-  SCORE_API_KEY?: string | undefined
-}
+  SCORE_API_URL?: string | undefined;
+  SCORE_API_KEY?: string | undefined;
+};
 
 export const resolveScoreAdapter = (
   env: ResolveScoreAdapterEnv = process.env as ResolveScoreAdapterEnv,
 ): ScoreReadAdapter => {
-  const apiUrl = env.SCORE_API_URL
+  const apiUrl = env.SCORE_API_URL;
   if (apiUrl && apiUrl.length > 0) {
     return buildRealAdapter({
       apiUrl,
       apiKey: env.SCORE_API_KEY,
-    })
+    });
   }
-  return mockScoreAdapter
-}
+  return mockScoreAdapter;
+};
 
 // Default export · uses ambient process.env at first call.
 // Consumers: `const score = scoreAdapter` for default behavior.
 // For test-time injection: `const score = resolveScoreAdapter({ SCORE_API_URL: "..." })`.
-export const scoreAdapter: ScoreReadAdapter = resolveScoreAdapter()
+export const scoreAdapter: ScoreReadAdapter = resolveScoreAdapter();

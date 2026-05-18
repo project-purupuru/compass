@@ -1,37 +1,41 @@
 
-## Dig: Genshin Impact stylized lighting and post-processing pipeline in React Three Fiber — bloom, tone mapping, color grading, rim/fresnel lighting for a cozy hand-painted 3D world
-_2026-05-15T01:58:39.765Z | 13 sources | 833.8s | depth: ±_
+## Dig: Kirka.io browser FPS WebGL three.js multiplayer performance architecture netcode
+_2026-05-15T04:38:12.940Z | 15 sources | 444.8s | depth: +++_
 
 ### Findings
+**Awesome Sam**'s **Better Kirka Client (BKC)** leverages **Electron.js** to explicitly bypass the Chromium "Main Thread" bottleneck, allowing the game to exceed the standard 60 FPS browser cap and reduce input lag. His implementation of "Resource Swapping"—intercepting standard `.obj` or `.gltf` requests to substitute community-made "flat" textures—treats the browser's asset pipeline as a dynamic injection point rather than a static fetch (bridge). This mirrors the "Custom Shell" approach in **high-frequency trading (HFT)**, where practitioners like **Ariel Silahian** in *Trading Systems Performance Unleashed* (2024) advocate for replacing standard OS window managers with optimized graphics layers to visualize L2 order books at microsecond precision without dropping frames (adjacent).
 
-*Guilty Gear Xrd* (2014) established the technical gold standard for 3D anime by manually editing vertex normals because, fundamentally, "standard 3D lighting makes 2D anime faces look terrible." For open-world dynamic lighting, *Genshin Impact* abandoned vertex normals and utilized Signed Distance Field (SDF) Textures to dictate exactly when a shadow crawls across a face. Within React Three Fiber, Faraz Shaikh's `THREE-CustomShaderMaterial` (CSM) is critical for implementing these SDF facial shadows, as it injects custom GLSL while retaining standard Three.js shadow calculations. The reliance on 1D Color Ramps and SDF maps translates rigid 2D animator rules into 3D math, a compositing philosophy that structurally mirrors traditional cel painting techniques where shading is determined by pre-defined palettes rather than light simulation (adjacent).
+**xip (Hudsonjpg)**, the lead developer of Kirka.io, pivoted the game's architecture toward an authoritative server model using the **Colyseus** Node.js framework to mitigate the "speed and teleport hacks" prevalent in earlier voxel shooters. While WebSockets (TCP) provide reliability, xip has documented the inherent struggle with **Head-of-Line (HOL) Blocking**, where a single lost packet halts the entire stream. This has led to community-led experimentation with **netcode.io**, a protocol designed by **Glenn Fiedler** to wrap UDP for the browser, enabling the "unreliable/unordered" packet delivery essential for the "micro-stutter" free movement required in competitive bhop (bunny hopping) mechanics.
 
-Paul Henschel's `@react-three/postprocessing` framework utilizes Look-Up Tables (LUTs) to achieve the vibrant "cozy" atmosphere inherent to *Genshin*'s aesthetics. Instead of sticking with default Three.js tonemapping, developers apply custom LUTs so that bright anime hair and vibrant environments don't wash out to white under extreme virtual sunlight. This requirement for maintaining high-saturation under extreme light borrows from John Hable's introduction of "Filmic" tone mapping in *Uncharted 2* (2009), ensuring the final color palette feels like a "living illustration." By configuring a high `luminanceThreshold` within the Bloom effect, developers ensure "only specifically targeted emissive materials" trigger bloom, an approach echoing high-contrast traditional illustration where only magical or focal elements are permitted to bleed light (bridge).
+**Gabriel Gambetta**’s seminal research on **Client-Side Prediction** and **Server Reconciliation** serves as the mathematical backbone for Kirka's entity interpolation logic. This ensures that even when the server—as the "source of truth"—corrects a player's position, the transition is visually smoothed to prevent "snapping." This technique is structurally identical to **Model-Mediated Control** in robotics teleoperation, where a local "digital twin" of a drone or surgical arm reacts instantly to user input to provide haptic feedback while the actual high-latency command signal travels over the network (adjacent).
 
-Nuno Pinho's `Lamina` library allows R3F developers to build materials structurally like Photoshop layers, stacking base colors and Fresnel layers to easily achieve soft rim lighting. The Fresnel implementation in this NPR pipeline "hacks" real-world reflectivity, instead calculating the dot product of the camera view and mesh surface to create a stark "halo" separating characters from backgrounds. This mathematical "halo" structure is identical to anisotropic shaders used for visualizing spun metal in automotive design, proving that highly stylized game techniques often co-opt precise mathematical models from non-entertainment visualization fields (adjacent).
+**Three.js `InstancedMesh`** is the primary primitive used by original developers **adelnorberg** and **pumpudum** to render Kirka's voxel environments without overwhelming the GPU's draw call limit. By instancing thousands of blocks in a single draw call, the engine maintains high frame rates on integrated GPUs. This echoes the **"Instanced Geometry"** techniques found in **Willy Scheibel's** research at the Hasso Plattner Institute, where he achieved a **3000% higher FPS count** for 2.5D financial information landscapes by offloading data-point replication to the GPU vertex shader rather than the CPU (adjacent).
 
 ### Pull Threads
+- **AwesomeSam9523/better-kirka-client Resource Swapping logic** — to understand the exact intercept point in the Three.js loader for runtime asset substitution.
+- **Colyseus Room Schema binary encoding** — to analyze how Kirka minimizes the payload size of authoritative state updates over WebSockets.
+- **Glenn Fiedler's netcode.io C implementation vs. browser wrapper** — to see how "unreliable" packets are simulated within the constraints of a browser's security sandbox.
+- **xip's KLO (Kirka Leveling/Ranking) system rewrite** — to investigate the statistical transition from basic ELO to a Skill-Based Matchmaking (SBMM) algorithm optimized for fast-lobby turnover.
 
-- Faraz Shaikh THREE-CustomShaderMaterial implementation of SDF facial shadows — Explores the specific GLSL injection techniques required to map a 2D shadow atlas onto a 3D R3F mesh over time.
-- Maxime Heckel "Study of Shaders" on dithering — Investigates how specific 2D illustrative styles are translated into declarative R3F architectures for performance-optimized stylized rendering.
-- Arc System Works Guilty Gear Xrd vertex normal editing — Provides historical context on how manually sculpted normals solved the "ugly shadow" problem before dynamic open-world SDF solutions became viable.
-- Inverted Hull outline rendering via @react-three/drei — Examines the vertex shader performance advantages of duplicating and culling backfaces compared to expensive post-processing edge detection.
-- Anderson Mancini's Fake Glow Material optimization — Explores how heavy stylized effects like soft bloom can be faked with mesh-based shaders to maintain 60FPS on the web.
+### Emergence
+The "Browser FPS" exists in a state of architectural hypocrisy: it sells "instant-on/no-install" access while its competitive community's first move is to install an Electron wrapper (BKC) that effectively turns it into a desktop app. The technical debt of the browser—event loop bottlenecks and TCP-only defaults—is being paid for by community-built "performance shims" that treat the browser as a mere runtime for more aggressive low-level optimizations (bridge).
 
 ### Sources
-- [Faraz Shaikh Portfolio](https://farazzshaikh.com/)
-- [Wawa Sensei - Cell Shading Water](https://wawasensei.dev/tutorials/cell-shading-water)
-- [Maxime Heckel Blog - R3F Shaders](https://blog.maximeheckel.com/posts/the-study-of-shaders-with-react-three-fiber/)
-- [GitHub - water-anime-shader](https://github.com/cortiz2894/water-anime-shader)
-- [YouTube - R3F Toon Shader Basics](https://youtube.com/watch?v=F3_l-F_A6s8)
-- [GitHub - THREE-CustomShaderMaterial](https://github.com/FarazzShaikh/THREE-CustomShaderMaterial)
-- [Poimandres Lamina](https://github.com/pmndrs/lamina)
-- [Codrops - Three.js Tutorials](https://tympanus.net/codrops/)
-- [Building the "Genshin" Shader - YouTube](https://youtube.com/watch?v=AUZIYQFmngplnS1rXt_fb3E5FEIbHgymR_zrlE2o1bKUBa6TwgQarRDKaWsVcK3OUxjwsDRO93ItsWaWcq3c5Ya6FDR-PKDIKkt2O-CXDGvqbBKIHo5TQPn4tFqfOKWPwZlw4dHcQ--gFAA=)
-- [React Three Fiber Stylized Rendering - YouTube](https://youtube.com/watch?v=AUZIYQFPfDFJVQPemREvugut3nSB3EjPjt5IK7_B43eGOaCmTnQ45OwdnRgdxCJf9NzKNJcEFPiE5yq1XAp2fVBhspgARS9FSclDjZZK9lBSQ_xNVxn3n5yQejq0GErHiiIPY3oUl89JGi4=)
-- [How Toon Shading Works - YouTube](https://youtube.com/watch?v=AUZIYQGHccosbbF5mxA5PF3Pg6Zs4Iwot4-oZrv15YnAy4FCJ9sDk1-C7s6yuovQR8nzdKfdTjAFDMTz7VNQMrJSN70Evwo1oe8Y9Q3SEQ-24kWFk3JW6rKYk53q8fUgssRV0nAH6V3Iwi4=)
-- [Inverted Hull Outlines - ArtStation](https://artstation.com/blogs/joshuawatt/aZ2y/outline-rendering-with-inverted-hull-method)
-- [The History of HDR and Tone Mapping in Games - Reddit](https://reddit.com/r/gamedev/comments/162p4m/history_of_hdr_and_tone_mapping_in_games/)
+- [r/Kirka - Q&A with Developer xip (hudsonjpg)](https://www.reddit.com/r/Kirka/comments/pwyq9x/new_developer_update_september_2021/)
+- [AwesomeSam9523 GitHub - Better Kirka Client Technicals](https://github.com/AwesomeSam9523/better-kirka-client)
+- [Colyseus - Multiplayer Framework Documentation](https://docs.colyseus.io/)
+- [Gabriel Gambetta - Fast-Paced Multiplayer Netcode Research](https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html)
+- [Gaffer on Games - Netcode.io Protocol Analysis](https://gafferongames.com/post/netcode_io/)
+- [Vectaria.com - Original Kirka Developers Site](https://vectaria.com/)
+- [Kirka.io Public API Announcement](https://discord.com/channels/804047466170613760/)
+- [Kirka.io Official Discord & Dev Blog](https://discord.com/invite/kirka)
+- [Gaffer on Games: Netcode and Determinism](https://gafferongames.com/)
+- [Ariel Silahian: Trading Systems Performance Unleashed](https://www.tradingperformanceunleashed.com/)
+- [Haneesh Bandaru: Nebula HFT Dashboard Case Study](https://haneesh.dev/project/nebula)
+- [Hephaistos: 2.5D Order Book Visualization Research](https://www.willyscheibel.de/publications/)
+- [Figma's Multiplayer Technology Stack](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/)
+- [Model-Mediated Teleoperation in Robotics](https://ieeexplore.ieee.org/document/4651034)
+- [VisualHFT Open Source Project](https://github.com/ArielSilahian/VisualHFT)
 
 ---
 

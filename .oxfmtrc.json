@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "**/*.md",
+    "**/*.mdx",
+    ".next/**",
+    ".next.OLD*/**",
+    "dist/**",
+    "build/**",
+    "programs/**",
+    "packages/*/dist/**",
+    ".vercel/**",
+    ".claude/**",
+    "grimoires/**",
+    "tests/fixtures/**",
+    "public/**",
+    "*.yaml",
+    "*.yml",
+    "*.svg",
+    "*.png",
+    "*.webp",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "tsconfig.tsbuildinfo"
+  ]
+}

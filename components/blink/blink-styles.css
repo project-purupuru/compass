@@ -124,7 +124,7 @@
    * is the one override that bypasses the cascade by design (operator's
    * landing page ships the same canonical contrast: dark ink on honey). */
   --blink-text-button: oklch(0.18 0.025 80) !important;
-  --blink-text-button-disabled: oklch(0.40 0.020 80) !important;
+  --blink-text-button-disabled: oklch(0.4 0.02 80) !important;
   --blink-text-button-success: var(--puru-wood-dim) !important;
 
   /* brand accent · honey · echoes the CTA */
@@ -135,7 +135,7 @@
   --blink-icon-warning-hover: var(--puru-honey-base) !important;
   --blink-text-warning: var(--puru-honey-dim) !important;
   --blink-stroke-warning: var(--puru-honey-tint) !important;
-  --blink-transparent-warning: oklch(0.82 0.140 85 / 0.10) !important;
+  --blink-transparent-warning: oklch(0.82 0.14 85 / 0.1) !important;
 
   /* strokes · soft warm separators */
   --blink-stroke-primary: var(--puru-cloud-shadow) !important;
@@ -146,7 +146,7 @@
    * the honey glow at 22% reads as soft warmth · against light cream-bright
    * (0.96) the same opacity reads as paper-shadow. The token resolves to
    * slightly brighter honey in old-horai which compensates. */
-  --blink-shadow-container: 0 8px 32px -4px oklch(0.82 0.140 85 / 0.22) !important;
+  --blink-shadow-container: 0 8px 32px -4px oklch(0.82 0.14 85 / 0.22) !important;
 }
 
 /* World CTA detail · 2px honey-dim border + pill radius on every button.
@@ -164,7 +164,7 @@
 .purupuru-blink-scope .x-light,
 .purupuru-blink-scope .x-dark,
 .purupuru-blink-scope .dial-light {
-  box-shadow: 0 8px 32px -4px oklch(0.82 0.140 85 / 0.22);
+  box-shadow: 0 8px 32px -4px oklch(0.82 0.14 85 / 0.22);
 }
 
 /* Make the icon area corners match the card for a unified look */

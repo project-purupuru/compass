@@ -49,7 +49,20 @@ function unitFor(countryCode: string | undefined): "C" | "F" {
 }
 
 const LEADING_GENERICS = new Set([
-  "rancho", "mount", "mt", "lake", "fort", "ft", "cape", "port", "old", "new", "north", "south", "east", "west",
+  "rancho",
+  "mount",
+  "mt",
+  "lake",
+  "fort",
+  "ft",
+  "cape",
+  "port",
+  "old",
+  "new",
+  "north",
+  "south",
+  "east",
+  "west",
 ]);
 const TRAILING_GENERICS = new Set(["city", "town", "village"]);
 
@@ -246,7 +259,7 @@ function deriveCosmicIntensity(
     const t = Date.now() / 1000;
     return clamp(0.18 + 0.08 * Math.sin(t / 47), 0.12, 0.32);
   }
-  const uv = uvIndex == null ? 4 : uvIndex;
+  const uv = uvIndex === null || uvIndex === undefined ? 4 : uvIndex;
   const sun = clamp(uv / 10, 0, 1);
   const dampen = 1 - clamp(cloudCoverPct, 0, 100) / 100 / 1.6;
   return Math.round(clamp(sun * dampen + 0.15, 0.1, 1) * 100) / 100;
@@ -276,7 +289,12 @@ function buildState(loc: ResolvedLocation, om: OpenMeteoResponse, unit: "C" | "F
     amplificationFactor: Math.round((0.85 + cosmic * 0.3) * 100) / 100,
     observed_at: c.time ? new Date(c.time).toISOString() : new Date().toISOString(),
     location: loc.name,
-    source: loc.via === "browser" ? "open-meteo · here" : loc.via === "ip" ? "open-meteo · ip" : "open-meteo · default",
+    source:
+      loc.via === "browser"
+        ? "open-meteo · here"
+        : loc.via === "ip"
+          ? "open-meteo · ip"
+          : "open-meteo · default",
     sunrise,
     sunset,
     is_night: deriveIsNight(Date.now(), sunrise, sunset),

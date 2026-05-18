@@ -11,11 +11,7 @@ import { ELEMENT_KANJI } from "@/lib/domain/element";
 // to-right as wood → fire → earth → metal → water → (wood).
 const DISPLAY_ORDER: readonly Element[] = ["wood", "fire", "earth", "metal", "water"] as const;
 
-export function KpiStrip({
-  distribution,
-}: {
-  distribution: Record<Element, number>;
-}) {
+export function KpiStrip({ distribution }: { distribution: Record<Element, number> }) {
   const leader = useMemo(() => {
     let best: Element = "wood";
     let bestVal = -Infinity;
@@ -129,10 +125,8 @@ function Stat({
         className="pointer-events-none absolute -right-8 top-1/2 -translate-y-1/2 select-none font-puru-display text-[140px] leading-none text-puru-ink-base opacity-[0.09] transition-[color,opacity] duration-700 ease-out"
         style={{
           ...iconStyle,
-          maskImage:
-            "linear-gradient(to left, transparent 0%, black 45%, black 100%)",
-          WebkitMaskImage:
-            "linear-gradient(to left, transparent 0%, black 45%, black 100%)",
+          maskImage: "linear-gradient(to left, transparent 0%, black 45%, black 100%)",
+          WebkitMaskImage: "linear-gradient(to left, transparent 0%, black 45%, black 100%)",
         }}
       >
         {icon}

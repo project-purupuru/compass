@@ -41,34 +41,12 @@ Prefer `Match` for `/battle-v2` lifecycle work. Treat `Battle` as the older sele
   ban to `lib/world/` so the world substrate cannot absorb Honeycomb.
 - Add new `MatchPhase` or `MatchCommand` values in `match.port.ts`, `match.reducer.ts` or `match.live.ts`, and the phase tests together.
 - Keep dev-only mutation behind `dev:*` commands and the `__PURU_DEV__.enabled` gate.
-- Service filenames are kebab-case and suffix-typed: `foo-bar.port.ts`,
-  `foo-bar.live.ts`, and `foo-bar.mock.ts`; live layer exports are named
-  `FooBarLive` and are composed in `lib/runtime/runtime.ts`.
-- Port pairing is universal inside `lib/honeycomb`: every `*.port.ts` must
-  have matching `*.live.ts` and `*.mock.ts` adapters, and every adapter must
-  have its matching port. Empty placeholder services should not be committed.
 - When adding a new Effect service, create the `port/live/mock` trio and wire the live layer once in `lib/runtime/runtime.ts`.
-- The import scanner in `scripts/check-honeycomb-discipline.sh` is a
-  zero-dependency lexical guard: it strips comments, reads static import/export,
-  `require`, and dynamic `import()` specifiers, and intentionally avoids a
-  TypeScript parser during build bootstrap. If Honeycomb starts needing syntax
-  outside the selftest fixtures, graduate the guard to an AST-backed rule.
-  Non-static `import()` and `require()` expressions are intentionally banned in
-  Honeycomb files; use explicit module imports so boundary checks can read the
-  dependency.
-- `pnpm build` runs the Honeycomb guard through `prebuild`. Use
-  `SKIP_HONEYCOMB_GUARD=1` only for an emergency hotfix when the guard itself is
-  broken, then restore the guard in the follow-up PR. Use
-  `HONEYCOMB_GUARD_MODE=warn` only when a hotfix must keep the guard visible
-  without blocking the build; the default mode is blocking.
 
 ## Checks
 
 ```sh
 bash scripts/check-honeycomb-discipline.sh
-bash scripts/check-honeycomb-discipline.selftest.sh
-bash scripts/check-world-discipline.sh
-bash scripts/check-world-discipline.selftest.sh
 pnpm vitest run lib/honeycomb
 pnpm typecheck
 ```

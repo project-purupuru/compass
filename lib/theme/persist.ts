@@ -32,9 +32,7 @@ export function persistResolvedTheme(opts: {
   // cookie can't be rewritten over a downgraded http proxy hop —
   // ALEXANDER craft-review hardening, no behavior change otherwise.
   const secureFlag =
-    typeof location !== "undefined" && location.protocol === "https:"
-      ? ["Secure"]
-      : [];
+    typeof location !== "undefined" && location.protocol === "https:" ? ["Secure"] : [];
   document.cookie = [
     `${THEME_COOKIE}=${encodeURIComponent(theme)}`,
     `Path=/`,

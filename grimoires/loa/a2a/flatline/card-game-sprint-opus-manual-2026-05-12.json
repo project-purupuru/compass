@@ -1,0 +1,187 @@
+{
+  "phase": "sprint",
+  "document": "grimoires/loa/sprint.md",
+  "timestamp": "2026-05-12T18:28:02Z",
+  "method": "manual-synthesis (orchestrator bypass)",
+  "cost_usd_total": 0.3173,
+  "review": {
+    "improvements": [
+      {
+        "id": "IMP-001",
+        "description": "Add explicit rollback/abort procedures for each sprint when exit criteria fail mid-sprint",
+        "rationale": "The plan defines GO/CONDITIONAL/NO-GO only at S0, but S1-S7 have hard dependencies and LOC budgets that could blow up mid-sprint. Without abort criteria (e.g., 'if LOC delta exceeds 1.5x budget by task N, halt and pair-point'), the team will discover failures only at sprint close, wasting days. S1 especially (largest at +2,400 LOC, 12 tasks) needs mid-sprint checkpoints.",
+        "location": "All sprints; especially S1 exit criteria",
+        "priority": "HIGH",
+        "confidence": 0.85
+      },
+      {
+        "id": "IMP-002",
+        "description": "Specify the parallelization mechanism for S3 ‖ S4 (separate branches, merge order, conflict resolution)",
+        "rationale": "Critical path shows S3 ‖ S4 parallel, but both branch off S2 and both modify components in `app/battle/_scene/`. ArenaSpeakers (S4) evolves WhisperBubble which BattleScene v2 (S2) references; ElementQuiz (S3) is rendered by BattleScene v2's phase switch. Without merge-order rules or a designated integration branch, parallel work will create merge conflicts on BattleScene.tsx. Specify: which sprint merges first, who rebases, or use stacked PRs.",
+        "location": "S3 and S4 sprint headers; Cross-sprint considerations",
+        "priority": "HIGH",
+        "confidence": 0.88
+      },
+      {
+        "id": "IMP-003",
+        "description": "Define quantitative pass/fail criteria for the S1 'Honeycomb pattern locked' operator pair-point",
+        "rationale": "S1 close has an operator pair-point that locks the pattern for S2-S5, but the criteria are only 'if pattern feels off, raise blockers'. This is subjective. Define concrete checks: e.g., 'port file ≤ X LOC per service', 'test-to-impl ratio ≥ Y', 'no Layer.provide leaks outside runtime.ts'. Without this, S2-S5 may inherit a flawed pattern that's expensive to retrofit.",
+        "location": "S1 sprint exit criteria · operator pair-point",
+        "priority": "HIGH",
+        "confidence": 0.82
+      },
+      {
+        "id": "IMP-004",
+        "description": "Add explicit handling for S0 NO-GO / CONDITIONAL outcomes",
+        "rationale": "S0 may yield NO-GO or CONDITIONAL, but the plan only states 'do NOT enter S1' for non-GO. What happens next? Is the cycle aborted, re-scoped, or does S0 re-run with a different approach? Without a defined branch path, a NO-GO result creates planning paralysis. Add: 'NO-GO → cycle re-scope via new /simstim PLANNING; CONDITIONAL → specific remediation tasks added to S1 prelude'.",
+        "location": "S0 sprint exit criteria",
+        "priority": "HIGH",
+        "confidence": 0.83
+      },
+      {
+        "id": "IMP-005",
+        "description": "Specify Playwright leak-detection methodology for the S2 `useMatch()` 10x mount/unmount test",
+        "rationale": "S2 acceptance includes 'Playwright opens/closes /battle 10× · no memory growth' but doesn't specify HOW to detect memory growth (chrome heap snapshots? performance.memory API? threshold in MB?). 'No memory growth' is unfalsifiable without metric + threshold. Specify e.g., 'JS heap delta < 5MB after 10 cycles via CDP HeapSnapshot diff'.",
+        "location": "S2 sprint exit criteria · T2.4",
+        "priority": "MEDIUM",
+        "confidence": 0.78
+      },
+      {
+        "id": "IMP-006",
+        "description": "Add an explicit S5.5 re-planning checkpoint for the case where COMPRESS option fires",
+        "rationale": "The firing matrix shows COMPRESS at +4,001 to +5,300 = '1-2 day polish/test pass', but doesn't specify what gets cut vs. what gets done. If accumulated feedback contains 8 HIGH-priority items and only 1-2 days exist, the team needs a triage protocol. Specify ranking heuristic (e.g., 'risk-weighted: items blocking S6 first, then a11y/perf, then polish').",
+        "location": "S5.5 firing decision matrix",
+        "priority": "MEDIUM",
+        "confidence": 0.75
+      },
+      {
+        "id": "IMP-007",
+        "description": "Define the contract between S0 T0.5 asset-sync proof and S6 T6.3 full sync (what must transfer, what may differ)",
+        "rationale": "S0 proves a 1-file sync against a test-tarball; S6 runs the real sync against v1.0.0. If the script materially changes between S0 and S6 (e.g., adds manifest validation, atomic swap semantics differ), S0's proof value is diluted. Specify: 'S0 script must contain the production sha256 + atomic swap codepath; S6 only adds CI wiring and version-pinning, not core sync logic'.",
+        "location": "S0 T0.5 acceptance; S6 T6.3",
+        "priority": "MEDIUM",
+        "confidence": 0.72
+      },
+      {
+        "id": "IMP-008",
+        "description": "Add a contingency plan for the ESLint custom rule (T1.8 Option A) exceeding its 1-day fallback threshold",
+        "rationale": "T1.8 says 'Option A preferred ~2-3h; Option B fallback ~1h if A turns out to be >1 day'. But 'turns out to be >1 day' is detected only after the day is spent. Specify a decision point: 'after 4 hours on Option A, if not type-checking against test fixtures cleanly, switch to Option B'. Otherwise, the team may sunk-cost into Option A for 2 days.",
+        "location": "S1 T1.8",
+        "priority": "MEDIUM",
+        "confidence": 0.76
+      },
+      {
+        "id": "IMP-009",
+        "description": "Specify how visual parity QA (T5.3) deltas are triaged — what's a blocker vs. follow-up ticket",
+        "rationale": "T5.3 says 'Tickets file for any unintentional deltas needing fix-up' but doesn't say which deltas block S5 close vs. defer to S5.5 or post-cycle. Without severity criteria (e.g., 'visual regression on element-tint = blocker; subtle motion-easing difference = follow-up'), the operator faces an open-ended judgment call at S5 close.",
+        "location": "S5 T5.3 + sprint exit criteria",
+        "priority": "MEDIUM",
+        "confidence": 0.7
+      },
+      {
+        "id": "IMP-010",
+        "description": "Add an asset-version pinning policy for compass when purupuru-assets gets a v1.0.1+ patch mid-cycle",
+        "rationale": "S6 creates purupuru-assets v1.0.0 and pins compass via `.assets-version`. The CONTRIBUTING.md (T6.7) covers asset-update protocol, but the plan doesn't say what compass does if Gumi publishes v1.0.1 between S6 and S7. Specify: 'compass stays pinned to v1.0.0 through S7; version bumps deferred to post-cycle unless a fix is required for AC-15/16/17'. Prevents thrash during final audit.",
+        "location": "S6 T6.3 / T6.7; S7 entry conditions",
+        "priority": "LOW",
+        "confidence": 0.68
+      }
+    ],
+    "summary": "10 improvements identified: 4 HIGH, 5 MEDIUM, 1 LOW. Focus areas: mid-sprint failure handling, parallel-branch merge mechanics, subjective gate criteria, and contingency contracts between sprints."
+  },
+  "skeptic": {
+    "concerns": [
+      {
+        "id": "SKP-001",
+        "concern": "LOC budget is a fragile proxy that incentivizes wrong behavior and is likely to be wildly inaccurate",
+        "severity": "HIGH",
+        "severity_score": 720,
+        "why_matters": "The +7,500 LOC budget across 9 sprints relies on a single S0 spike's translation ratio (T0.2/T0.3) extrapolated to the entire port. Svelte→React ratios vary 1.5-4x depending on component type (reactive state, slots, stores). One bad estimate cascades into S5.5 firing or scope cuts. LOC also doesn't measure complexity — a 50-line custom ESLint rule (T1.8) can take a day. Worse, the budget creates pressure to under-comment, skip tests, or inline rather than extract.",
+        "location": "Header LOC budget + AC-14 + per-sprint sub-budgets",
+        "recommendation": "Treat LOC as a tracking signal not a gate. Replace with: time-budget gates (already partially present in OP-1 table) + functional acceptance. Reserve S5.5 fire decision on time/feedback aggregate, not LOC."
+      },
+      {
+        "id": "SKP-002",
+        "concern": "S1 is severely overloaded (12 tasks, ~36+ hours estimated, 5-6 day timebox)",
+        "severity": "CRITICAL",
+        "severity_score": 850,
+        "why_matters": "S1 contains: 3 port/live/mock trios (clash, opponent, match), 4 test suites including statistical Wilson-bound fingerprinting, a custom ESLint rule, SSR-safe storage, CI workflow setup, schema authoring, and geometry module. Any single delay (especially T1.5 statistical fingerprint, T1.8 ESLint rule) cascades. The operator pair-point at S1 close requires Honeycomb pattern lock — if S1 slips, S2-S5 cannot start in parallel mode. This is the single biggest risk in the plan.",
+        "location": "S1 · Honeycomb growth",
+        "recommendation": "Split S1 into S1a (clash + match + transitions) and S1b (opponent fingerprint + storage + CI infra + ESLint). Or descope T1.8 to Option B fallback by default and T1.5 Wilson rigor to a follow-up."
+      },
+      {
+        "id": "SKP-003",
+        "concern": "Custom ESLint rule (T1.8 Option A) is a classic time-sink trap mislabeled as 2-3h",
+        "severity": "HIGH",
+        "severity_score": 680,
+        "why_matters": "Writing a custom ESLint rule that correctly traverses TypeScript AST, identifies switch statements over a specific type alias (BattlePhase), checks for exhaustive never-assert default — and works with the existing eslint config / typescript-eslint parser setup — routinely takes a full day for someone unfamiliar with ESTree/TSESTree APIs. The fallback (Option B fuzz test) is wisely included but operator may stubbornly pursue Option A.",
+        "location": "S1 T1.8",
+        "recommendation": "Default to Option B. Make Option A explicitly out-of-scope unless someone has prior ESLint rule authorship experience. Or use ts-pattern's exhaustive() helper to enforce at type level instead of lint level."
+      },
+      {
+        "id": "SKP-004",
+        "concern": "Asset extraction (S6) creates external repo dependency and release coupling with no rollback plan",
+        "severity": "HIGH",
+        "severity_score": 700,
+        "why_matters": "S6 creates purupuru-assets as a separate GitHub repo with release tags, tarballs, sha256 manifests. compass pins via .assets-version. But: what if the assets repo's v1.0.0 release is botched? What if GitHub release downloads fail in CI? What if a contributor force-pushes? The S0 T0.5 test-tarball validates one file, not the full integration. There's no documented rollback to 'just copy files locally like before.' Also unclear who has write access, breaking the auth model.",
+        "location": "S6 + SDD §6.x references",
+        "recommendation": "Add explicit rollback procedure: if asset-sync fails, fall back to committed local snapshot in compass/public/. Document write-access policy. Add CI test that exercises full tarball→sync→verify cycle on a PR, not just dry-run."
+      },
+      {
+        "id": "SKP-005",
+        "concern": "Parallel sprints S3 ‖ S4 assume non-conflicting changes — but both modify BattleScene and runtime",
+        "severity": "MEDIUM",
+        "severity_score": 580,
+        "why_matters": "S3 adds EntryScreen/ElementQuiz which the BattleScene phase switch must route to. S4 evolves WhisperBubble→ArenaSpeakers which BattleScene also references. Both will touch BattleScene.tsx, useMatch consumers, and the runtime. The plan claims they're parallel-eligible but doesn't define merge order or conflict resolution. In practice they'll serialize via rebase pain.",
+        "location": "S3 + S4 sequencing",
+        "recommendation": "Define which sprint owns BattleScene edits (likely S3 since it adds phase routing). S4 components must be designed as drop-in additions. Or just sequence S3→S4 and remove the parallel optimization — saves coordination cost."
+      },
+      {
+        "id": "SKP-006",
+        "concern": "Statistical opponent fingerprint tests (T1.5) will be flaky on CI despite snapshot fixture",
+        "severity": "HIGH",
+        "severity_score": 620,
+        "why_matters": "Wilson lower-bound assertions against generated population stats are deterministic only if the RNG is fully controlled. Sampling N=24 candidates per arrangement, scored via element coefficients, then asserting per-element distributions land within Wilson LB — even with seeded RNG, snapshot fixture mismatches happen when: floating-point order changes across Node versions, V8 sort stability quirks, or any minor refactor invalidates the snapshot. Expect 5-10% CI flake rate.",
+        "location": "S1 T1.5",
+        "recommendation": "Use exact-equality snapshot only; remove Wilson LB statistical assertions from CI gate (move to a separate 'characterization' suite operator runs locally). OR pin Node version exactly and freeze RNG implementation."
+      },
+      {
+        "id": "SKP-007",
+        "concern": "S0 operator pair-point is the only kill-switch — but its criteria (translation tractability) is subjective",
+        "severity": "MEDIUM",
+        "severity_score": 540,
+        "why_matters": "GO/CONDITIONAL/NO-GO at S0 close hinges on 'operator confirmation' of translation tractability and a LOC projection from a single spike. The operator authored the plan and is motivated to GO. Without external review or a concrete NO-GO threshold (e.g., 'if LOC projection >9,000, halt'), this gate is theater. Sunk-cost will dominate.",
+        "location": "S0 T0.6 + sprint exit criteria",
+        "recommendation": "Pre-commit to numeric NO-GO criteria before S0 starts: e.g., LOC projection >9,000 = NO-GO, >8,000 = CONDITIONAL (mandatory descope). Add second reviewer or written sign-off."
+      },
+      {
+        "id": "SKP-008",
+        "concern": "Whisper determinism fix (T7.7) deferred to last sprint, but whispers are emitted from S1 onward",
+        "severity": "MEDIUM",
+        "severity_score": 500,
+        "why_matters": "S1 T1.1 wires 'whisper-on-clash via deterministic seed' into clash.live.ts. S7 T7.7 then fixes whisper determinism by replacing Math.random with a Ref counter. So either (a) whispers are already deterministic in S1 and T7.7 is redundant, or (b) S1 ships non-deterministic whispers and 5 sprints of tests/snapshots bake in nondeterminism. T7.7's test (same seed → same sequence) will require touching MatchSnapshot serialization that other code now depends on.",
+        "location": "S1 T1.1 vs S7 T7.7",
+        "recommendation": "Move whisper determinism into S1 T1.1. There is no good reason to defer fundamental determinism that the Match service contract depends on."
+      },
+      {
+        "id": "SKP-009",
+        "concern": "No defined behavior for localStorage failures beyond 'graceful fallback' — silent data loss risk",
+        "severity": "MEDIUM",
+        "severity_score": 480,
+        "why_matters": "S3 exit criteria says 'localStorage failures gracefully fall back to in-memory only (no crash).' But this means: user completes ElementQuiz, storage write fails (Safari private mode, quota exceeded), they refresh, quiz re-prompts. No telemetry, no user-visible signal. For a game where tutorial-vs-experienced player branching matters, this is a silent UX bug. Also no thought given to schema migration when storage shape evolves.",
+        "location": "S1 T1.9 + S3 T3.3",
+        "recommendation": "Specify storage failure UX: toast/banner when write fails. Add schema version field to stored data with migration path. Add lightweight telemetry for storage-failure rate."
+      },
+      {
+        "id": "SKP-010",
+        "concern": "S7 packs 11 tasks including 3 testing frameworks (Lighthouse, axe, Playwright playability) into a 3-day budget",
+        "severity": "HIGH",
+        "severity_score": 650,
+        "why_matters": "S7 includes: DevConsole + 3 sub-panels (~10h), whisper determinism fix with new tests, Lighthouse CI setup (notoriously flaky on first integration), axe-core E2E across 4 phases, Playwright playability suite covering 12 checks, plus final audit. Standing up Lighthouse CI alone — getting it to run on PR, parsing JSON, asserting thresholds without false positives — is typically a 1-2 day task. Each new test framework has its own dependency hell. 3 days is aggressive by 2x.",
+        "location": "S7 (entire sprint)",
+        "recommendation": "Split: move Lighthouse + axe + playability scaffolding earlier (into S5.5 buffer if it fires, or a dedicated S6.5). S7 stays focused on dev panel relocation + whisper fix + final audit. Or extend S7 budget to 5 days."
+      }
+    ],
+    "summary": "10 concerns identified, 1 CRITICAL (S1 overload), 5 HIGH (LOC proxy, ESLint trap, asset repo coupling, statistical test flakiness, S7 overload), 3 MEDIUM, 0 LOW. The plan is impressively detailed but front-loads risk into S1 and back-loads risk into S7. Recommend splitting S1 and re-balancing S7 before kickoff."
+  }
+}

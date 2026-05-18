@@ -28,3 +28,93 @@
   "current_phase": "unknown",
   "current_task": "unknown"
 }}
+{"event":"compact_recovery","timestamp":"2026-05-12T19:45:22Z","context":{
+  "timestamp": "2026-05-12T19:37:24Z",
+  "project_root": "/Users/zksoju/bonfire/compass",
+  "run_mode": {
+    "active": true,
+    "state": "JACKED_OUT"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}
+{"event":"compact_recovery","timestamp":"2026-05-13T00:14:26Z","context":{
+  "timestamp": "2026-05-12T22:25:07Z",
+  "project_root": "/Users/zksoju/bonfire/compass",
+  "run_mode": {
+    "active": true,
+    "state": "JACKED_OUT"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}
+{"event":"compact_recovery","timestamp":"2026-05-13T01:39:12Z","context":{
+  "timestamp": "2026-05-13T01:34:46Z",
+  "project_root": "/Users/zksoju/bonfire/score-mibera",
+  "run_mode": {
+    "active": true,
+    "state": "JACKED_OUT"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}
+{"event":"compact_recovery","timestamp":"2026-05-14T04:02:41Z","context":{
+  "timestamp": "2026-05-14T03:55:05Z",
+  "project_root": "/Users/zksoju/bonfire/compass",
+  "run_mode": {
+    "active": true,
+    "state": "JACKED_OUT"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}
+{"event":"compact_recovery","timestamp":"2026-05-14T19:02:33Z","context":{
+  "timestamp": "2026-05-14T17:50:05Z",
+  "project_root": "/Users/zksoju/bonfire/compass",
+  "run_mode": {
+    "active": true,
+    "state": "RUNNING"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}
+{"event":"compact_recovery","timestamp":"2026-05-15T01:37:30Z","context":{
+  "timestamp": "2026-05-15T01:32:32Z",
+  "project_root": "/Users/zksoju/bonfire/compass",
+  "run_mode": {
+    "active": true,
+    "state": "JACKED_OUT"
+  },
+  "simstim": {
+    "active": true,
+    "phase": "complete"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}

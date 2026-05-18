@@ -56,13 +56,14 @@ actually tried, not just what someone *said* was tried.
 | ID | Status | Feature | Recurrence |
 |----|--------|---------|------------|
 | [KF-001](#kf-001-bridgebuilder-cross-model-provider-network-failures-non-openai) | RESOLVED 2026-05-10 (Node 20 Happy Eyeballs autoselection-attempt-timeout) | bridgebuilder cross-model dissent | 3 |
-| [KF-002](#kf-002-adversarial-reviewsh-empty-content-on-review-type-prompts-at-scale) | LAYERS-2-AND-3-RESOLVED-STRUCTURAL 2026-05-12 (cycle-103 Sprint 2 T2.2 empirical replay: 0 empty_content / 150 trials at 30K–80K against claude-opus-4.7 via cycle-102 Sprint 4A streaming substrate; bug class did not reproduce). Layer 1 (reasoning-budget exhaustion on small max_tokens) still latent if operator manually misconfigures `max_tokens` below thinking + visible-output sum. | adversarial-review.sh review-type | 5 |
+| [KF-002](#kf-002-adversarial-reviewsh-empty-content-on-review-type-prompts-at-scale) | **RESOLVED-STRUCTURAL 2026-05-15** (cycle-109 Sprint 4 T4.10 closure). Layer 1 (reasoning-budget / large-input class) closed by: (a) loa_cheval.chunking package routes oversized inputs through per-file chunked dispatch with IMP-006 conflict resolution + cross-chunk pass; (b) loa_cheval.streaming.recovery with 3 IMP-014 thresholds (first_token_deadline, empty_content_window, cot_budget) aborts empty/runaway streams with typed exits; (c) MODELINV v1.3 envelope surfaces chunked_review + streaming_recovery telemetry. Layers 2+3 previously resolved cycle-103 Sprint 2 T2.2. Bug class is now structurally impossible across all 3 layers. | adversarial-review.sh review-type | 5 |
 | [KF-003](#kf-003-gpt-55-pro-empty-content-on-27k-input-reasoning-class-prompts) | RESOLVED (model swap) | flatline_protocol code review | 1 |
 | [KF-004](#kf-004-validate_finding-silent-rejection-of-dissenter-payloads) | RESOLVED 2026-05-10 (sidecar dump landed; #814 mitigation shipped) | adversarial-review.sh validation pipeline | ≥4 |
 | [KF-005](#kf-005-beads_rust-021-migration-blocks-task-tracking) | RESOLVED-VIA-WORKAROUND — cycle-105 (2026-05-12) shipped `tools/beads-migration-repair.sh` + `beads-health.sh --repair` + WARN-not-FAIL pre-commit + CI gate. Upstream `beads_rust#290` still OPEN. | beads_rust task tracking | many reproductions + cycle-105 closure |
 | [KF-006](#kf-006-t114-migrate-model-config-v2-schema-rejects-max_output_tokens) | RESOLVED 2026-05-10 (v2 schema modelEntry permits max_output_tokens + max_input_tokens) | T1.14 migrate-model-config v2 schema | every PR since dd54fe9c |
 | [KF-007](#kf-007-red-team-pipeline-hardcoded-single-model-evaluator-vestigial-config) | RESOLVED 2026-05-10 (multi-model evaluator) | red team pipeline hardcoded single-model evaluator | n/a — resolved in same session as discovery |
 | [KF-008](#kf-008-bridgebuilder-google-api-socketerror-on-large-request-bodies) | RESOLVED-architectural-complete — cycle-103 Sprint 1 unification (review-adapter path) + cycle-104 Sprint 3 T3.4 substrate-replay closure 2026-05-12 (4/4 trials clean at 297/302/317/539KB via cheval httpx). | bridgebuilder Google provider | 4 reproductions + 1 final non-reproduction |
+| [KF-010](#kf-010-cheval-delegate-google-adapter-300s-process-timeout-on-concurrent-bb-runs) | RESOLVED 2026-05-16 (sprint-bug-165, issue #921) | bridgebuilder google + anthropic voices / `deriveTimeoutMs` predicate scope | 6 (single batch, 2026-05-16) |
 
 ---
 
@@ -151,7 +152,7 @@ evidence (different machine, different network, different time-of-day).
 
 ## KF-002: adversarial-review.sh empty-content on review-type prompts at scale
 
-**Status**: PARTIALLY-MITIGATED 2026-05-10 (text.format=text shipped for OpenAI; structural opus + connection-lost layers remain) + LAYER-3-RESOLVED-BY-CONSTRUCTION 2026-05-11 (Sprint 4A streaming-transport default eliminates the >60s-wait-for-first-byte failure mode; gate raised from 24K/36K to 200K/180K; see Attempts table 2026-05-11 row and Sprint 4A Resolution note below)
+**Status**: **RESOLVED-STRUCTURAL 2026-05-15** (cycle-109 Sprint 4 T4.10 closure) — Layer 1 (reasoning-budget / large-input class) closed by three composing pieces: (a) `loa_cheval.chunking` package routes oversized inputs through per-file chunked dispatch with IMP-006 conflict resolution + cross-chunk pass; (b) `loa_cheval.streaming.recovery` with 3 IMP-014 thresholds (first_token_deadline, empty_content_window, cot_budget) aborts empty/runaway streams with typed exits; (c) MODELINV v1.3 envelope surfaces `chunked_review` + `streaming_recovery` telemetry. Layers 2+3 previously resolved cycle-103 Sprint 2 T2.2. The bug class is now structurally impossible across all 3 layers. **Prior partial mitigations preserved for history**: PARTIALLY-MITIGATED 2026-05-10 (text.format=text shipped for OpenAI; structural opus + connection-lost layers remained); LAYER-3-RESOLVED-BY-CONSTRUCTION 2026-05-11 (Sprint 4A streaming-transport default eliminated the >60s-wait-for-first-byte failure mode; gate raised from 24K/36K to 200K/180K).
 
 ### Upstream cross-references (added 2026-05-10 during KF-002 deep-dive)
 
@@ -712,6 +713,31 @@ not address.
 When cycle-108 substrate is invoked but `.run/model-invoke.jsonl` has insufficient v1.2 envelope data for the requested strata, the natural close shape is "substrate-validation mode". Do NOT treat DEFERRED classifications as failures — they're the expected outcome until the operator triggers a real-data benchmark (rollout-policy.md §7 trigger conditions). Coverage audit threshold (≥90%) is the canonical readiness check; if it fails, route the cycle to "extend the coverage window" rather than "ship anyway".
 
 When future cycles want to benchmark a NEW dimension (not in cycle-108), reuse the cycle-108 substrate end-to-end (rollup + classifier + harness + stats), supply the new dimension's stratifier rules, and capture the cycle's decision-fork outcome as a fresh `cycle-NNN-baselines-pin-<sha>` Git tag. The pattern is repo-substrate.
+
+---
+
+## KF-010: cheval-delegate google adapter 300s process timeout on concurrent BB runs
+
+**Status**: RESOLVED 2026-05-16 (sprint-bug-165 — issue #921 — `deriveTimeoutMs` predicate extended to cover reasoning-class Anthropic + Google models)
+**Feature**: bridgebuilder multi-model review — `google/gemini-3.1-pro-preview` voice via cheval-delegate subprocess (and `claude-opus-4-7` — see Attempts row 2026-05-16 root-cause finding)
+**Symptom**: Every google voice invocation in a 6-PR concurrent BB sweep returned `cheval-delegate: process exceeded timeout=300000ms (signal=SIGTERM)`. The BB TS layer (`adapters/llm-google.ts` or equivalent) imposes a 300s SIGTERM on the cheval-delegate subprocess. Anthropic + OpenAI voices completed normally (anthropic 80-275s, openai 39-138s on same runs). Consensus scoring proceeds with 2/3 voices but verdict-quality envelope is DEGRADED per NFR-Rel-1. BB does NOT surface the degradation in the GitHub-posted review comment — the comment header lists all 3 INTENDED models without distinguishing which actually returned a verdict. Operators relying on the comment alone cannot tell quality is degraded.
+**First observed**: 2026-05-16 (cycle-110 BB sweep batch 5, run IDs `bridgebuilder-20260516T0721{19,26,33,40,46,53}-*`)
+**Recurrence count**: 6 (single batch, all 6 PRs in the sweep, all hitting exactly the 300s wall — pattern strongly suggests provider-side issue rather than client-side per-call latency variance)
+**Current workaround**: Treat any BB run missing a `google] Complete` log line as DEGRADED → do NOT auto-merge under operator-approval `Verdict quality NOT DEGRADED` clause. Re-run BB sequentially (not concurrent) if convergence is required; or accept 2-voice consensus and route the merge through human review.
+**Upstream issue**: not filed yet — needs investigation to distinguish (a) Google API throttling/slowness on concurrent reqs, (b) cheval google httpx-adapter hang, (c) BB's 300s timeout being too tight for current Gemini response latency.
+**Related visions / lore**: KF-001 (different mechanism — Node 20 Happy Eyeballs at 250ms, resolved), KF-008 (different mechanism — Google SocketError on large bodies, resolved via cheval httpx). This is a NEW failure class: process-level subprocess timeout, not connection-level.
+
+### Attempts
+
+| Date | What we tried | Outcome | Evidence |
+|------|---------------|---------|----------|
+| 2026-05-16 07:21Z | 6 BB invocations launched concurrently with 5s stagger across PRs #804/#885/#912/#913/#914/#917 | DID NOT WORK — all 6 google voices SIGTERM'd at 300s; anthropic+openai succeeded | `/tmp/bb-runs-5/pr-{804,885,912,913,914,917}.log`; GitHub comments timestamped 07:28Z on each PR |
+| 2026-05-16 (root-cause + fix) | Root-cause traced to `.claude/skills/bridgebuilder-review/resources/core/multi-model-pipeline.ts:42-48` — `isReasoningClassOpenAI` predicate only granted the 1_800_000ms budget to OpenAI `gpt-*-pro`; Anthropic Opus + Google Gemini Pro fell into the 300_000ms tier. Direct provider APIs confirmed healthy (Gemini 3.5s on 6-token prompt, 10s on 5KB). Fix: predicate renamed to `isReasoningClass` and extended with anthropic `/opus/i` + google `/^gemini-\d+(\.\d+)?-pro/i` branches. 11 unit tests pin all 3 providers + tier-ladder regressions. | RESOLVED | sprint-bug-165 (bug ID `20260516-i921-e386d6`); issue #921; test file `.claude/skills/bridgebuilder-review/resources/__tests__/multi-model-pipeline-timeout.test.ts` (11/11 pass post-fix; 8/11 pre-fix proving the bug) |
+| 2026-05-17 (post-merge empirical confirmation) | Re-BB on PR #804 (the same PR on the original 2026-05-16 07:21Z failure batch) from `main` after PR #923 merged the fix. 3/3-voice consensus achieved: `claude-opus-4-7` 219272ms, `gpt-5.5-pro` 155332ms, `gemini-3.1-pro-preview` **48526ms** — same PR where google voice previously SIGTERMed at exactly 300_000ms. All three voices well under the 1_800_000ms ceiling; 14 findings (1 consensus, 2 disputed, 0 blocker); total wall 1216s. The gemini drop from 300_000ms SIGTERM → 48526ms complete on the same content is the direct empirical signal the predicate extension restored the substrate. | RESOLVED (empirical) | Run ID `bridgebuilder-20260517T010336-787d`; log `/tmp/bb-kf010-validation.log`; merge commit `551ea15d`; PR #923 |
+
+### Reading guide
+
+When a BB sweep shows uniform `cheval-delegate: process exceeded timeout=300000ms` on the google voice across all PRs, treat as DEGRADED-voice batch-level and refuse auto-merge per the operator-approval doc's `Verdict quality NOT DEGRADED` clause. Don't retry the same batch — investigate the substrate first: (a) check Gemini API status / rate-limit posture, (b) run a single sequential BB and observe wall time, (c) examine cheval google adapter for hang patterns (similar to KF-008's pre-cheval-httpx era). The pattern is suspicious because all 6 hit exactly 300s — concurrent reqs from same key may be queueing server-side and timing out client-side together, not on individual call latency. **Do NOT increase BB's 300s timeout as a workaround** — that hides the underlying provider issue; instead, route batch-mode invocations through sequential queue or accept 2-voice consensus with explicit human gate.
 
 ---
 

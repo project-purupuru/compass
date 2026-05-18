@@ -11,10 +11,8 @@
 //   SOLANA_DEVNET  = solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1
 //   SOLANA_TESTNET = solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3
 
-export const SOLANA_DEVNET_CAIP2 =
-  "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1" as const
-export const SOLANA_MAINNET_CAIP2 =
-  "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp" as const
+export const SOLANA_DEVNET_CAIP2 = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1" as const;
+export const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp" as const;
 
 export const ACTION_CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -25,22 +23,22 @@ export const ACTION_CORS_HEADERS = {
   "X-Action-Version": "2.4",
   "X-Blockchain-Ids": SOLANA_DEVNET_CAIP2, // sprint-3 swaps to mainnet at deploy
   "Content-Type": "application/json",
-} as const
+} as const;
 
 // Resolve the deployment base URL · prefer canonical env · fall back to localhost.
 // Used to construct absolute href paths in ActionGetResponse buttons.
 export const getBaseUrl = (request?: Request): string => {
   // Prefer explicit env var (set in vercel · sprint-3 production deploy).
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+    return `https://${process.env.VERCEL_URL}`;
   }
   // Derive from request origin if present.
   if (request) {
-    const url = new URL(request.url)
-    return `${url.protocol}//${url.host}`
+    const url = new URL(request.url);
+    return `${url.protocol}//${url.host}`;
   }
-  return "http://localhost:3000"
-}
+  return "http://localhost:3000";
+};

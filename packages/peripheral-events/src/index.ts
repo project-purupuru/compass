@@ -4,7 +4,7 @@
 // Schema validation at every boundary · effect-schema decode/encode roundtrip
 // tested in tests/. Canonical eventId stable across re-encodes per AC-1.1.
 
-export const PACKAGE_VERSION = "0.0.1" as const
+export const PACKAGE_VERSION = "0.0.1" as const;
 
 // World events · sealed discriminated union (4 v0 variants)
 export {
@@ -19,7 +19,7 @@ export {
   WorldEvent,
   eventReferencesPuruhani,
   eventTagOf,
-} from "./world-event"
+} from "./world-event";
 
 // Bazi quiz state · HMAC-validated · GET-chain URL state shape
 export {
@@ -30,7 +30,7 @@ export {
   QuizStep,
   signQuizState,
   verifyQuizState,
-} from "./bazi-quiz-state"
+} from "./bazi-quiz-state";
 
 // Claim message · server-signed payload for genesis-stone mint
 export {
@@ -45,22 +45,15 @@ export {
   signClaimMessage,
   SolanaCluster,
   verifyClaimSignature,
-} from "./claim-message"
-export type { SignedClaimMessage } from "./claim-message"
+} from "./claim-message";
+export type { SignedClaimMessage } from "./claim-message";
 
 // Canonical eventId derivation · stable hash across re-encodes
-export {
-  CURRENT_SCHEMA_VERSION,
-  eventIdOf,
-  verifyEventId,
-} from "./event-id"
-export type { SourceTag } from "./event-id"
+export { CURRENT_SCHEMA_VERSION, eventIdOf, verifyEventId } from "./event-id";
+export type { SourceTag } from "./event-id";
 
 // Bazi resolver · derives archetype from quiz answer element votes
-export {
-  archetypeFromAnswers,
-  quizStateHashOf,
-} from "./bazi-resolver"
+export { archetypeFromAnswers, quizStateHashOf } from "./bazi-resolver";
 
 // StoneClaimed · on-chain Anchor event mirror · indexer consumption (zerker)
 export {
@@ -68,5 +61,5 @@ export {
   StoneClaimedIndexedFields,
   StoneClaimedRaw,
   StoneClaimedSchema,
-} from "./stone-claimed"
-export type { StoneClaimed } from "./stone-claimed"
+} from "./stone-claimed";
+export type { StoneClaimed } from "./stone-claimed";

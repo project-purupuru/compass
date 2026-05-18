@@ -42,10 +42,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CELESTIAL } from "@/lib/world-purupuru-cdn";
-import {
-  resolveCelestialPosition,
-  type CelestialPosition,
-} from "@/lib/celestial/position";
+import { resolveCelestialPosition, type CelestialPosition } from "@/lib/celestial/position";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const LOGO_TO_BUTTONS_DELAY_MS = 1200;

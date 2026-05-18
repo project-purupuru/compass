@@ -1,0 +1,139 @@
+  /* ClashVfx — per-element collision particles at the clash midpoint.
+     Ported from world-purupuru cycle-088 +page.svelte lines 1383-1542.
+     The substrate-shaped seam: each element has its own keyframes; the
+     ClashVfx component is identical across elements. */
+
+  .clash-vfx {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 32;
+  }
+
+  /* ── Fire (火) — radial ember burst. "NOW." ──────────────────── */
+  .vfx-ember {
+    position: absolute;
+    width: var(--ember-size, 5px);
+    height: var(--ember-size, 5px);
+    border-radius: 50%;
+    background: oklch(0.64 0.181 28.4);
+    box-shadow: 0 0 6px oklch(0.64 0.181 28.4 / 0.6),
+                0 0 12px oklch(0.82 0.14 55 / 0.3);
+    opacity: 0;
+    animation: ember-fly 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)
+               var(--ember-delay, 0ms) forwards;
+  }
+  @keyframes ember-fly {
+    0%   { opacity: 1; transform: rotate(var(--ember-angle)) translateX(0); }
+    60%  { opacity: 0.8; transform: rotate(var(--ember-angle)) translateX(var(--ember-dist)) translateY(-8px); }
+    100% { opacity: 0;   transform: rotate(var(--ember-angle)) translateX(calc(var(--ember-dist) * 1.3)) translateY(-14px); }
+  }
+
+  /* ── Earth (土) — concentric quake rings. "Still here." ─────── */
+  .vfx-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2.5px solid oklch(0.85 0.153 83.8 / 0.6);
+    width: 10px;
+    height: 10px;
+    top: -5px;
+    left: -5px;
+    opacity: 0;
+  }
+  .vfx-ring--1 { animation: ring-expand 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+  .vfx-ring--2 { animation: ring-expand 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94)  80ms forwards; }
+  .vfx-ring--3 { animation: ring-expand 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) 160ms forwards; }
+  @keyframes ring-expand {
+    0%   { opacity: 0.7; transform: scale(0.3); }
+    40%  { opacity: 0.5; }
+    100% { opacity: 0;   transform: scale(5); }
+  }
+
+  /* ── Wood (木) — radial root growth. "The garden blooms." ──── */
+  .vfx-root {
+    position: absolute;
+    width: 2px;
+    height: 34px;
+    background: linear-gradient(to top,
+      oklch(0.81 0.144 112.7 / 0.8),
+      oklch(0.90 0.06 112.7 / 0));
+    border-radius: 9999px;
+    transform-origin: bottom center;
+    opacity: 0;
+    animation: root-grow 600ms cubic-bezier(0.34, 1.0, 0.36, 1)
+               var(--root-delay, 0ms) forwards;
+  }
+  @keyframes root-grow {
+    0%   { opacity: 0.8; transform: rotate(var(--root-angle)) scaleY(0); }
+    60%  { opacity: 0.6; transform: rotate(var(--root-angle)) scaleY(0.82); }
+    100% { opacity: 0;   transform: rotate(var(--root-angle)) scaleY(1) translateX(2px); }
+  }
+
+  /* ── Metal (金) — slash and shards. "One cut. Clean." ──────── */
+  .vfx-slash {
+    position: absolute;
+    width: 48px;
+    height: 2px;
+    background: oklch(0.52 0.126 309.7);
+    box-shadow: 0 0 8px oklch(0.52 0.126 309.7 / 0.6);
+    border-radius: 1px;
+    transform-origin: left center;
+    transform: rotate(25deg) translateX(-20px) scaleX(0);
+    animation: slash-cut 180ms linear forwards;
+  }
+  @keyframes slash-cut {
+    0%   { transform: rotate(25deg) translateX(-20px) scaleX(0); opacity: 1; }
+    60%  { transform: rotate(25deg) translateX(-20px) scaleX(1); opacity: 1; }
+    100% { transform: rotate(25deg) translateX(-20px) scaleX(1); opacity: 0.5; }
+  }
+  .vfx-shard {
+    position: absolute;
+    width: 6px;
+    height: 3px;
+    background: oklch(0.70 0.08 309.7);
+    clip-path: polygon(0 0, 100% 30%, 60% 100%);
+    opacity: 0;
+    animation: shard-scatter 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94)
+               var(--shard-delay, 80ms) forwards;
+  }
+  @keyframes shard-scatter {
+    0%   { opacity: 0.8; transform: rotate(var(--shard-angle)) translateX(0); }
+    100% { opacity: 0;   transform: rotate(var(--shard-angle)) translateX(22px) translateY(-6px); }
+  }
+
+  /* ── Water (水) — implosion then expansion. "The tide carries." ── */
+  .vfx-wave {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    top: -4px;
+    left: -4px;
+    border-radius: 50%;
+    border: 2px solid oklch(0.53 0.180 266.2 / 0.6);
+    background: oklch(0.53 0.180 266.2 / 0.1);
+    opacity: 0;
+    animation: wave-collapse 700ms cubic-bezier(0.34, 1.0, 0.36, 1) forwards;
+  }
+  .vfx-wave--inner {
+    animation: wave-implode 300ms cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+  }
+  @keyframes wave-collapse {
+    0%   { opacity: 0;   transform: scale(0.5); }
+    15%  { opacity: 0.6; transform: scale(0.3); }
+    30%  { opacity: 0.5; transform: scale(0.4); }
+    100% { opacity: 0;   transform: scale(5); }
+  }
+  @keyframes wave-implode {
+    0%   { opacity: 0;   transform: scale(3); }
+    60%  { opacity: 0.5; transform: scale(0.5); }
+    100% { opacity: 0;   transform: scale(0.2); }
+  }
+
+  /* prefers-reduced-motion: kill the particle bursts entirely. The
+     stamp + whisper still convey the outcome. */
+  @media (prefers-reduced-motion: reduce) {
+    .clash-vfx { display: none; }
+  }

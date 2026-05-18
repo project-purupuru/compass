@@ -32,8 +32,8 @@ import {
   PublicKey,
   Transaction,
   type TransactionInstruction,
-} from "@solana/web3.js"
-import bs58 from "bs58"
+} from "@solana/web3.js";
+import bs58 from "bs58";
 
 /**
  * Load the sponsored-payer keypair from env.
@@ -48,34 +48,32 @@ import bs58 from "bs58"
  * Throws if no env var set OR malformed (fail-closed · we don't want a half-broken mint).
  */
 export function loadSponsoredPayer(env: NodeJS.ProcessEnv = process.env): Keypair {
-  const bs58Key = env.SPONSORED_PAYER_SECRET_BS58
+  const bs58Key = env.SPONSORED_PAYER_SECRET_BS58;
   if (bs58Key && bs58Key.length > 0) {
-    const bytes = bs58.decode(bs58Key)
+    const bytes = bs58.decode(bs58Key);
     if (bytes.length !== 64) {
-      throw new Error(
-        `SPONSORED_PAYER_SECRET_BS58 decoded to ${bytes.length} bytes · expected 64`,
-      )
+      throw new Error(`SPONSORED_PAYER_SECRET_BS58 decoded to ${bytes.length} bytes · expected 64`);
     }
-    return Keypair.fromSecretKey(bytes)
+    return Keypair.fromSecretKey(bytes);
   }
 
-  const jsonKey = env.SPONSORED_PAYER_SECRET_JSON
+  const jsonKey = env.SPONSORED_PAYER_SECRET_JSON;
   if (jsonKey && jsonKey.length > 0) {
-    let parsed: unknown
+    let parsed: unknown;
     try {
-      parsed = JSON.parse(jsonKey)
+      parsed = JSON.parse(jsonKey);
     } catch (err) {
-      throw new Error(`SPONSORED_PAYER_SECRET_JSON not valid JSON: ${(err as Error).message}`)
+      throw new Error(`SPONSORED_PAYER_SECRET_JSON not valid JSON: ${(err as Error).message}`);
     }
     if (!Array.isArray(parsed) || parsed.length !== 64) {
-      throw new Error("SPONSORED_PAYER_SECRET_JSON must be a 64-element byte array")
+      throw new Error("SPONSORED_PAYER_SECRET_JSON must be a 64-element byte array");
     }
-    return Keypair.fromSecretKey(new Uint8Array(parsed as number[]))
+    return Keypair.fromSecretKey(new Uint8Array(parsed as number[]));
   }
 
   throw new Error(
     "no sponsored-payer secret in env · set SPONSORED_PAYER_SECRET_BS58 or SPONSORED_PAYER_SECRET_JSON",
-  )
+  );
 }
 
 /**
@@ -90,46 +88,44 @@ export function loadSponsoredPayer(env: NodeJS.ProcessEnv = process.env): Keypai
  *   - signatureFromPayer · the partial sig we added (debug · log if needed)
  */
 export async function buildPartialSignedTx(args: {
-  connection: Connection
-  sponsoredPayer: Keypair
-  userWallet: PublicKey
-  instructions: TransactionInstruction[]
+  connection: Connection;
+  sponsoredPayer: Keypair;
+  userWallet: PublicKey;
+  instructions: TransactionInstruction[];
 }): Promise<{ base64Tx: string; payerSignature: string }> {
-  const { connection, sponsoredPayer, userWallet, instructions } = args
+  const { connection, sponsoredPayer, userWallet, instructions } = args;
 
   // Pre-flight · sanity check sponsored-payer != userWallet (would be a bug · payer can't be authority).
   if (sponsoredPayer.publicKey.equals(userWallet)) {
-    throw new Error("sponsored-payer pubkey == user wallet · misconfiguration")
+    throw new Error("sponsored-payer pubkey == user wallet · misconfiguration");
   }
 
   // Build tx with sponsored-payer as feePayer
-  const tx = new Transaction()
-  tx.feePayer = sponsoredPayer.publicKey
-  tx.add(...instructions)
+  const tx = new Transaction();
+  tx.feePayer = sponsoredPayer.publicKey;
+  tx.add(...instructions);
 
   // Need fresh blockhash · cluster-validated freshness window ~150 slots / ~60s
-  const { blockhash } = await connection.getLatestBlockhash("confirmed")
-  tx.recentBlockhash = blockhash
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
 
   // Partial-sign as feePayer · this attaches our sig to the appropriate slot
   // but leaves userWallet's slot empty for the wallet to fill in.
-  tx.partialSign(sponsoredPayer)
+  tx.partialSign(sponsoredPayer);
 
   // Serialize · `requireAllSignatures: false` because user wallet hasn't signed yet
   const serialized = tx.serialize({
     requireAllSignatures: false,
     verifySignatures: false,
-  })
+  });
 
-  const base64Tx = serialized.toString("base64")
+  const base64Tx = serialized.toString("base64");
 
   // Extract our partial sig for debugging (find the slot matching our pubkey)
-  const ourSig = tx.signatures.find((s) =>
-    s.publicKey.equals(sponsoredPayer.publicKey),
-  )?.signature
-  const payerSignature = ourSig ? bs58.encode(ourSig) : "unsigned"
+  const ourSig = tx.signatures.find((s) => s.publicKey.equals(sponsoredPayer.publicKey))?.signature;
+  const payerSignature = ourSig ? bs58.encode(ourSig) : "unsigned";
 
-  return { base64Tx, payerSignature }
+  return { base64Tx, payerSignature };
 }
 
 /**
@@ -142,9 +138,9 @@ export async function checkPayerBalance(
   connection: Connection,
   sponsoredPayer: PublicKey,
 ): Promise<{ lamports: number; sol: number; canSponsor: boolean }> {
-  const lamports = await connection.getBalance(sponsoredPayer, "confirmed")
-  const sol = lamports / 1_000_000_000
+  const lamports = await connection.getBalance(sponsoredPayer, "confirmed");
+  const sol = lamports / 1_000_000_000;
   // Each mint costs ~0.012 SOL (rent + fees) · keep 0.05 SOL buffer · refuse below
-  const canSponsor = sol >= 0.05
-  return { lamports, sol, canSponsor }
+  const canSponsor = sol >= 0.05;
+  return { lamports, sol, canSponsor };
 }

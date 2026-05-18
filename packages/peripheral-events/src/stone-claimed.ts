@@ -12,13 +12,13 @@
 // Element/weather byte mapping (same as ClaimMessage):
 //   1=Wood · 2=Fire · 3=Earth · 4=Metal · 5=Water
 
-import { Schema as S } from "effect"
+import { Schema as S } from "effect";
 
-import { SolanaPubkey } from "./world-event"
+import { SolanaPubkey } from "./world-event";
 
 // Element / weather byte literals · 1..5 per wuxing cycle.
-export const ElementByte = S.Literal(1, 2, 3, 4, 5)
-export type ElementByte = S.Schema.Type<typeof ElementByte>
+export const ElementByte = S.Literal(1, 2, 3, 4, 5);
+export type ElementByte = S.Schema.Type<typeof ElementByte>;
 
 // Indexed metadata not in the on-chain event itself but needed by consumers
 // to disambiguate occurrences (the Anchor event has no signature/slot).
@@ -30,7 +30,7 @@ export const StoneClaimedIndexedFields = S.Struct({
   slot: S.Number,
   /** Unix seconds · null until the slot is finalized */
   blockTime: S.NullOr(S.Number),
-})
+});
 
 // Raw on-chain event shape · matches the Anchor #[event] struct exactly.
 export const StoneClaimedRaw = S.Struct({
@@ -38,13 +38,10 @@ export const StoneClaimedRaw = S.Struct({
   element: ElementByte,
   weather: ElementByte,
   mint: SolanaPubkey,
-})
-export type StoneClaimedRaw = S.Schema.Type<typeof StoneClaimedRaw>
+});
+export type StoneClaimedRaw = S.Schema.Type<typeof StoneClaimedRaw>;
 
 // Indexed shape · what dashboards / awareness-layer consumers use.
 // Composes raw event with indexer-supplied metadata.
-export const StoneClaimedSchema = S.extend(
-  StoneClaimedRaw,
-  StoneClaimedIndexedFields,
-)
-export type StoneClaimed = S.Schema.Type<typeof StoneClaimedSchema>
+export const StoneClaimedSchema = S.extend(StoneClaimedRaw, StoneClaimedIndexedFields);
+export type StoneClaimed = S.Schema.Type<typeof StoneClaimedSchema>;

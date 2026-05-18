@@ -127,13 +127,7 @@
     },
     {
       "id": "v24-array-mixed",
-      "input": [
-        1,
-        "two",
-        true,
-        null,
-        3.14
-      ],
+      "input": [1, "two", true, null, 3.14],
       "expected": "[1,\"two\",true,null,3.14]"
     },
     {
@@ -155,17 +149,7 @@
     },
     {
       "id": "v26-nested-array",
-      "input": [
-        [
-          [
-            [
-              [
-                "deep"
-              ]
-            ]
-          ]
-        ]
-      ],
+      "input": [[[[["deep"]]]]],
       "expected": "[[[[[\"deep\"]]]]]"
     },
     {
@@ -200,11 +184,7 @@
     {
       "id": "v29-no-whitespace-out",
       "input": {
-        "a": [
-          1,
-          2,
-          3
-        ]
+        "a": [1, 2, 3]
       },
       "expected": "{\"a\":[1,2,3]}"
     },

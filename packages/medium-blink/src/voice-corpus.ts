@@ -31,25 +31,24 @@
 //   would tighten the bridge between the quiz signal and traditional bazi
 //   reading. Not in v0 scope (no DOB collection in the GET-chain Blink today).
 
-import type { Element } from "@purupuru/peripheral-events"
+import type { Element } from "@purupuru/peripheral-events";
 
 export interface QuizQuestion {
-  step: number // 1..QUIZ_CONFIG.totalSteps
-  prompt: string // ≤ 280 chars
+  step: number; // 1..QUIZ_CONFIG.totalSteps
+  prompt: string; // ≤ 280 chars
   answers: ReadonlyArray<{
-    label: string // ≤ 80 chars · operator/Gumi prose
-    element: Element // which element this answer leans toward
-  }>
+    label: string; // ≤ 80 chars · operator/Gumi prose
+    element: Element; // which element this answer leans toward
+  }>;
 }
 
 // Eight questions · 3 hand-picked answers each · operator + Gumi authored.
 export const QUIZ_CORPUS: ReadonlyArray<QuizQuestion> = [
   {
     step: 1,
-    prompt:
-      "Your friend cancels plans last minute. What's your first reaction?",
+    prompt: "Your friend cancels plans last minute. What's your first reaction?",
     answers: [
-      { label: "You text back immediately: \"why\"", element: "FIRE" },
+      { label: 'You text back immediately: "why"', element: "FIRE" },
       { label: "Ooh. At last, a free evening", element: "WATER" },
       { label: "Meh. Already had a backup plan anyway", element: "METAL" },
     ],
@@ -65,8 +64,7 @@ export const QUIZ_CORPUS: ReadonlyArray<QuizQuestion> = [
   },
   {
     step: 3,
-    prompt:
-      "You're in a group chat and someone says something incredibly confidently wrong.",
+    prompt: "You're in a group chat and someone says something incredibly confidently wrong.",
     answers: [
       { label: "You wait to see if they figure it out on their own", element: "WOOD" },
       { label: "You correct them immediately perhaps a little too harshly", element: "FIRE" },
@@ -84,8 +82,7 @@ export const QUIZ_CORPUS: ReadonlyArray<QuizQuestion> = [
   },
   {
     step: 5,
-    prompt:
-      "Someone you just met is telling you their whole life story. You:",
+    prompt: "Someone you just met is telling you their whole life story. You:",
     answers: [
       { label: "Listen. People don't do this unless they need to", element: "WOOD" },
       { label: "Notice what they're not saying", element: "METAL" },
@@ -119,7 +116,7 @@ export const QUIZ_CORPUS: ReadonlyArray<QuizQuestion> = [
       { label: "Bluntly give them the honest answer even if it's uncomfortable", element: "METAL" },
     ],
   },
-] as const
+] as const;
 
 // Archetype reveals · plain personality-test language · used as the
 // description (subhead) on the reveal card. Grounded · no metaphor ·
@@ -138,7 +135,7 @@ export const ARCHETYPE_REVEALS: Record<Element, string> = {
   EARTH: "You stay when others move on. People come back to you to remember themselves.",
   METAL: "You hear what people aren't saying. The cut is the gift.",
   WATER: "You feel before you think, and you're usually right. You read the room without trying.",
-}
+};
 
 // Step indicator · plain "Question X of Y" · rendered as the description
 // subhead (under the question prompt). Operator-preferred over poetic variants.
@@ -151,7 +148,7 @@ export const QUIZ_STEP_TITLES: Record<number, string> = {
   6: "Question 6 of 8",
   7: "Question 7 of 8",
   8: "Question 8 of 8",
-}
+};
 
 // (Removed 2026-05-10) AMBIENT_PROMPT used to read "the world breathes. take a
 // moment with it." — replaced by observatory-aligned data subhead in

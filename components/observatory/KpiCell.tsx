@@ -46,9 +46,7 @@ export function KpiCell({
   // Default mode (desktop sidebar): cells sit on cloud-bright tiles
   // with rounded corners + tile shadow — the existing card vocab.
   const surfaceClass = flush ? "bg-puru-cloud-base" : "bg-puru-cloud-bright";
-  const chromeClass = flush
-    ? "h-full shadow-puru-tile"
-    : "rounded-puru-sm shadow-puru-tile";
+  const chromeClass = flush ? "h-full shadow-puru-tile" : "rounded-puru-sm shadow-puru-tile";
   return (
     <div
       className={`relative flex min-w-0 flex-col gap-1 overflow-hidden px-3 py-2 transition-[background-image] duration-700 ease-out ${surfaceClass} ${chromeClass}`}

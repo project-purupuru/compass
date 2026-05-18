@@ -9,9 +9,9 @@
 // Our rules · all paths under /api/actions/** map directly to themselves
 // (the URL IS the action endpoint · no website-to-action indirection).
 
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
-import { ACTION_CORS_HEADERS } from "@/lib/blink/cors"
+import { ACTION_CORS_HEADERS } from "@/lib/blink/cors";
 
 const ACTIONS_MANIFEST = {
   rules: [
@@ -31,14 +31,14 @@ const ACTIONS_MANIFEST = {
       apiPath: "/api/actions/today",
     },
   ],
-} as const
+} as const;
 
 export async function GET() {
   return NextResponse.json(ACTIONS_MANIFEST, {
     headers: ACTION_CORS_HEADERS,
-  })
+  });
 }
 
 export async function OPTIONS() {
-  return new Response(null, { headers: ACTION_CORS_HEADERS })
+  return new Response(null, { headers: ACTION_CORS_HEADERS });
 }

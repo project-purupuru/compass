@@ -26,7 +26,7 @@ const ELEMENT_FREQ_HZ: Record<Element, number> = {
   fire: 587.33,
   earth: 659.25,
   metal: 783.99,
-  water: 880.00,
+  water: 880.0,
 };
 
 const COOLDOWN_MS = 450;
@@ -63,7 +63,11 @@ class WuxingSonifier {
   private wetGain: GainNode | null = null;
   private dryGain: GainNode | null = null;
   private lastNoteAt: Record<Element, number> = {
-    wood: 0, fire: 0, earth: 0, metal: 0, water: 0,
+    wood: 0,
+    fire: 0,
+    earth: 0,
+    metal: 0,
+    water: 0,
   };
   private activeVoices: Set<OscillatorNode> = new Set();
   private enabled = false;
@@ -73,8 +77,7 @@ class WuxingSonifier {
     if (!this.ctx) {
       const Ctor =
         window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return;
       this.ctx = new Ctor();
       this.setupGraph();
@@ -110,7 +113,7 @@ class WuxingSonifier {
     this.convolver.buffer = this.makeReverbImpulse(REVERB_SECONDS);
 
     this.wetGain = ctx.createGain();
-    this.wetGain.gain.value = 0.40;
+    this.wetGain.gain.value = 0.4;
     this.dryGain = ctx.createGain();
     this.dryGain.gain.value = 0.55;
 
@@ -148,7 +151,11 @@ class WuxingSonifier {
     while (this.activeVoices.size >= POLYPHONY) {
       const oldest = this.activeVoices.values().next().value;
       if (!oldest) break;
-      try { oldest.stop(); } catch { /* already stopped */ }
+      try {
+        oldest.stop();
+      } catch {
+        /* already stopped */
+      }
       this.activeVoices.delete(oldest);
     }
 
@@ -176,7 +183,11 @@ class WuxingSonifier {
     this.activeVoices.add(osc);
     osc.onended = () => {
       this.activeVoices.delete(osc);
-      try { env.disconnect(); } catch { /* already disconnected */ }
+      try {
+        env.disconnect();
+      } catch {
+        /* already disconnected */
+      }
     };
   }
 }

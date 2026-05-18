@@ -53,10 +53,7 @@ import {
 // --- Test-mode override gating (cycle-099 LOA_*_TEST_MODE pattern) -------
 
 function goldenTestModeActive(): boolean {
-  return (
-    process.env.LOA_GOLDEN_TEST_MODE === "1" ||
-    !!process.env.BATS_TEST_DIRNAME
-  );
+  return process.env.LOA_GOLDEN_TEST_MODE === "1" || !!process.env.BATS_TEST_DIRNAME;
 }
 
 function goldenResolvePath(envVar: string, fallback: string): string {
@@ -103,14 +100,16 @@ function main(): number {
     try {
       json = execFileSync("yq", ["-o", "json", ".", fixturePath], { encoding: "utf-8" });
     } catch (e) {
-      process.stdout.write(dumpCanonicalJson({
-        fixture: fixtureName,
-        error: {
-          code: "[YAML-PARSE-FAILED]",
-          stage_failed: 0,
-          detail: "fixture YAML failed to parse",
-        },
-      }) + "\n");
+      process.stdout.write(
+        dumpCanonicalJson({
+          fixture: fixtureName,
+          error: {
+            code: "[YAML-PARSE-FAILED]",
+            stage_failed: 0,
+            detail: "fixture YAML failed to parse",
+          },
+        }) + "\n",
+      );
       continue;
     }
 
@@ -118,26 +117,30 @@ function main(): number {
     try {
       doc = JSON.parse(json);
     } catch (e) {
-      process.stdout.write(dumpCanonicalJson({
-        fixture: fixtureName,
-        error: {
-          code: "[YAML-PARSE-FAILED]",
-          stage_failed: 0,
-          detail: "fixture JSON conversion failed",
-        },
-      }) + "\n");
+      process.stdout.write(
+        dumpCanonicalJson({
+          fixture: fixtureName,
+          error: {
+            code: "[YAML-PARSE-FAILED]",
+            stage_failed: 0,
+            detail: "fixture JSON conversion failed",
+          },
+        }) + "\n",
+      );
       continue;
     }
 
     if (doc === null || typeof doc !== "object" || Array.isArray(doc)) {
-      process.stdout.write(dumpCanonicalJson({
-        fixture: fixtureName,
-        error: {
-          code: "[NO-EXPECTED-RESOLUTIONS]",
-          stage_failed: 0,
-          detail: "fixture lacks expected.resolutions[] block",
-        },
-      }) + "\n");
+      process.stdout.write(
+        dumpCanonicalJson({
+          fixture: fixtureName,
+          error: {
+            code: "[NO-EXPECTED-RESOLUTIONS]",
+            stage_failed: 0,
+            detail: "fixture lacks expected.resolutions[] block",
+          },
+        }) + "\n",
+      );
       continue;
     }
 
@@ -147,21 +150,25 @@ function main(): number {
     const resolutionsRaw = expected.resolutions;
 
     if (!Array.isArray(resolutionsRaw) || resolutionsRaw.length === 0) {
-      process.stdout.write(dumpCanonicalJson({
-        fixture: fixtureName,
-        error: {
-          code: "[NO-EXPECTED-RESOLUTIONS]",
-          stage_failed: 0,
-          detail: "fixture lacks expected.resolutions[] block",
-        },
-      }) + "\n");
+      process.stdout.write(
+        dumpCanonicalJson({
+          fixture: fixtureName,
+          error: {
+            code: "[NO-EXPECTED-RESOLUTIONS]",
+            stage_failed: 0,
+            detail: "fixture lacks expected.resolutions[] block",
+          },
+        }) + "\n",
+      );
       continue;
     }
 
     // Filter + sort by (skill, role) — matches Python and bash sort.
     const validResolutions = resolutionsRaw.filter(
       (r: unknown): r is Record<string, unknown> =>
-        r !== null && typeof r === "object" && !Array.isArray(r) &&
+        r !== null &&
+        typeof r === "object" &&
+        !Array.isArray(r) &&
         typeof (r as Record<string, unknown>).skill === "string" &&
         typeof (r as Record<string, unknown>).role === "string",
     );

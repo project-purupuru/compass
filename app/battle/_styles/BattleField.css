@@ -1,0 +1,541 @@
+  .battlefield {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--puru-cloud-base);
+    pointer-events: none;
+    /* Contain reflow — backdrop changes don't trigger page-level layout */
+    contain: layout style paint;
+    /* Parallax depth: backdrop moves the most (deepest layer).
+       --parallax-x/y come from CameraEngine (RAF-driven LERP). The CSS
+       transition is REMOVED — engine handles smoothing — leaving it on
+       chase-mode caused the saw-tooth glitch the operator saw. Camera
+       shake adds on top of parallax via additional vars. */
+    transform: translate(
+      calc(var(--parallax-x, 0px) + var(--camera-shake-x, 0px)),
+      calc(var(--parallax-y, 0px) + var(--camera-shake-y, 0px))
+    );
+  }
+
+  /* ── Hitstop ───────────────────────────────────────────────────
+     Replaced violent multi-axis shake with a directional push toward
+     the clash midpoint + brief desaturation. Translation only — no
+     rotation, no jitter. Reads as IMPACT, not as nausea-inducing
+     vibration on small viewports. */
+  .battlefield.hitstop {
+    animation: hitstop-push 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes hitstop-push {
+    0%   { transform: translate(var(--parallax-x, 0px), var(--parallax-y, 0px)); filter: saturate(1); }
+    25%  { transform: translate(calc(var(--parallax-x, 0px) - 0px), calc(var(--parallax-y, 0px) + 4px)); filter: saturate(1.2) brightness(1.05); }
+    100% { transform: translate(var(--parallax-x, 0px), var(--parallax-y, 0px)); filter: saturate(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .battlefield.hitstop { animation: none; }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Layer 0a: DETAILED MAP — entry mode (Depth 0-1)
+     Full geography. The world window.
+     ══════════════════════════════════════════════════════════ */
+  .map-detailed {
+    position: absolute;
+    inset: -4%;
+    width: 108%;
+    height: 108%;
+    object-fit: cover;
+    object-position: center 42%;
+    mask-image: radial-gradient(
+      ellipse 90% 84% at 50% 46%,
+      black 18%,
+      oklch(0 0 0 / 0.88) 35%,
+      oklch(0 0 0 / 0.55) 58%,
+      oklch(0 0 0 / 0.2) 78%,
+      transparent 94%
+    );
+    transform: translateY(calc(var(--tide-n) * -2px));
+    transition: transform 700ms var(--ease-puru-settle);
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Layer 0b: FLAT MAP — arena mode (Depth 3, Inner Sanctum)
+     Homepage treatment: ghost texture, not geography.
+     opacity 0.22, saturate 0.6, fog-of-war mask.
+     ALEXANDER: never blur geography — switch to texture.
+     ══════════════════════════════════════════════════════════ */
+  .map-flat {
+    position: absolute;
+    /* Operator feedback (2026-05-13 r2): "let's center the map in the
+       back for some reason it's getting cut off on bottom side." Root
+       cause: prior width: min(85vw, 900px) only constrained by VIEWPORT
+       WIDTH. With dev panel open the viewport HEIGHT (633px) was less
+       than 900px → centered map bled off both top + bottom (584px clip).
+       Bounding by min(vw, vh) ensures the square texture FITS the
+       smaller dimension. */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(85vw, 85vh, 900px);
+    height: min(85vw, 85vh, 900px);
+    max-width: 900px;
+    max-height: 900px;
+    aspect-ratio: 1 / 1;
+    /* ROSENZU: you're ON the terrain now, not above it.
+       Sepia warms the grey desaturation toward earth/parchment. */
+    opacity: 0.22;
+    filter: saturate(0.35) sepia(0.08);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    /* Fog of war — matches homepage exactly (TDR-018) */
+    mask-image: radial-gradient(
+      ellipse 80% 70% at 50% 50%,
+      black 20%,
+      oklch(0 0 0 / 0.7) 40%,
+      oklch(0 0 0 / 0.3) 62%,
+      oklch(0 0 0 / 0.1) 78%,
+      transparent 92%
+    );
+  }
+
+  /* ── Territory overlays ────────────────────────────────── */
+  .territory {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Entry mode: soft-light on detailed map */
+    mix-blend-mode: soft-light;
+    transition: opacity 700ms var(--ease-puru-settle);
+    z-index: 1;
+  }
+
+  /* Arena mode: territories use screen blend — brighter on the quiet base.
+     Sky-eyes says 95.2% cross-element similarity. Against the ghostly
+     backdrop, screen blend makes territories the dominant visual signal. */
+  .backdrop .territory {
+    mix-blend-mode: screen;
+  }
+
+  .territory.energized {
+    animation: territory-breathe 3000ms var(--ease-puru-breathe) infinite;
+  }
+
+  @keyframes territory-breathe {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.015); filter: brightness(1.1); }
+  }
+
+  .territory-wood {
+    opacity: calc(0.1 + var(--e-wood) * 0.85);
+    background: radial-gradient(
+      ellipse 46% 36% at 42% 28%,
+      oklch(0.81 0.144 112.7 / 0.8) 0%,
+      oklch(0.81 0.144 112.7 / 0.3) 45%,
+      transparent 100%
+    );
+  }
+
+  .territory-fire {
+    opacity: calc(0.1 + var(--e-fire) * 0.85);
+    background: radial-gradient(
+      ellipse 40% 34% at 36% 55%,
+      oklch(0.64 0.181 28.4 / 0.8) 0%,
+      oklch(0.64 0.181 28.4 / 0.3) 45%,
+      transparent 100%
+    );
+  }
+
+  .territory-earth {
+    opacity: calc(0.1 + var(--e-earth) * 0.85);
+    background: radial-gradient(
+      ellipse 44% 38% at 58% 48%,
+      oklch(0.85 0.153 83.8 / 0.8) 0%,
+      oklch(0.85 0.153 83.8 / 0.3) 45%,
+      transparent 100%
+    );
+  }
+
+  .territory-metal {
+    opacity: calc(0.1 + var(--e-metal) * 0.85);
+    background: radial-gradient(
+      ellipse 38% 32% at 72% 35%,
+      oklch(0.52 0.126 309.7 / 0.8) 0%,
+      oklch(0.52 0.126 309.7 / 0.3) 45%,
+      transparent 100%
+    );
+  }
+
+  .territory-water {
+    opacity: calc(0.1 + var(--e-water) * 0.85);
+    background: radial-gradient(
+      ellipse 48% 34% at 48% 72%,
+      oklch(0.53 0.18 266.2 / 0.8) 0%,
+      oklch(0.53 0.18 266.2 / 0.3) 45%,
+      transparent 100%
+    );
+  }
+
+  /* ── Color temperature ─────────────────────────────────── */
+  .temperature {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: color;
+    opacity: 0.07;
+    transition: background-color 700ms var(--ease-puru-settle);
+    z-index: 2;
+  }
+
+  .backdrop .temperature { opacity: 0.04; }
+
+  .temperature[data-element='wood']  { background-color: oklch(0.81 0.144 112.7); }
+  .temperature[data-element='fire']  { background-color: oklch(0.64 0.181 28.4); }
+  .temperature[data-element='earth'] { background-color: oklch(0.85 0.153 83.8); }
+  .temperature[data-element='metal'] { background-color: oklch(0.52 0.126 309.7); }
+  .temperature[data-element='water'] { background-color: oklch(0.53 0.18 266.2); }
+
+  /* ── Tide overlay ──────────────────────────────────────── */
+  .tide-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    background: linear-gradient(
+      to bottom,
+      oklch(0.12 0.01 85 / calc(max(0, var(--tide-n)) * 0.22)) 0%,
+      transparent 42%,
+      transparent 58%,
+      oklch(0.12 0.01 85 / calc(max(0, var(--tide-n) * -1) * 0.22)) 100%
+    );
+    transition: background 700ms var(--ease-puru-settle);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Arena vignette — focuses the center, darkens edges.
+     The open field needs a focal point. This is Alexander's
+     Strong Centers: the center of the arena is brighter
+     than the edges. The eye rests there. The whisper lives there.
+     ══════════════════════════════════════════════════════════ */
+  /* ROSENZU: The bamboo grove clearing. Asymmetric vignette.
+     Walls = side thicket (denser shadow left and right).
+     Canopy = lighter at top (sky through bamboo), warmer at bottom (earth). */
+  .arena-walls {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    background: linear-gradient(to right,
+      oklch(0.88 0.015 90 / 0.4) 0%,
+      transparent 26%,
+      transparent 74%,
+      oklch(0.88 0.015 90 / 0.4) 100%
+    );
+  }
+
+  .arena-canopy {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    background: linear-gradient(to bottom,
+      oklch(0.94 0.018 95 / 0.12) 0%,
+      transparent 22%,
+      transparent 68%,
+      oklch(0.86 0.02 85 / 0.28) 100%
+    );
+  }
+
+  [data-theme='old-horai'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.12 0.01 266 / 0.45) 0%,
+      transparent 26%,
+      transparent 74%,
+      oklch(0.12 0.01 266 / 0.45) 100%
+    );
+  }
+
+  [data-theme='old-horai'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.08 0.015 85 / 0.18) 0%,
+      transparent 28%,
+      transparent 65%,
+      oklch(0.15 0.02 85 / 0.4) 100%
+    );
+  }
+
+  /* ── Ripple ────────────────────────────────────────────── */
+  .ripple {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    animation: ripple-expand 1200ms var(--ease-puru-out) forwards;
+  }
+
+  /* Arena: bigger ripples — they're the main event now */
+  .backdrop .ripple {
+    width: 140px;
+    height: 140px;
+  }
+
+  .ripple[data-element='wood']  { left: 42%; top: 28%; background: radial-gradient(circle, oklch(0.81 0.144 112.7 / 0.5), transparent); }
+  .ripple[data-element='fire']  { left: 36%; top: 55%; background: radial-gradient(circle, oklch(0.64 0.181 28.4 / 0.5), transparent); }
+  .ripple[data-element='earth'] { left: 58%; top: 48%; background: radial-gradient(circle, oklch(0.85 0.153 83.8 / 0.5), transparent); }
+  .ripple[data-element='metal'] { left: 72%; top: 35%; background: radial-gradient(circle, oklch(0.52 0.126 309.7 / 0.5), transparent); }
+  .ripple[data-element='water'] { left: 48%; top: 72%; background: radial-gradient(circle, oklch(0.53 0.18 266.2 / 0.5), transparent); }
+
+  @keyframes ripple-expand {
+    0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+  }
+
+  /* ── Wuxing sparks ─────────────────────────────────────── */
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 6;
+    transform: translate(-50%, -50%);
+    left: var(--src-x);
+    top: var(--src-y);
+  }
+
+  /* Arena: larger sparks — promoted as primary visual */
+  .spark { width: 14px; height: 14px; }
+  .backdrop .spark { width: 18px; height: 18px; }
+
+  .spark-generate {
+    animation: spark-travel-gen 800ms var(--ease-puru-out) forwards;
+    box-shadow: 0 0 14px 5px currentColor;
+  }
+
+  .backdrop .spark-generate {
+    box-shadow: 0 0 20px 8px currentColor;
+  }
+
+  .spark-generate[data-element='wood']  { background: oklch(0.81 0.144 112.7); color: oklch(0.81 0.144 112.7 / 0.6); }
+  .spark-generate[data-element='fire']  { background: oklch(0.64 0.181 28.4); color: oklch(0.64 0.181 28.4 / 0.6); }
+  .spark-generate[data-element='earth'] { background: oklch(0.85 0.153 83.8); color: oklch(0.85 0.153 83.8 / 0.6); }
+  .spark-generate[data-element='metal'] { background: oklch(0.52 0.126 309.7); color: oklch(0.52 0.126 309.7 / 0.6); }
+  .spark-generate[data-element='water'] { background: oklch(0.53 0.18 266.2); color: oklch(0.53 0.18 266.2 / 0.6); }
+
+  @keyframes spark-travel-gen {
+    0% { left: var(--src-x); top: var(--src-y); opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    85% { opacity: 0.8; transform: translate(-50%, -50%) scale(0.9); }
+    100% { left: var(--end-x); top: var(--end-y); opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+  }
+
+  .spark-overcome {
+    animation: spark-travel-over 700ms var(--ease-puru-out) 100ms forwards;
+    opacity: 0;
+    background: oklch(0.25 0.02 85);
+    box-shadow: 0 0 10px 3px oklch(0.2 0.01 85 / 0.5);
+  }
+
+  @keyframes spark-travel-over {
+    0% { left: var(--src-x); top: var(--src-y); opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.8); }
+    100% { left: var(--end-x); top: var(--end-y); opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  }
+
+  /* ── Hitstop flash ─────────────────────────────────────── */
+  .hitstop-flash {
+    position: absolute;
+    inset: 0;
+    background: oklch(1 0 0 / 0.12);
+    pointer-events: none;
+    z-index: 7;
+    animation: flash-out 166ms linear forwards;
+  }
+
+  @keyframes flash-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ── Dark mode ─────────────────────────────────────────── */
+  [data-theme='old-horai'] .map-flat {
+    opacity: 0.18;
+    filter: saturate(0.7) brightness(1.15);
+  }
+
+  [data-theme='old-horai'] .backdrop .territory {
+    mix-blend-mode: screen;
+  }
+
+  /* The .arena-canopy + .arena-walls gradients are tuned for the cream
+     cloud-base — they all use light oklch L > 0.85 sources at 0.18–0.45
+     alpha, which in dark mode adds a warm haze across the whole UI
+     (operator feedback 2026-05-12 "color overlay looks weird on dark
+     more"). Dropping their composite intensity + switching to overlay
+     blend keeps the atmosphere read without lightening the substrate. */
+  [data-theme='old-horai'] .arena-canopy,
+  [data-theme='old-horai'] .arena-walls {
+    opacity: 0.38;
+    mix-blend-mode: overlay;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .map-flat {
+      opacity: 0.18;
+      filter: saturate(0.7) brightness(1.15);
+    }
+    :root:not([data-theme]) .backdrop .territory {
+      mix-blend-mode: screen;
+    }
+    :root:not([data-theme]) .arena-canopy,
+    :root:not([data-theme]) .arena-walls {
+      opacity: 0.38;
+      mix-blend-mode: overlay;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     ATMOSPHERE — per-element canopy, walls, floor animations.
+     Driven by data-weather attribute. Each element creates
+     a distinct room: light quality, wall compression, floor motion.
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Wood: dawn, sage green, organic edges, mist drift ─── */
+  .backdrop[data-weather='wood'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.88 0.06 85 / 0.22) 0%, oklch(0.90 0.04 112.7 / 0.10) 18%,
+      transparent 38%, transparent 62%, oklch(0.86 0.045 112.7 / 0.18) 100%);
+  }
+  .backdrop[data-weather='wood'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.84 0.04 112.7 / 0.38) 0%, transparent 30%, transparent 70%, oklch(0.84 0.04 112.7 / 0.38) 100%);
+  }
+  .backdrop[data-weather='wood'] .map-flat {
+    animation: atmo-drift 18s var(--ease-puru-breathe) infinite;
+  }
+
+  /* ── Fire: noon, ember, compressed space, heat shimmer ─── */
+  .backdrop[data-weather='fire'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.92 0.07 60 / 0.28) 0%, oklch(0.80 0.10 45 / 0.12) 20%,
+      transparent 35%, transparent 60%, oklch(0.70 0.12 28.4 / 0.22) 100%);
+  }
+  .backdrop[data-weather='fire'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.72 0.10 28.4 / 0.42) 0%, transparent 28%, transparent 72%, oklch(0.72 0.10 28.4 / 0.42) 100%);
+  }
+  .backdrop[data-weather='fire'] .map-flat {
+    animation: atmo-shimmer 8s var(--ease-puru-breathe) infinite;
+  }
+
+  /* ── Earth: afternoon amber, spacious, solid breath ────── */
+  .backdrop[data-weather='earth'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.90 0.08 85 / 0.18) 0%, oklch(0.88 0.10 83.8 / 0.14) 25%,
+      transparent 45%, transparent 65%, oklch(0.85 0.12 83.8 / 0.24) 100%);
+  }
+  .backdrop[data-weather='earth'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.82 0.08 83.8 / 0.28) 0%, transparent 36%, transparent 64%, oklch(0.82 0.08 83.8 / 0.28) 100%);
+  }
+  .backdrop[data-weather='earth'] .map-flat {
+    animation: atmo-breath 20s var(--ease-puru-breathe) infinite;
+  }
+
+  /* ── Metal: dusk violet, crisp, reflective pulse ───────── */
+  .backdrop[data-weather='metal'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.65 0.08 309.7 / 0.22) 0%, oklch(0.75 0.05 309.7 / 0.10) 22%,
+      transparent 40%, transparent 62%, oklch(0.55 0.06 309.7 / 0.16) 100%);
+  }
+  .backdrop[data-weather='metal'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.52 0.10 309.7 / 0.40) 0%, transparent 26%, transparent 74%, oklch(0.52 0.10 309.7 / 0.40) 100%);
+  }
+  .backdrop[data-weather='metal'] .map-flat {
+    animation: atmo-reflect 12s var(--ease-puru-breathe) infinite;
+  }
+
+  /* ── Water: night, bioluminescent, dissolving edges ────── */
+  .backdrop[data-weather='water'] .arena-canopy {
+    background: linear-gradient(to bottom,
+      oklch(0.35 0.09 266.2 / 0.35) 0%, oklch(0.45 0.12 266.2 / 0.18) 25%,
+      transparent 42%, transparent 60%, oklch(0.40 0.10 266.2 / 0.28) 100%);
+  }
+  .backdrop[data-weather='water'] .arena-walls {
+    background: linear-gradient(to right,
+      oklch(0.28 0.08 266.2 / 0.50) 0%, transparent 38%, transparent 62%, oklch(0.28 0.08 266.2 / 0.50) 100%);
+  }
+  .backdrop[data-weather='water'] .map-flat {
+    animation: atmo-ripple 14s var(--ease-puru-breathe) infinite;
+  }
+
+  /* ── Floor atmosphere keyframes (very slow — felt, not seen) ── */
+  @keyframes atmo-drift {
+    0%, 100% { transform: translate(-50%, -50%); }
+    50% { transform: translate(-50%, calc(-50% + -3px)) scale(1.003); }
+  }
+  @keyframes atmo-shimmer {
+    0%, 100% { transform: translate(-50%, -50%); filter: saturate(0.35) sepia(0.08); }
+    50% { transform: translate(-50%, -50%) skewY(0.12deg); filter: saturate(0.35) sepia(0.08) brightness(1.03); }
+  }
+  @keyframes atmo-breath {
+    0%, 100% { transform: translate(-50%, -50%); filter: saturate(0.40) sepia(0.12); }
+    50% { transform: translate(-50%, -50%) scale(1.002); filter: saturate(0.42) sepia(0.14) brightness(1.01); }
+  }
+  @keyframes atmo-reflect {
+    0%, 100% { filter: saturate(0.50) sepia(0.04) brightness(1.00); }
+    40% { filter: saturate(0.55) sepia(0.02) brightness(1.06) contrast(1.06); }
+  }
+  @keyframes atmo-ripple {
+    0%, 100% { transform: translate(-50%, -50%); }
+    35% { transform: translate(-50%, calc(-50% + -2px)) scaleX(1.002); }
+    70% { transform: translate(-50%, calc(-50% + 2px)); }
+  }
+
+  /* ── Phase-driven room state (from immersion brief) ──────── */
+  .backdrop[data-arena-phase='locked'] .arena-walls { opacity: 0.48; }
+  .backdrop[data-arena-phase='locked'] .arena-canopy { opacity: 0.8; }
+
+  .backdrop[data-arena-phase='clashing'] .arena-walls { opacity: 0.28; }
+  .backdrop[data-arena-phase='clashing'] .arena-canopy {
+    /* Opacity-only flare — no transform to avoid layout shift */
+    animation: dome-flare 600ms var(--ease-puru-settle) forwards;
+  }
+
+  .backdrop[data-arena-phase='rearrange'] .arena-walls { opacity: 0.38; }
+  /* Rearrange: room settles. No floor animation — avoids repaint flash. */
+
+  .backdrop[data-arena-phase='result'] .arena-walls { opacity: 0.55; }
+
+  @keyframes dome-flare {
+    0% { opacity: 0.35; }
+    35% { opacity: 0.55; }
+    100% { opacity: 0.42; }
+  }
+
+  @keyframes floor-exhale {
+    0% { opacity: 0.28; }
+    35% { opacity: 0.20; }
+    100% { opacity: 0.28; }
+  }
+
+  .arena-walls, .arena-canopy {
+    transition: opacity 600ms var(--ease-puru-settle);
+    will-change: opacity;
+  }
+
+  /* ── Reduced motion ────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .battlefield.hitstop { animation: none; }
+    .ripple { animation-duration: 2s; }
+    .spark { animation-duration: 1.5s; }
+    .territory { transition-duration: 1.2s; }
+    .territory.energized { animation: none; }
+    .backdrop[data-weather] .map-flat { animation: none; }
+    .backdrop[data-arena-phase='clashing'] .arena-canopy { animation: none; }
+    .backdrop[data-arena-phase='rearrange'] .map-flat { animation: none; }
+  }

@@ -11,33 +11,28 @@
 //   "external-link" → button is a plain hyperlink (degraded · navigates away)
 //   "message"       → POST returns text-to-sign (sign-message flow)
 //   "inline-link"   → href fetched as GET · returns next action inline (rare)
-export type LinkedActionType =
-  | "transaction"
-  | "post"
-  | "external-link"
-  | "message"
-  | "inline-link"
+export type LinkedActionType = "transaction" | "post" | "external-link" | "message" | "inline-link";
 
 // Action chained linked button.
 export interface LinkedAction {
   /** Type of action · REQUIRED in Solana Actions spec v2.4+ · defaults to "transaction" if omitted */
-  type: LinkedActionType
-  label: string
-  href: string
+  type: LinkedActionType;
+  label: string;
+  href: string;
   // input fields disallowed v0 per BLINK_DESCRIPTOR · button-multichoice only
 }
 
 // Standard ActionGetResponse · what GET endpoints return.
 export interface ActionGetResponse {
-  icon: string // URL to image (≤ 128 KiB · per BLINK_DESCRIPTOR)
-  title: string // ≤ 80 chars
-  description: string // ≤ 280 chars
-  label: string
+  icon: string; // URL to image (≤ 128 KiB · per BLINK_DESCRIPTOR)
+  title: string; // ≤ 80 chars
+  description: string; // ≤ 280 chars
+  label: string;
   links?: {
-    actions: LinkedAction[]
-  }
-  disabled?: boolean
-  error?: { message: string }
+    actions: LinkedAction[];
+  };
+  disabled?: boolean;
+  error?: { message: string };
 }
 
 // NextAction chain link · used in POST response `links.next` to drive the chain.
@@ -45,28 +40,28 @@ export interface ActionGetResponse {
 //   type "inline": next action is embedded directly · client renders without extra fetch
 export type NextActionLink =
   | { type: "post"; href: string }
-  | { type: "inline"; action: ActionGetResponse }
+  | { type: "inline"; action: ActionGetResponse };
 
 // ActionPostResponse · response from POST when button.type === "transaction".
 // Contains a base64-encoded tx the wallet signs + submits.
 export interface ActionPostResponse {
-  type?: "transaction"
-  transaction: string
-  message?: string
+  type?: "transaction";
+  transaction: string;
+  message?: string;
   links?: {
-    next?: NextActionLink
-  }
+    next?: NextActionLink;
+  };
 }
 
 // PostResponse · response from POST when button.type === "post".
 // NO transaction · just chains to the next action (or terminates with a message).
 // This is what our quiz-step + quiz-result POST handlers return.
 export interface PostResponse {
-  type: "post"
-  message?: string
+  type: "post";
+  message?: string;
   links?: {
-    next: NextActionLink
-  }
+    next: NextActionLink;
+  };
 }
 
 // BLINK_DESCRIPTOR constraints (cycle-X upstream PR target · per FR-2).
@@ -83,6 +78,6 @@ export const BLINK_DESCRIPTOR = {
   walletAwareGet: false, // GET is anonymous per Actions spec
   presentationBoundary: "cmp-boundary-presentation",
   nftStandard: "metaplex-token-metadata",
-} as const
+} as const;
 
-export type BlinkDescriptor = typeof BLINK_DESCRIPTOR
+export type BlinkDescriptor = typeof BLINK_DESCRIPTOR;

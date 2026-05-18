@@ -1,4 +1,8 @@
 # Loa Framework Configuration
+# Merged 2026-05-16 via /update-loa (loa-upstream/main → cycle-111).
+# HEAD wins for overlapping keys (operator decree: subscription-CLI only,
+# hackathon mode tunings, observatory branch); upstream's new top-level
+# keys added at end. See in-file comments for per-block rationale.
 persistence_mode: standard
 integrity_enforcement: strict
 drift_resolution: code
@@ -36,64 +40,128 @@ interview:
     between_phases: false
     before_generation: true
 
-# Run mode — autonomous sprint execution
-run_mode:
-  enabled: true
-  defaults:
-    max_cycles: 20
-    timeout_hours: 8
-  sprint_plan:
-    branch_prefix: "feature/"
-    default_branch_name: "observatory-v0"
-    consolidate_pr: true
-    commit_prefix: "feat"
-    include_commits_by_sprint: true
-
 # Simstim — HITL accelerated workflow (PRD → SDD → Sprint → Implementation)
 # Enabled 2026-05-09 for indexer sprint-2 Flatline gate
+# HEAD-wins: keep beads_loop:false (4d ship clock); upstream had beads_loop:true
 simstim:
   enabled: true
   bridgebuilder_design_review: true   # Phase 3.5 active
   flatline:
     beads_loop: false                 # Phase 6.5 off · 4d clock
 
+# Multi-model routing substrate (cheval)
+# 2026-05-13: flatline_routing enabled so cheval routes `kind: cli` headless
+# aliases through the CLI binaries. Required because this environment has NO
+# working API keys — operator decree "always use subscription CLI" (see
+# auto-memory subscription-cli-always). Live smoke tests 2026-05-13 showed the
+# anthropic/openai/google API keys are present-but-dead (quota / access denied);
+# the claude/codex/gemini CLI binaries are installed + subscription-authed.
+# 2026-05-16 /update-loa: expanded with upstream's feature_flags + metering
+# + headless.mode; preserves flatline_routing: true.
+hounfour:
+  flatline_routing: true
+  flatline_tertiary_model: gemini-3.1-pro-preview
+  # cycle-109 (2026-05-13): headless mode default for /run invocations.
+  # API path is billing-degraded (Anthropic + OpenAI Pro); CLI subscription path works.
+  headless:
+    mode: cli-only
+  feature_flags:
+    google_adapter: true
+    deep_research: true
+    flatline_routing: true
+    metering: true
+    thinking_traces: true
+    jam_geometry: false
+  metering:
+    enabled: true
+    ledger_path: .run/cost-ledger.jsonl
+    budget:
+      daily_micro_usd: 500000000   # $500/day default
+      warn_at_percent: 80
+      on_exceeded: downgrade
+
 # Flatline Protocol — multi-model adversarial review
 # Enabled 2026-05-09 for indexer sprint-2 Flatline gate (sprint plan + amendments)
 # Auto-trigger left off — manual invocation via /flatline-review only
-# 2026-05-13 PM (cycle-1): route model-adapter through cheval (model-invoke).
-# Without this, model-adapter.sh sends headless aliases (codex-headless etc) directly
-# to OpenAI API which rejects them with "model does not exist".
-# CLAUDE.md says default is true post-cycle-107 but code default is false.
-hounfour:
-  flatline_routing: true
-
-# Bridgebuilder model — same auth pivot as flatline (codex-headless via subscription)
-bridgebuilder:
-  model: codex-headless
-  dry_run: false
-  max_prs: 10
-
+# HEAD-wins for models: operator decree "always use subscription CLI, no API keys"
 flatline_protocol:
   enabled: true
   auto_trigger: false
-  # 2026-05-13 PM (cycle-1): auth degraded — anthropic credits exhausted, google project 403.
-  # Routing all 3 voices through codex-headless (only working path) for infrastructure validation.
-  # Manual Opus voice supplied via Claude Code session (this conversation) as second adversarial voice.
-  # Restore Anthropic + Google auth to return to multi-model adversarial config.
+  # 2026-05-13: all three voices switched to `-headless` subscription-CLI
+  # aliases. Prior config (opus / gpt-5.5-pro / gemini-3.1-pro) routed through
+  # API keys — live smoke tests confirmed openai "quota exceeded" + google
+  # "project access denied". Operator: "we should ALWAYS be using subscription
+  # CLI. I have no API keys." The headless aliases (kind: cli) route through
+  # the claude/codex/gemini CLI binaries via cheval (requires hounfour.
+  # flatline_routing: true, set above). Supersedes the 2026-05-12 GPT+Gemini-
+  # API note. All three CLIs verified installed + authed 2026-05-13.
+  #
+  # 2026-05-13 (operator decision): running 2-VOICE. Live smoke tests:
+  #   codex-headless  ✅ clean parseable JSON via codex CLI
+  #   claude-headless ✅ functional (claude -p wraps JSON in agent preamble;
+  #                      extractable) — secondary
+  #   gemini-headless ❌ "rate limited by google" — cheval passes GOOGLE_API_KEY
+  #                      through to the gemini CLI (the dig-search script scrubs
+  #                      it precisely to avoid this 429 class). System-Zone bug
+  #                      in loa_cheval env-handling — filed upstream. Left as
+  #                      tertiary so cheval voice-drops it; auto-restores to
+  #                      3-voice once the cheval env-scrub fix lands.
   models:
     primary: codex-headless
-    secondary: codex-headless
-    tertiary: codex-headless
+    secondary: claude-headless
+    tertiary: gemini-headless
+  # Adopted from upstream (cycle-104 onwards) — thresholds + sub-gates.
+  # NOTE: code_review / security_audit / autonomous_arbiter still reference
+  # API-tier model ids (gpt-5.5-pro etc.). In compass's no-API-keys env these
+  # would fail; operator should review/swap to headless aliases before invoking
+  # those gates. Left intact so /update-loa cycles aren't required to opt in.
+  thresholds:
+    high_consensus: 700
+    disputed_delta: 300
+    low_value: 400
+    blocker_skeptic: 700
+  max_iterations: 5
+  code_review:
+    enabled: true
+    model: gpt-5.5-pro   # TODO(compass): swap to a -headless alias if invoked
+    budget_cents: 200
+    timeout_seconds: 600
+  security_audit:
+    enabled: true
+    model: gpt-5.5-pro   # TODO(compass): swap to a -headless alias if invoked
+    budget_cents: 200
+    timeout_seconds: 600
+  secret_scanning:
+    patterns:
+      - "AIzaSy[A-Za-z0-9_-]{33}"
+  knowledge:
+    local:
+      enabled: true
+      paths:
+        - grimoires/loa/
+        - .claude/protocols/
+    notebooklm:
+      enabled: false
+      notebook_id: ""
+  autonomous_arbiter:
+    enabled: true
+    rotation:
+      - opus
+      - gpt-5.5-pro
+      - gemini-3.1-pro
+    fallback: "reject"
+    max_arbiter_tokens: 4000
 
 # ─────────────────────────────────────────────────────────────────────────
 # Run Bridge · Autonomous Excellence Loop (added 2026-05-07 PM)
+# HEAD-wins for compass defaults (depth:3, mibera/neuromancer lore, rtfm:false);
+# bridgebuilder sub-block adopted from upstream for multi-model features.
 # ─────────────────────────────────────────────────────────────────────────
-
 run_bridge:
   enabled: true
   defaults:
     depth: 3
-    per_sprint: false  # full plan mode · iterate at plan-level
+    per_sprint: false              # full plan mode · iterate at plan-level
     flatline_threshold: 0.05
     consecutive_flatline: 2
   timeouts:
@@ -108,17 +176,57 @@ run_bridge:
     enabled: true
     auto_capture: true
   rtfm:
-    enabled: false  # docs not v0 critical
+    enabled: false                 # docs not v0 critical
   lore:
     enabled: true
     categories:
       - mibera
       - neuromancer
+  bridgebuilder:
+    persona_enabled: true
+    persona_path: .claude/data/bridgebuilder-persona.md
+    enriched_findings: true
+    insights_stream: true
+    praise_findings: true
+    integrity_check: true
+    token_budget:
+      findings_tokens: 5000
+      insights_tokens: 25000
+      total_tokens: 30000
+    size_limits:
+      truncate_bytes: 66560
+      findings_only_bytes: 262144
+    redaction:
+      enabled: true
+      post_redaction_safety: true
+    multi_model:
+      enabled: true
+      models:
+        - provider: anthropic
+          model_id: claude-opus-4-7
+          role: primary
+        - provider: openai
+          model_id: gpt-5.5-pro
+          role: reviewer
+        - provider: google
+          model_id: gemini-3.1-pro-preview
+          role: reviewer
+      iteration_strategy: final
+      api_key_mode: graceful       # missing keys degrade vs block
+      consensus:
+        enabled: true
+        scoring_thresholds:
+          high_consensus: 700
+          disputed_delta: 300
+          low_value: 400
+          blocker: 700
+  pipeline_self_review:
+    enabled: false                 # progressive rollout
 
 # ─────────────────────────────────────────────────────────────────────────
 # Run Mode · /run sprint-plan autonomous execution (added 2026-05-07 PM)
+# HEAD-wins: awareness-layer-spine branch (compass-specific)
 # ─────────────────────────────────────────────────────────────────────────
-
 run_mode:
   enabled: true
   defaults:
@@ -130,3 +238,188 @@ run_mode:
     consolidate_pr: true
     commit_prefix: "feat"
     include_commits_by_sprint: true
+
+# ─────────────────────────────────────────────────────────────────────────
+# NEW from upstream (loa-upstream/main cycle-104 → cycle-111)
+# Added wholesale on 2026-05-16 /update-loa. Compass can override
+# per-key as features get exercised.
+# ─────────────────────────────────────────────────────────────────────────
+
+# Cycle-110 sprint-2b2b1 (2026-05-15): advisor_strategy enabled per upstream.
+# Headless-first dispatch wire-up shipped in PRs #903-#908. MODELINV envelopes
+# carry v1.4 fields (auth_type_resolved + auth_type_selection_reason +
+# auto_selection_inputs + auto_evaluation_timestamp). Auto-mode runs with
+# empty stats (cold-start) until 7-day measurement window completes.
+# Compass note: tier_aliases reference API model ids; cold-start path should
+# prefer headless when chain has a headless entry (matches our CLI-only env).
+advisor_strategy:
+  schema_version: 2
+  enabled: true
+  defaults:
+    planning: advisor
+    review: advisor
+    audit: advisor
+    implementation: advisor
+  tier_aliases:
+    advisor:
+      anthropic: claude-opus-4-7
+      openai: gpt-5.5-pro
+      google: gemini-3.1-pro-preview
+    executor:
+      anthropic: claude-sonnet-4-6
+      openai: gpt-5.3-codex
+      google: gemini-2.5-pro
+
+# Vision Registry Integration (v1.42.0 — cycle-041)
+# Weaves captured visions from bridge reviews into planning workflows.
+vision_registry:
+  enabled: true                    # Graduated in cycle-069 (#486)
+  shadow_mode: true
+  shadow_cycles_before_prompt: 2
+  status_filter:
+    - Captured
+    - Exploring
+  min_tag_overlap: 2
+  max_visions_per_session: 3
+  ref_elevation_threshold: 3
+  propose_requirements: false
+  bridge_auto_capture: false
+
+# Spiral Configuration (cycle-069 seed, cycle-070 e2e)
+# Compass note: executor=sonnet, advisor=opus reference model names — these
+# route via cheval, so headless aliases will hit when configured. Master
+# switch left enabled; /spiral --start is operator-initiated.
+spiral:
+  enabled: true
+  task: ""
+  max_budget_per_cycle_usd: 15
+  max_total_budget_usd: 50
+  status_file: ".run/spiral-status.txt"
+  seed:
+    mode: "full"
+    default_tags:
+      - architecture
+      - security
+    max_seed_visions: 10
+  step_timeouts:
+    seed_sec: 30
+    simstim_sec: 7200
+    harvest_sec: 60
+  harness:
+    enabled: true
+    max_phase_retries: 3
+    planning_budget_usd: 1
+    implement_budget_usd: 5
+    review_budget_usd: 2
+    audit_budget_usd: 2
+    executor_model: sonnet
+    advisor_model: opus
+    pipeline_profile: standard
+  scheduling:
+    enabled: false
+    windows:
+      - start_utc: "02:00"
+        end_utc: "08:00"
+        days: [mon, tue, wed, thu, fri]
+    strategy: fill
+    max_cycles_per_window: 3
+
+# Prompt Isolation (v1.42.0 — cycle-042)
+prompt_isolation:
+  enabled: true
+
+# Continuous Learning — Skill Extraction (cycle-046)
+continuous_learning:
+  skills_dir: grimoires/loa/skills
+  pending_dir: grimoires/loa/skills-pending
+  archive_dir: grimoires/loa/skills-archived
+
+# Post-PR Validation — Amendment 1 enablement (cycle-053, Issue #467)
+post_pr_validation:
+  enabled: true
+  phases:
+    bridgebuilder_review:
+      enabled: true
+      auto_triage_blockers: true
+      depth: 5
+
+# Bridgebuilder Design Review (cycle-044)
+bridgebuilder_design_review:
+  enabled: true
+  persona_path: ".claude/data/bridgebuilder-persona.md"
+  lore_enabled: true
+  vision_capture: true
+  token_budget:
+    findings_tokens: 5000
+    insights_tokens: 25000
+    total_tokens: 30000
+
+# Red Team — Generative Adversarial Security Design (cycle-012)
+# Compass note: model refs are API ids; will fail in no-API env. Left as
+# upstream defaults; swap to -headless aliases before invoking in compass.
+red_team:
+  enabled: true
+  mode: standard
+  models:
+    attacker_primary: opus
+    attacker_secondary: gpt-5.5-pro
+    defender_primary: opus
+    defender_secondary: gpt-5.5-pro
+    evaluator_multi_model: true
+    evaluator_primary: claude-opus-4-7
+    evaluator_secondary: gpt-5.5-pro
+    evaluator_tertiary: gemini-3.1-pro
+  defaults:
+    attacks_per_model: 10
+    depth: 1
+    focus: null
+  thresholds:
+    confirmed_attack: 700
+    theoretical: 400
+    human_review_gate: 800
+  budgets:
+    quick_max_tokens: 50000
+    standard_max_tokens: 200000
+    deep_max_tokens: 500000
+    max_attacks_total: 20
+  early_stopping:
+    saturation_threshold: 0.8
+    min_novel_per_iteration: 2
+  grounding_failure:
+    opus_zero_threshold: 0.8
+    min_attacks: 3
+  safety:
+    prohibited_content: true
+    mandatory_redaction: true
+    retention_days_restricted: 30
+    retention_days_internal: 90
+    ci_artifact_scrubbing: true
+  input_sanitization:
+    injection_detection: true
+    context_isolation: true
+    secret_filtering: true
+  surfaces_registry: .claude/data/attack-surfaces.yaml
+  simstim:
+    auto_trigger: true
+    phase: post_sdd
+  bridge:
+    enabled: false
+  compliance_gates:
+    security:
+      keywords:
+        - Security
+        - Authentication
+        - Authorization
+        - Validation
+        - Error.Handling
+        - Access.Control
+        - Secrets
+        - Encryption
+        - Input.Sanitiz
+      prompt_template: "security-comparison"
+  code_vs_design:
+    enabled: false
+    max_cycles: 2
+    skip_if_no_sdd: true
+    severity_threshold: 700
+    token_budget: 150000

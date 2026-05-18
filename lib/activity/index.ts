@@ -19,10 +19,17 @@
  */
 
 import { populationStore, type SpawnedPuruhani } from "@/lib/sim/population.system";
+import { MutationGuard } from "@/lib/registry/mutation-contract";
 import { startRadarPolling } from "./radar-source";
 import type { ActivityEvent, ActivityStream, JoinActivity } from "./types";
 
-export type { ActionKind, ActivityEvent, ActivityStream, JoinActivity, MintActivity } from "./types";
+export type {
+  ActionKind,
+  ActivityEvent,
+  ActivityStream,
+  JoinActivity,
+  MintActivity,
+} from "./types";
 
 function toJoin(s: SpawnedPuruhani): JoinActivity {
   return {
@@ -35,9 +42,26 @@ function toJoin(s: SpawnedPuruhani): JoinActivity {
   };
 }
 
-// One-off events injected via seedActivityEvent. Kept in a local buffer
-// so recent() can replay them alongside the populationStore-derived ones.
-const extras: ActivityEvent[] = [];
+// REGISTRY DOCTRINE applied: extras buffer is closure-captured inside
+// `extrasGuard`, not a module-level mutable. Every append goes through a
+// registered MutationContract — direct .push() from anywhere else would
+// fail to compile (no exported reference) and the ESLint rule
+// `no-unregistered-mutation` belt-and-suspenders against future drift.
+//
+// See grimoires/loa/proposals/registry-doctrine-2026-05-12.md.
+const extrasGuard = new MutationGuard<ActivityEvent[]>([]);
+extrasGuard.register({
+  name: "activity.append",
+  description: "Append a single activity event to the extras buffer",
+  validate: (e: ActivityEvent) => (e && e.kind ? true : "missing kind"),
+  apply: (state, e) => [...state, e],
+});
+extrasGuard.register({
+  name: "activity.clear",
+  description: "Drop all extras (test/demo reset)",
+  apply: () => [],
+});
+
 const subscribers = new Set<(e: ActivityEvent) => void>();
 
 // Bridge populationStore → our subscriber set. Attaches lazily on first
@@ -62,7 +86,9 @@ function attachBridge(): void {
   // (returns false) if the env var is unset, so the rail keeps working
   // in pure-mock mode for local dev without any config.
   startRadarPolling((mint) => {
-    extras.push(mint);
+    // ROUTED THROUGH REGISTRY: registered "activity.append" contract,
+    // not a direct .push(). Validation runs first.
+    extrasGuard.apply("activity.append", mint);
     for (const cb of subscribers) {
       try {
         cb(mint);
@@ -83,7 +109,7 @@ export const activityStream: ActivityStream = {
   },
   recent(n = 20) {
     const fromPop = populationStore.current().map(toJoin);
-    const all = [...fromPop, ...extras];
+    const all = [...fromPop, ...extrasGuard.read()];
     all.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
     return all.slice(0, n);
   },
@@ -97,7 +123,8 @@ export const activityStream: ActivityStream = {
  * StoneClaimed events through.
  */
 export function seedActivityEvent(event: ActivityEvent): void {
-  extras.push(event);
+  // ROUTED THROUGH REGISTRY — see extrasGuard above
+  extrasGuard.apply("activity.append", event);
   for (const cb of subscribers) {
     try {
       cb(event);
@@ -105,4 +132,9 @@ export function seedActivityEvent(event: ActivityEvent): void {
       // isolate subscriber errors
     }
   }
+}
+
+/** Reset the extras buffer — used by tests + the dev panel "panic" actions. */
+export function clearActivityExtras(): void {
+  extrasGuard.apply("activity.clear", undefined);
 }

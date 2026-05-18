@@ -20,15 +20,11 @@ declare const VerifiedBrand: unique symbol;
  */
 export type Verified<T> = T & { readonly [VerifiedBrand]: true };
 
-export class VerifyError extends S.TaggedError<VerifyError>()(
-  "VerifyError",
-  { reason: S.String },
-) {}
+export class VerifyError extends S.TaggedError<VerifyError>()("VerifyError", {
+  reason: S.String,
+}) {}
 
-export class JudgeError extends S.TaggedError<JudgeError>()(
-  "JudgeError",
-  { reason: S.String },
-) {}
+export class JudgeError extends S.TaggedError<JudgeError>()("JudgeError", { reason: S.String }) {}
 
 /**
  * verify is pure · substrate-anchored. Decodes raw input via the schema,

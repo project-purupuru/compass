@@ -1,0 +1,287 @@
+	.battle-scene {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		min-height: 100svh;
+		background: var(--puru-cloud-dim);
+		overflow: hidden;
+	}
+
+	.quiz-wrapper {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.quiz-wrapper.exiting {
+		pointer-events: none;
+	}
+
+	.battle-wrapper {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		transition: opacity var(--duration-slow) var(--ease-puru-settle);
+	}
+
+	.battle-wrapper.mounted {
+		opacity: 1;
+	}
+
+	/* ═══════════════════════════════════════════════════════════════
+	   Canonical arena layout (from world-purupuru cycle-088 +page.svelte)
+	   .arena is a flex column: opponent (flex:1) · clash-zone (140-200px)
+	   · player-zone (flex:1 — hand + action-bar). The clash-zone is the
+	   visual middle where opponent cards descend to meet the player hand.
+	   ═══════════════════════════════════════════════════════════════ */
+	.arena {
+		position: absolute;
+		inset: 0;
+		z-index: 10;
+		display: flex;
+		flex-direction: column;
+		pointer-events: none;
+		/* Camera composition — CameraEngine writes --parallax-arena-x/y
+		   on every RAF tick (LERP-smoothed in JS). Idle drift is now
+		   ALSO computed by the engine (additive on top of pointer target),
+		   so the legacy --idle-drift-x/y vars + CSS keyframe animation
+		   are removed. Camera shake adds via --camera-shake-x/y * 0.5
+		   (arena lives at the mid layer). The CSS transition that caused
+		   the saw-tooth glitch is removed.
+		*/
+		transform: translate(
+			calc(var(--parallax-arena-x, 0px) + var(--camera-shake-x, 0px) * 0.5),
+			calc(var(--parallax-arena-y, 0px) + var(--camera-shake-y, 0px) * 0.5)
+		);
+	}
+	/* Pause idle drift during clash phases so the impact owns the screen. */
+	.arena[data-phase='clashing'],
+	.arena[data-phase='disintegrating'] {
+		animation-play-state: paused;
+	}
+	/* Figure-8 drift on registered custom properties — translation only,
+	   never rotation, capped at 2px to prevent any nausea. */
+	@property --idle-drift-x {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	@property --idle-drift-y {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	/* Amplitude is live-tunable. The keyframe references
+	   --puru-idle-drift-amplitude (default 2px); via calc() on the
+	   inner --idle-drift-x/y. */
+	@keyframes arena-idle-drift {
+		0%   { --idle-drift-x: 0px;
+		       --idle-drift-y: 0px; }
+		25%  { --idle-drift-x: var(--puru-idle-drift-amplitude, 2px);
+		       --idle-drift-y: calc(var(--puru-idle-drift-amplitude, 2px) * -0.75); }
+		50%  { --idle-drift-x: 0px;
+		       --idle-drift-y: calc(var(--puru-idle-drift-amplitude, 2px) * 0.75); }
+		75%  { --idle-drift-x: calc(var(--puru-idle-drift-amplitude, 2px) * -1);
+		       --idle-drift-y: calc(var(--puru-idle-drift-amplitude, 2px) * -0.75); }
+		100% { --idle-drift-x: 0px;
+		       --idle-drift-y: 0px; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.arena { animation: none; transform: none; transition: none; }
+	}
+
+	.clash-zone {
+		height: clamp(140px, 28vh, 200px);
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-xs);
+		pointer-events: none;
+		position: relative;
+	}
+	.clash-zone::after {
+		content: '';
+		position: absolute;
+		inset: -20%;
+		background: radial-gradient(circle at 50% 50%, oklch(0.97 0.010 90 / 0.4) 0%, transparent 60%);
+		z-index: 27;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 200ms var(--ease-puru-settle);
+	}
+	.arena[data-phase='clashing'] .clash-zone::after,
+	.arena[data-phase='disintegrating'] .clash-zone::after { opacity: 1; }
+
+	.player-zone {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: flex-end;
+		gap: var(--space-sm);
+		padding: 0 var(--space-sm) calc(env(safe-area-inset-bottom, 0px) + var(--space-md));
+		pointer-events: auto;
+		min-height: 0;
+	}
+
+	/* Round context chip — STAGE DOTS (3-row indicator). Centered above
+	   the hand fan. Stage-dot pattern mirrors world-purupuru's prior art.
+	   Always inside the safe area; never cut by viewport edges. */
+	.round-chip {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 0;
+		pointer-events: none;
+		opacity: 0.95;
+		transition: opacity 240ms ease;
+		min-width: 0;
+		width: 100%;
+		max-width: 280px;
+		margin: 0 auto;
+	}
+	.round-chip[data-phase='clashing'],
+	.round-chip[data-phase='disintegrating'] { opacity: 0.55; }
+
+	.round-chip__stages {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+	}
+	.round-chip__dot {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		border: 1.5px solid oklch(from var(--puru-ink-ghost) l c h / 0.55);
+		background: transparent;
+		transition: background 200ms, transform 200ms, border-color 200ms;
+	}
+	.round-chip__dot--done {
+		background: var(--puru-honey-rich);
+		border-color: var(--puru-honey-rich);
+	}
+	.round-chip__dot--active {
+		background: oklch(from var(--puru-honey-rich) l c h / 0.35);
+		border-color: var(--puru-honey-rich);
+		transform: scale(1.25);
+		box-shadow: 0 0 8px oklch(from var(--puru-honey-rich) l c h / 0.45);
+	}
+
+	.action-bar {
+		padding: var(--space-xs) var(--space-lg) 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-sm);
+		pointer-events: auto;
+		width: 100%;
+		min-height: calc(48px + var(--space-xs));
+	}
+
+	.action-bar .tile-btn--lock {
+		font-family: var(--font-body);
+		font-size: var(--text-md);
+		font-weight: 700;
+		/* Text on honey stays dark in BOTH themes — was --puru-ink-rich
+		   which flipped to near-white in dark mode against the honey
+		   button bg, making "Lock in" unreadable. Operator feedback. */
+		color: var(--puru-on-honey);
+		background: var(--puru-honey-base);
+		border: none;
+		padding: var(--space-sm) var(--space-2xl);
+		min-height: 48px;
+		width: 100%;
+		max-width: 340px;
+		border-radius: var(--radius-full);
+		cursor: pointer;
+		letter-spacing: 0.02em;
+		box-shadow: var(--shadow-tile), 0 4px 20px oklch(0.82 0.14 85 / 0.3);
+		background-image: linear-gradient(to bottom, oklch(1 0 0 / 0.18) 0%, transparent 50%);
+		transition: transform 160ms var(--ease-puru-bounce), box-shadow 200ms var(--ease-puru-settle);
+	}
+	.action-bar .tile-btn--lock:hover { transform: translateY(-2px); }
+	.action-bar .tile-btn--lock:hover::before {
+		opacity: 0.6;
+		transform: scale(1.08);
+	}
+	.action-bar .tile-btn--lock:active {
+		transform: scaleY(0.88) scaleX(1.06);
+		transition-duration: 80ms;
+		box-shadow: var(--shadow-tile), 0 2px 8px oklch(0.82 0.14 85 / 0.5);
+	}
+	/* Press-and-commit ritual: a honey halo sweep behind the button. */
+	.action-bar .tile-btn--lock {
+		position: relative;
+	}
+	.action-bar .tile-btn--lock::before {
+		content: '';
+		position: absolute;
+		inset: -8px;
+		border-radius: var(--radius-full);
+		background: radial-gradient(
+			ellipse at 50% 50%,
+			oklch(0.82 0.14 85 / 0.45) 0%,
+			transparent 70%
+		);
+		opacity: 0.25;
+		transform: scale(0.95);
+		transition:
+			opacity 240ms var(--ease-puru-settle),
+			transform 320ms var(--ease-puru-settle);
+		pointer-events: none;
+		z-index: -1;
+	}
+
+	/* When the player commits — phase flips from arrange to clashing —
+	   the fan compaction fires (the visual "snap to formation" moment).
+	   This honors the moment of irreversibility — Hearthstone's "End
+	   Turn" rope settling into the clash. */
+	.arena[data-phase='committed'] .lineup-row,
+	.arena[data-phase='clashing'] .lineup-row,
+	.arena[data-phase='disintegrating'] .lineup-row {
+		transition: gap var(--lock-compact-ms, 320ms) var(--ease-puru-settle);
+	}
+	/* Opponent face-down → revealed cascade — staggered by --card-idx. */
+	.arena[data-phase='clashing'] .opponent-card.revealed,
+	.arena[data-phase='disintegrating'] .opponent-card.revealed {
+		animation: opponent-flip 380ms cubic-bezier(0.34, 1.56, 0.64, 1)
+		           calc(var(--card-idx, 0) * 80ms) backwards;
+	}
+	@keyframes opponent-flip {
+		0%   { transform: perspective(800px) rotateY(180deg) scale(0.95); opacity: 0; }
+		60%  { transform: perspective(800px) rotateY(-10deg) scale(1.02); opacity: 1; }
+		100% { transform: perspective(800px) rotateY(0) scale(1); opacity: 1; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.arena[data-phase='clashing'] .opponent-card.revealed,
+		.arena[data-phase='disintegrating'] .opponent-card.revealed { animation: none; }
+		.action-bar .tile-btn--lock::before { display: none; }
+	}
+
+	.help-btn {
+		position: fixed;
+		bottom: var(--space-md);
+		right: var(--space-md);
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--puru-cloud-bright);
+		border: 1px solid var(--puru-surface-border);
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		color: var(--puru-ink-soft);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}

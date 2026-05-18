@@ -1,895 +1,789 @@
 ---
-status: post-bridgebuilder-r1-patched
-type: sdd
-cycle: substrate-agentic-translation-adoption-2026-05-12
-mode: arch + adopt
-prd: grimoires/loa/prd.md
-review: .run/bridge-reviews/design-review-substrate-agentic-2026-05-12.md
-created: 2026-05-12
-revision: post-bridgebuilder-r1 · 3 HIGH (BB-001 BB-002 BB-003) + 6 MEDIUM patched · BB-012 REFRAME resolved (keep split + pattern-lock at S1 close)
-operator: zksoju
+cycle: fixture-ecs-instancing-2026-05-17
+session: 19
+type: SDD
+status: candidate (Path B — focused SDD; no full Flatline SDD ceremony per cycle 1+2 convention)
+date: 2026-05-17
+mode: ARCH (OSTROM) + craft lens (ALEXANDER) + k-hole-as-teacher
+references:
+  - grimoires/loa/prd.md (this cycle's PRD)
+  - lib/engine/ecs/archetype.ts (cycle-1 substrate)
+  - lib/engine/animation/sway-system.ts (cycle-1 system pattern)
+  - app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx (cycle-1 renderer template)
+  - app/battle-v2/_components/vfx/effects/leafExtractors.ts (cycle-1 extractor template)
+  - app/battle-v2/_components/vfx/effects/{Tree,Bush,Rock,Mushroom,Wildflower}.tsx (existing fixtures)
+  - app/battle-v2/_components/vfx/effects/HexPlot.tsx (integration seam)
+  - app/battle-v2/_components/vfx/effects/BigRealmScene.tsx (composer)
 ---
 
-# SDD · Substrate-Agentic Translation Layer · Compass Adoption Cycle
+# Cycle-3 — Fixture-ECS-Instancing (SDD)
 
-## 1 · Abstract (PRAISE-001 verbatim · load-bearing)
+> Architecture for collapsing 5 fixture kinds (Tree · Bush · Rock · Mushroom · Wildflower)
+> from per-React-component meshes into InstancedMesh archetypes. Each kind gets its own
+> `lib/engine/ecs/<kind>-archetype.ts` substrate primitive + an `Instanced<Kind>Field.tsx`
+> renderer. Integration via additive `suppressFixtures` opt-in on HexPlot. BLACK-leaves
+> shader-chunk fix lands first as a standalone commit (meshLambertMaterial swap).
 
-> **The original 5-doc Gemini synthesis (`grimoires/loa/context/07..11-*.md`) proposed inventing a translation layer. KEEPER pre-flight + grounding in upstream repos established that the translation layer already exists. This cycle is INTEGRATION, not invention.**
+---
 
-This SDD describes HOW compass conforms to three already-shipping upstream substrates per PRD D1-D6:
-- **Hand-port** ~5 hounfour schemas as Effect Schemas owned in `compass/lib/domain/` (D1)
-- **Vendor** rooms-substrate handoff envelope JSON files into `compass/lib/domain/schemas/` (D5)
-- **Doc-only** force-chain mapping + compile-time TypeScript brand-type fence for verify⊥judge (D2)
-- **In-memory only** persistence for new system layers (D4)
-- **No new top-level folders** — chain-bindings stay in `lib/live/` (D5)
-- **Envelope-shell first** then narrow `verdict` typing in S2 (D6)
+## 1. Overview
 
-The SDD's customer is the implementer agent in S1-S6 sprints and the operator pair-points at gates. Every section names file paths · code shapes · acceptance criteria · NOT design rationale (PRD owns rationale).
+```
+Existing data flow (non-instanced — N React components per tile):
+  PlotT.fixtures[i]   →   <HexPlot>.dispatch(fix.kind)   →   <Tree>/<Bush>/<Rock>/...
+                                                              └─ N <mesh> + Outlines per fixture
+                                                              └─ Bush also has its OWN useFrame
 
-## 2 · Stack & decisions
-
-### 2.1 · Confirmed stack (from compass repo state · NOT changed by cycle)
-
-| Layer | Tech | Compass version |
-|---|---|---|
-| Runtime | Next.js | 16.2.6 (Turbopack default) |
-| UI | React | 19.2.4 |
-| Styles | Tailwind | 4.x (`@tailwindcss/postcss` · `@theme` in CSS, no JS config) |
-| Schema/Effects | `effect` | from package.json (verify pin at S0) |
-| Chain | Solana / Anchor / Metaplex | unchanged |
-| Pkg manager | pnpm | 10.x |
-
-### 2.2 · New dependencies introduced this cycle
-
-| Package | Sprint | Purpose | Justification |
-|---|---|---|---|
-| `ajv` + `ajv-formats` | S1 | Validate vendored handoff envelope JSON Schemas at parse boundaries | NFR-SEC-3 · structural conformance · already-canonical JSON Schema validator |
-| `expect-type` | S3 | Verify⊥judge compile-time fence assertion | Q6 / NFR-SEC-1 · pinned per BB-005 (composes with vitest · zero new infra · drop tstyche alternation) |
-| `@octokit/rest` | S2 | Drift detection script GitHub API client (per BB-004 hardening) | SDD §9.1 |
-| `json-schema-diff` | S2 | Structural diff between vendored + upstream schemas | SDD §9.1 |
-| **NOT** `@sinclair/typebox` | — | — | PRD D1 explicitly forbids · compass does not host TypeBox |
-| **NOT** `loa-hounfour` (npm) | — | — | PRD D1 hand-port pattern · upstream is reference, not import |
-| **NOT** `loa-straylight` (npm) | — | — | PRD D2 doc-only · zero runtime imports |
-
-### 2.3 · Resolved SDD-level decisions (PRD §11 closures)
-
-**SDD-D1 · Single `Effect.provide` site** (PRD §11 Q1 · revised per BB-001 · LOAD-BEARING). Compass ALREADY has the canonical pattern at `lib/runtime/runtime.ts:10`: `export const runtime = ManagedRuntime.make(AppLayer)`. The existing file's own comment forbids parallel sites: *"THE single Effect.provide site for the app. Lint check: a grep for `ManagedRuntime.make` in lib/ or app/ should return exactly one match."* This cycle COMPOSES INTO that file, NOT parallel to it. S1 modifies `lib/runtime/runtime.ts` to add lifted `ActivityLive` + `PopulationLive` to the existing `AppLayer = Layer.mergeAll(WeatherLive, SonifierLive, ActivityLive, PopulationLive)`. S4 extends the same `AppLayer` with world-system Layers. The React-bridge already lives at `lib/runtime/react.ts` (existing) — no new hook files. **Zero new files in `lib/runtime/` this cycle.**
-
-**SDD-D2 · Drift-detection mechanism** (PRD §11 Q2). GitHub Actions weekly cron at `.github/workflows/hounfour-drift.yml`. Runs `pnpm hounfour:drift` which: (a) reads each `lib/domain/*.hounfour-port.ts` · (b) reads its `Source: hounfour@<sha>:schemas/<file>` annotation · (c) fetches `https://raw.githubusercontent.com/0xHoneyJar/loa-hounfour/<sha>/schemas/<file>.schema.json` (or local clone if available) · (d) parses both, runs structural diff via `json-schema-diff` package · (e) writes report to `grimoires/loa/drift-reports/YYYY-MM-DD.md` · (f) opens GitHub issue if delta > 2 fields.
-
-**SDD-D3 · Hand-port idiom: `Schema.Struct` baseline · `Schema.Class` for branded types** (PRD §11 Q3). Default to `Schema.Struct({...})` for plain records (matches existing compass pattern in `peripheral-events/src/world-event.ts`). Use `Schema.Class<T>("Name")({...})` ONLY when (a) the type needs nominal identity OR (b) the type is wrapped by a brand (e.g., `VerifiedEvent<T>`). Rationale: keeps imports light · matches compass's prevailing style · Class adds named identifier in error messages where it matters.
-
-**Brand disambiguation** (per BB-010): use `S.brand("Name")` for value-tagging at decode-time (Solana pubkey, hex strings — see existing `packages/peripheral-events/src/world-event.ts:16`). Use `unique symbol` brand (§6.2) for security-grade brands the implementation refuses to construct except through one named function (`verify()`).
-
-**SDD-D4 · Compass-as-fixture-vs-tutorial** (PRD §11 Q4 / IMP-016) · DEFER to S6 distill. SDD does not commit; S6 operator pair-point decides whether to PR a `compass-conformance.test.ts` upstream into hounfour CI.
-
-## 3 · Type-system bridge implementation (D1)
-
-### 3.1 · Hand-port file convention
-
-For each candidate hounfour schema in PRD §5.1.1, ship one file at `lib/domain/<name>.hounfour-port.ts`:
-
-```typescript
-/**
- * Hand-port of hounfour `<name>` schema as Effect Schema.
- *
- * Source: hounfour@<resolved-S0-SHA>:schemas/<name>.schema.json
- * Drift policy: see lib/domain/__tests__/<name>.drift.test.ts
- *
- * DO NOT EDIT to match an evolving upstream — let the drift CI flag deltas.
- * Adopting an upstream change requires bumping the SHA + re-porting + operator pair-point.
- */
-import { Schema as S } from "effect"
-// ESM JSON import per BB-003 · NOT require()
-import upstreamSchema from "./schemas/hounfour-<name>.schema.json" with { type: "json" }
-
-export const <Name>Port = S.Struct({
-  // 1:1 mapping of upstream JSON Schema fields
-  // Optionality, nullability, enums match upstream semantics
-})
-
-export type <Name>Port = S.Schema.Type<typeof <Name>Port>
-
-// Runtime conformance check at module load (NFR-SEC-3 surface)
-export const <Name>UpstreamSchema = upstreamSchema
+New data flow (instanced — SHARED InstancedMesh per kind):
+  PlotT.fixtures[i]   →   fixtureExtractors.gather(plots, worldPositions)
+                              └─ produces TreeSpec[] · BushSpec[] · RockSpec[] · ...
+                          ↓
+                          per-kind Archetype tables (lib/engine/ecs/*)
+                              └─ Float32 column slabs: position, rotation, scale, color, …
+                          ↓
+                          Instanced<Kind>Field.tsx renders
+                              └─ 1-6 InstancedMesh layers per kind (NO per-frame work for
+                                 static fixtures; leaf field handles sway separately)
+                          ↓
+                          HexPlot skips JSX render for kinds ∈ suppressFixtures
 ```
 
-**Required tsconfig** (verify at S0 · likely already set): `resolveJsonModule: true` + `module: "esnext"` or higher.
+The cycle-1 pattern (Archetype + System + InstancedMesh + useFrame) is preserved for
+the LEAF-bearing parts (cycle-1 still owns sway). The cycle-3 archetypes are STATIC —
+no per-frame work needed because trunks/branches/stems/rocks/bushes don't animate
+independently in the non-instanced path either (Bush is the exception and gets its
+own design choice — see §5.2).
 
-### 3.2 · Per-port test substrate
+---
 
-Each `*.hounfour-port.ts` ships with:
+## 2. Component breakdown
 
-| File | Role |
+### 2.1 New `lib/engine/` substrate (renderer-agnostic — no Three.js imports)
+
+| File | Purpose |
 |---|---|
-| `lib/domain/__tests__/<name>.port.test.ts` | Decode / encode round-trip · sample payload conformance |
-| `lib/domain/__tests__/<name>.drift.test.ts` | Structural-diff test against vendored JSON Schema · runs on every CI |
-| `lib/domain/<name>.mock.ts` | Factory function returning a valid mock instance |
+| `lib/engine/ecs/tree-trunk-archetype.ts` | TreeTrunkCols + factory; one row per tree (trunk geometry). |
+| `lib/engine/ecs/tree-branch-archetype.ts` | TreeBranchCols + factory; one row per branch (4 per tree typical). |
+| `lib/engine/ecs/bush-archetype.ts` | BushCols + factory; one row per bush, variant column selects canonical geometry. |
+| `lib/engine/ecs/rock-archetype.ts` | RockCols + factory; one row per rock primary + RockChunkCols for chunks (similar to tree split). |
+| `lib/engine/ecs/mushroom-archetype.ts` | MushroomCols + factory; one row per mushroom (stem only — cap continues through cycle-1 leaf field). |
+| `lib/engine/ecs/wildflower-archetype.ts` | WildflowerCols + factory; one row per wildflower (stem only — bloom continues through cycle-1 leaf field). |
+| `lib/engine/index.ts` (extend) | Re-export all new types. |
 
-### 3.3 · Vendored JSON Schema location
+**Note**: These archetypes have NO accompanying `system.ts` files because the cycle-3
+archetypes are STATIC (no per-frame mutation). The cycle-1 `swayLeafSystem` handles
+all the actual sway-animation work. If a future cycle needs whole-tree wind effects,
+a `treeWindSystem` lands then.
 
-Vendored copies of upstream JSON Schemas live at `lib/domain/schemas/hounfour-<name>.schema.json`. These are NOT edited; they are refreshed by the operator at S6 (or when the SHA pin moves).
+### 2.2 New `app/battle-v2/_components/vfx/effects/` renderers
 
-### 3.4 · Hand-port checklist for each schema (S2 task contract)
-
-1. Read upstream `schemas/<name>.schema.json` at the pinned SHA.
-2. Vendor as `lib/domain/schemas/hounfour-<name>.schema.json`.
-3. Author `lib/domain/<name>.hounfour-port.ts` following §3.1.
-4. Author `<name>.mock.ts` factory with realistic defaults.
-5. Author `__tests__/<name>.port.test.ts` with decode + encode round-trip + 1 invalid-input case.
-6. Author `__tests__/<name>.drift.test.ts` that asserts structural equivalence (uses `ajv.compile(upstreamSchema)` against `Schema.encode(<Name>Port)(mockInstance)`).
-7. Run `pnpm test` — must stay green.
-8. Operator pair-point review for Effect-Schema idiom-fit before marking sprint-task closed.
-
-## 4 · Envelope vendoring implementation (D5)
-
-### 4.1 · Vendoring procedure
-
-Two JSON files copied verbatim from `~/Documents/GitHub/construct-rooms-substrate/data/trajectory-schemas/`:
-
-| Source | Vendored at |
+| File | Purpose |
 |---|---|
-| `room-activation-packet.schema.json` | `lib/domain/schemas/room-activation-packet.schema.json` |
-| `construct-handoff.schema.json` | `lib/domain/schemas/construct-handoff.schema.json` |
+| `InstancedTreeField.tsx` | Mounts TreeTrunkArchetype + TreeBranchArchetype. 2 InstancedMeshes (trunk + branch cylinders). |
+| `InstancedBushField.tsx` | Mounts BushArchetype. N InstancedMeshes (one per canonical bush variant; default N=2). |
+| `InstancedRockField.tsx` | Mounts RockArchetype + RockChunkArchetype. Up to N×M InstancedMeshes (one per shape × variant; default 3 shapes × 2 variants = 6). |
+| `InstancedMushroomField.tsx` | Mounts MushroomArchetype. 1 InstancedMesh (cylinder stem). |
+| `InstancedWildflowerField.tsx` | Mounts WildflowerArchetype. 1 InstancedMesh (cylinder stem). |
+| `fixtureExtractors.ts` | Pure functions: `treeSpecsFromPlots`, `bushSpecsFromPlots`, etc. Mirrors `leafExtractors.ts` pattern. |
+| `fixtureGeometryVariants.ts` | Module-load-time canonical geometry baking for Bush + Rock variants. |
 
-Both files are copy-only · no edits. Provenance comment in `lib/domain/schemas/README.md` names the source SHA (resolved at S0 per PRD §10.5).
+### 2.3 Modified existing files (additive only — preserves cycle-1 + cycle-2 contracts)
 
-### 4.2 · Effect Schema mirror at type level
+| File | Change |
+|---|---|
+| `app/battle-v2/_components/vfx/effects/HexPlot.tsx` | Add `suppressFixtures?: ReadonlySet<FixtureKindT>` prop. Skip JSX render per kind when present. `suppressLeaves` prop stays as-is (orthogonal). |
+| `app/battle-v2/_components/vfx/effects/BigRealmScene.tsx` | Add InstancedXField mounts (one per kind), driven by new `useInstancedFixtures` config. Pass `suppressFixtures` to each `<HexPlot>`. |
+| `app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx` | Swap `<meshToonMaterial>` → `<meshLambertMaterial>` (BLACK-leaves S1 commit 1). |
+| `app/battle-v2/_components/vfx/VfxConfig.ts` (or equivalent) | Add `useInstancedFixtures: ReadonlySet<FixtureKindT>` to `BigRealmSceneConfigT` schema. Apply HMR-stale-ref backfill defaults pattern from cycle-2. |
+| `lib/engine/index.ts` | Re-export new archetype types. |
 
-`lib/domain/handoff.schema.ts`:
+### 2.4 Tests (G8, P2 — nice-to-have)
 
-```typescript
-import { Schema as S } from "effect"
+| File | Purpose |
+|---|---|
+| `lib/engine/ecs/tree-trunk-archetype.test.ts` | Per-archetype factory determinism + Float32 precision. |
+| `lib/engine/ecs/tree-branch-archetype.test.ts` | Same shape. |
+| `lib/engine/ecs/bush-archetype.test.ts` | Same shape + variant assignment determinism. |
+| `lib/engine/ecs/rock-archetype.test.ts` | Same shape + shape/variant matrix. |
+| `lib/engine/ecs/mushroom-archetype.test.ts` | Same shape. |
+| `lib/engine/ecs/wildflower-archetype.test.ts` | Same shape. |
+| `app/battle-v2/_components/vfx/effects/fixtureExtractors.test.ts` | Per-extractor: deterministic spec output for a given seed; consistent across runs. |
 
-const OutputType = S.Literal("Signal", "Verdict", "Artifact", "Intent", "Operator-Model")
-const InvocationMode = S.Literal("room", "studio", "headless")
+---
 
-// Verdict starts as Unknown per PRD D6 · narrows in S2
-export const ConstructHandoff = S.Struct({
-  construct_slug: S.String,
-  output_type: OutputType,
-  verdict: S.Unknown, // S2 narrows to discriminated union of hand-ported types
-  invocation_mode: InvocationMode,
-  cycle_id: S.String,
-  // optional fields per upstream schema
-  persona: S.optional(S.String),
-  output_refs: S.optional(S.Array(S.String)),
-  evidence: S.optional(S.Unknown),
-})
-export type ConstructHandoff = S.Schema.Type<typeof ConstructHandoff>
+## 3. lib/engine archetype designs
 
-// Vendored JSON Schema for runtime AJV validation · ESM import per BB-003
-import handoffSchema from "./schemas/construct-handoff.schema.json" with { type: "json" }
-export const ConstructHandoffSchema = handoffSchema
-```
+### 3.1 TreeTrunkArchetype
 
-### 4.2.1 · Verdict narrowing migration (S1 → S2 · per BB-008)
-
-S1 ships `verdict: S.Unknown`. S2 narrows to discriminated union of hand-ported types. To prevent breaking consumers between S1 merge and S2 merge:
-
-1. **At S2 entry**: grep for `ConstructHandoff[\"\']*verdict` usage sites in `lib/` and `app/`. Expected count: 0 (no consumer should have read raw `verdict` yet · S1 is one sprint long).
-2. **If grep returns 0**: narrow `verdict` field directly. Atomic commit.
-3. **If grep returns >0**: ship narrowing as ADDITIVE field `typed_verdict: <NewUnion>` · deprecate `verdict: S.Unknown` in same commit · remove `verdict` field in next sprint.
-
-Operator pair-point at S2 entry confirms grep result before proceeding.
-
-### 4.3 · AJV validation utility
-
-`lib/domain/validate-envelope.ts`:
+**Why split trunk + branch into TWO archetypes** (divergence from operator brief's
+"ONE TreeArchetype"): a tree's trunk is ONE geometry; its 3-5 branches each have
+DIFFERENT matrices (per-branch yaw/pitch/length/thickness from `buildBranches`).
+InstancedMesh requires one shared geometry per instance — branches and trunk can't
+share. Two archetypes preserve the per-branch matrix variety while keeping each
+archetype's column shape flat and instance count clean.
 
 ```typescript
-import Ajv from "ajv"
-import addFormats from "ajv-formats"
-import { ConstructHandoffSchema } from "./handoff.schema"
+// lib/engine/ecs/tree-trunk-archetype.ts
+export type TreeTrunkCols = "posX" | "posY" | "posZ" | "rotY" | "scale";
 
-const ajv = new Ajv({ allErrors: true, strict: true })
-addFormats(ajv)
-const validate = ajv.compile(ConstructHandoffSchema)
-
-export const validateEnvelope = (input: unknown) => {
-  if (!validate(input)) throw new EnvelopeValidationError(validate.errors)
-  return input as ConstructHandoff
-}
+export const TREE_TRUNK_COLUMN_SPECS: readonly ColumnSpec[] = [
+  { name: "posX", itemSize: 1 },
+  { name: "posY", itemSize: 1 },
+  { name: "posZ", itemSize: 1 },
+  { name: "rotY", itemSize: 1 },
+  { name: "scale", itemSize: 1 },
+];
 ```
 
-### 4.4 · Output_type coverage rule (Q4 · per BB-007 · regex pinned · zero new deps)
+- **Renderer** (in `InstancedTreeField`): per-instance matrix from `(posX, posY, posZ)`
+  translation + `rotY` Y-rotation + uniform `scale`. Trunk source geometry is a
+  tapered cylinder (`cylinderGeometry args=[topRadius, baseRadius, trunkHeight, 7]`)
+  baked at module load.
+- **Color**: trunk is always `PALETTE.trunk` — no per-instance color column. Set on
+  material directly.
+- **Outline**: dropped (per cycle-1 outline-on-instanced regression, accepted).
 
-S1 adds `scripts/check-envelope-coverage.sh`:
-
-```bash
-#!/usr/bin/env bash
-# Counts S.Literal _tag occurrences vs output_type: occurrences in world-event.ts
-# Asserts equality. Fragile by design: if the file shape changes, this breaks loudly.
-set -e
-FILE=packages/peripheral-events/src/world-event.ts
-TAGS=$(grep -cE "_tag:\s*S\.Literal" "$FILE" || echo 0)
-TYPES=$(grep -cE "output_type:\s*S\." "$FILE" || echo 0)
-if [ "$TAGS" != "$TYPES" ]; then
-  echo "FAIL: $TAGS _tag variants vs $TYPES output_type annotations in $FILE"
-  exit 1
-fi
-echo "OK: $TAGS variants all tagged with output_type"
-```
-
-CI step in `.github/workflows/envelope-coverage.yml` runs this script. **NO ts-morph dependency.** Acceptable failure mode: future shape changes to world-event.ts break the regex loudly; operator decides whether to fix the script or restructure the file.
-
-## 5 · Single Effect.provide site (SDD-D1 · COMPOSES INTO EXISTING per BB-001)
-
-### 5.1 · Modify existing `lib/runtime/runtime.ts`
-
-Current state (`lib/runtime/runtime.ts:1-11` · DO NOT replace):
+### 3.2 TreeBranchArchetype
 
 ```typescript
-import { Layer, ManagedRuntime } from "effect";
-import { WeatherLive } from "@/lib/live/weather.live";
-import { SonifierLive } from "@/lib/live/sonifier.live";
+// lib/engine/ecs/tree-branch-archetype.ts
+export type TreeBranchCols =
+  | "anchorX" | "anchorY" | "anchorZ"  // tree base + branchOriginY (world space)
+  | "parentRotY"                        // tree's whole-tree rotY
+  | "yaw" | "pitch"                     // branch-local yaw + pitch (from buildBranches)
+  | "length" | "thickness"              // branch dimensions
+  ;
 
-// THE single Effect.provide site for the app. Lint check: a grep for
-// `ManagedRuntime.make` in lib/ or app/ should return exactly one match
-// — this file. A second site would fragment the service graph and
-// fork the Layer scope.
-export const AppLayer = Layer.mergeAll(WeatherLive, SonifierLive);
-export const runtime = ManagedRuntime.make(AppLayer);
+export const TREE_BRANCH_COLUMN_SPECS: readonly ColumnSpec[] = [
+  { name: "anchorX", itemSize: 1 },
+  { name: "anchorY", itemSize: 1 },
+  { name: "anchorZ", itemSize: 1 },
+  { name: "parentRotY", itemSize: 1 },
+  { name: "yaw", itemSize: 1 },
+  { name: "pitch", itemSize: 1 },
+  { name: "length", itemSize: 1 },
+  { name: "thickness", itemSize: 1 },
+];
 ```
 
-S1 modifies this file to extend `AppLayer`:
+- **Renderer** (in `InstancedTreeField`): per-instance matrix composed from:
+  ```
+  M = translate(anchorX, anchorY, anchorZ)
+    × rotY(parentRotY + yaw)
+    × rotZ(-pitch)
+    × translate(0, length/2, 0)
+    × scale(thickness, length, thickness)
+  ```
+  Branch source geometry is a unit-cylinder (`cylinderGeometry args=[0.55, 1, 1, 5]`).
+  The scale `[thickness, length, thickness]` produces a tapered cylinder with top
+  radius `0.55*thickness` and base radius `thickness` — matches Tree.tsx exactly.
+- **Color**: trunk hue (same as trunk).
+
+### 3.3 BushArchetype
+
+**Trade-off**: Bush.tsx merges 4-6 procedural icospheres into ONE BufferGeometry per
+bush (cycle-1 craft note: "one merged geo + one outline + spherical-pivot normals").
+Each bush has a UNIQUE merged geometry, which InstancedMesh can't share.
+
+**Design choice** (default for cycle-3, operator pair-point at S2 BushArchetype design):
+**Bake 2 canonical bush variants** (small, medium) at module load via `buildPuffCluster`.
+Per-bush picks variant by seed. Loses per-bush shape variety; preserves merged-geo
+craft (one outline per bush, shared-volume normals per variant).
 
 ```typescript
-import { Layer, ManagedRuntime } from "effect";
-import { WeatherLive } from "@/lib/live/weather.live";
-import { SonifierLive } from "@/lib/live/sonifier.live";
-// S1 additions (after lifting per FR-S1-3.5):
-import { ActivityLive } from "@/lib/activity/activity.live";
-import { PopulationLive } from "@/lib/sim/population.live";
+// lib/engine/ecs/bush-archetype.ts
+export type BushCols = "posX" | "posY" | "posZ" | "rotY" | "scale" | "variant" | "hueR" | "hueG" | "hueB";
 
-export const AppLayer = Layer.mergeAll(
-  WeatherLive,
-  SonifierLive,
-  ActivityLive,
-  PopulationLive,
-);
-export const runtime = ManagedRuntime.make(AppLayer);
+export const BUSH_COLUMN_SPECS: readonly ColumnSpec[] = [
+  { name: "posX", itemSize: 1 },
+  { name: "posY", itemSize: 1 },
+  { name: "posZ", itemSize: 1 },
+  { name: "rotY", itemSize: 1 },
+  { name: "scale", itemSize: 1 },
+  { name: "variant", itemSize: 1 },  // 0 or 1 (index into baked canonical bushes)
+  { name: "hueR", itemSize: 1 },
+  { name: "hueG", itemSize: 1 },
+  { name: "hueB", itemSize: 1 },
+];
 ```
 
-S4 extends further:
+- **Renderer**: split rows by `variant` column at render time; mount 2 InstancedMeshes
+  (one per variant), each fed only matching rows.
+- **Per-instance color**: via `setColorAt(i, color)` + `vertexColors` on material,
+  same as cycle-1 leaf path.
+- **Sway**: Bush.tsx had whole-bush useFrame sway. Cycle-3 default = **DROP the sway**
+  for instanced bushes (operator visual gate decides if missed). If sway matters,
+  add a `BushSwaySystem` (similar to swayLeafSystem) reading rotY column + writing
+  back per frame. Defer unless operator flags.
+
+**Alternative shape** (operator pair-point at S2):
+- **Per-puff archetype**: BushPuffArchetype with one row per puff (4-6 per bush).
+  Loses craft (separate outlines, separate volume normals per puff). Gains shape
+  variety. Tradeoff favors craft per cycle-1 doctrine; default = canonical variants.
+
+### 3.4 RockArchetype + RockChunkArchetype
+
+**Same trade-off as Bush**: `buildRockGeometry` is fully procedural per-rock.
+
+**Design choice**: Bake **3 canonical geometries per shape** (boulder × 3, slab × 3,
+pebble × 3) at module load via `buildRockGeometry` with fixed seeds. Per-rock picks
+shape × variant by seed. 9 canonical RockGeometries total.
 
 ```typescript
-// S4 additions:
-import { AwarenessLive } from "@/lib/world/awareness.live";
-import { ObservatoryLive } from "@/lib/world/observatory.live";
-import { InvocationLive } from "@/lib/world/invocation.live"; // renamed from "ceremony" per BB-011
+// lib/engine/ecs/rock-archetype.ts
+export type RockCols =
+  | "posX" | "posY" | "posZ"     // world position
+  | "rotY"                        // variation
+  | "scaleX" | "scaleY" | "scaleZ"  // non-uniform (slab squish: 1.25, 0.55, 1.15)
+  | "shape" | "variant"           // shape: 0=boulder, 1=slab, 2=pebble; variant: 0..2
+  | "hueR" | "hueG" | "hueB"      // per-rock color
+  ;
 
-export const AppLayer = Layer.mergeAll(
-  WeatherLive, SonifierLive, ActivityLive, PopulationLive,
-  AwarenessLive, ObservatoryLive, InvocationLive,
-);
+export type RockChunkCols =
+  | "posX" | "posY" | "posZ"
+  | "rotY"
+  | "scale"
+  | "variant"  // 0..2 (re-use boulder geometries)
+  | "hueR" | "hueG" | "hueB"
+  ;
 ```
 
-### 5.2 · React bridge (existing · `lib/runtime/react.ts`)
+- **Renderer** (`InstancedRockField`): split rows by `(shape, variant)` column pair;
+  mount up to 9 InstancedMeshes for primaries + up to 3 for chunks. In practice ~6-12
+  InstancedMeshes total for rocks. Per-rock matrix from position + rotY + scaleXYZ.
+- **Moss puffs**: continue to flow through cycle-1 leaf field via `rockMossLeafSpecs`
+  (already exists). No new work for moss.
 
-Existing pattern uses `runtime.runFork()` etc. NO new hook files this cycle. Components import from `@/lib/runtime/react` as they already do.
+### 3.5 MushroomArchetype
 
-### 5.3 · Grep rule (FR-S1-4 enforcement · existing comment-as-spec)
-
-The existing comment in `lib/runtime/runtime.ts:5-8` IS the spec. S1 adds CI step:
-
-```bash
-# .github/workflows/single-runtime.yml
-COUNT=$(grep -rn "ManagedRuntime\.make" --include="*.ts" --include="*.tsx" lib/ app/ | wc -l)
-if [ "$COUNT" != "1" ]; then echo "FAIL: $COUNT ManagedRuntime.make sites (expected 1)"; exit 1; fi
-```
-
-### 5.4 · S1 pattern-lock for S4 (per BB-012 operator decision)
-
-S1 closes by shipping a **lift-pattern template** at `grimoires/loa/specs/lift-pattern-template.md` documenting:
-- The 4-file canonical trio (`<name>.port.ts` · `<name>.live.ts` · `<name>.mock.ts` · `<name>.test.ts`)
-- The Layer integration step (one line added to `runtime.ts` AppLayer)
-- The example component pattern (`app/_components/<name>-example.tsx`)
-- Naming conventions
-
-S4 applies this template mechanically per system. Goal: a new system in `lib/world/` is droppable in 5 commands (see FR-S4-2 numbered procedure).
-
-## 6 · Force-chain mapping + compile-time fence (D2 / FR-S3-1..3)
-
-### 6.1 · Force chain doc shape
-
-`grimoires/loa/context/13-force-chain-mapping.md` ships with this skeleton:
-
-```markdown
-| Step | Compass surface | Gate location | Status |
-|---|---|---|---|
-| observation | weather + activity events flow | lib/activity/index.ts | ✅ exists |
-| memory | activity stream history | lib/activity/index.ts (Stream subscription) | ✅ exists |
-| belief | KEEPER-style aggregation | NOT YET — placeholder for puruhani-aware | 🟡 doc-only |
-| instruction | ceremony invocation | lib/ceremony/* | ✅ exists |
-| plan | (no compass surface yet · post-cycle) | — | ⏳ deferred |
-| permission | wallet signature gate | lib/blink/sponsored-payer.ts | ✅ exists (Solana scope) |
-| action | claim message exec | lib/blink/claim-message.ts | ✅ exists |
-| commitment | Solana tx confirmation | claim handler | ✅ exists (Solana scope) |
-| permanence | on-chain state | Solana program | ✅ exists |
-```
-
-### 6.2 · Compile-time brand-type fence
-
-`lib/domain/verify-fence.ts` (no straylight import per D2):
+**Simplest case** — Mushroom.tsx is just a tapered cylinder stem + cap LeafPuff. The
+cap continues to flow through cycle-1 leaf field via `mushroomLeafSpecs`. Cycle-3
+handles only the stem.
 
 ```typescript
-import { Effect } from "effect"
-import { Schema as S } from "effect"
-
-// Branded marker — only constructable via verify()
-declare const VerifiedBrand: unique symbol
-export type Verified<T> = T & { readonly [VerifiedBrand]: true }
-
-export class VerifyError extends S.TaggedError<VerifyError>()(
-  "VerifyError",
-  { reason: S.String },
-) {}
-
-export class JudgeError extends S.TaggedError<JudgeError>()(
-  "JudgeError",
-  { reason: S.String },
-) {}
-
-/**
- * Verify is pure · substrate-anchored. Accepts raw T, returns Verified<T>.
- * Implementation = AJV validation against the vendored JSON Schema.
- */
-export const verify = <T>(
-  schema: S.Schema<T>,
-  input: unknown,
-): Effect.Effect<Verified<T>, VerifyError, never> =>
-  S.decodeUnknown(schema)(input).pipe(
-    Effect.map((decoded) => decoded as Verified<T>),
-    Effect.mapError((cause) => new VerifyError({ reason: String(cause) })),
-  )
-
-/**
- * Judge is LLM-bound (in future cycles) · revocable.
- * INVARIANT: signature requires Verified<T> · raw T won't typecheck.
- */
-export const judge = <T, R>(
-  e: Verified<T>,
-  judgmentFn: (e: T) => Effect.Effect<R, JudgeError, never>,
-): Effect.Effect<R, JudgeError, never> => judgmentFn(e)
+// lib/engine/ecs/mushroom-archetype.ts
+export type MushroomCols =
+  | "posX" | "posY" | "posZ"
+  | "rotY"
+  | "scale"
+  ;
 ```
 
-### 6.3 · Compile-time fence assertion (Q6 surface · expect-type API per BB-005 / SP-001)
+- **Renderer** (`InstancedMushroomField`): 1 InstancedMesh, cylinder source baked at
+  module load (`cylinderGeometry args=[stemTopRadius, stemBaseRadius, 1, 6]`), per-
+  instance matrix from `(posX, posY+0.5*stemHeight*scale, posZ) + rotY + scale`.
+- **Color**: stem is always `PALETTE.parchment` — material-level, no per-instance column.
 
-`lib/test/judge-fence.spec-types.ts`:
+### 3.6 WildflowerArchetype
+
+**Same as Mushroom** — Wildflower.tsx is just a thin tapered cylinder stem + bloom
+LeafPuff. Bloom continues through cycle-1 leaf field via `wildflowerLeafSpecs`.
 
 ```typescript
-import { expectTypeOf } from "expect-type"
-import { describe, it } from "vitest"
-import { verify, judge, type Verified } from "@/lib/domain/verify-fence"
-import { Schema as S } from "effect"
-import { Effect } from "effect"
-
-const TestSchema = S.Struct({ id: S.String })
-type Test = S.Schema.Type<typeof TestSchema>
-
-describe("verify⊥judge fence", () => {
-  it("judge accepts Verified<Test> at the type level", () => {
-    const verified = {} as Verified<Test>
-    expectTypeOf(judge(verified, (e) => Effect.succeed(e.id)))
-      .toMatchTypeOf<Effect.Effect<string, never, never>>()
-  })
-
-  it("judge MUST reject raw Test at the type level", () => {
-    const raw: Test = { id: "x" }
-    // @ts-expect-error -- raw T is not assignable to Verified<T>
-    expectTypeOf(judge(raw, (e) => Effect.succeed(e.id))).not.toBeAny()
-  })
-})
+// lib/engine/ecs/wildflower-archetype.ts
+export type WildflowerCols =
+  | "posX" | "posY" | "posZ"
+  | "rotY"
+  | "scale"
+  ;
 ```
 
-The `@ts-expect-error` directive IS the fence assertion — if the type-mismatch ever stops being an error, `tsc --noEmit` fails. expect-type composes inside vitest (no separate runner).
+- **Renderer** (`InstancedWildflowerField`): 1 InstancedMesh, cylinder source baked at
+  module load (`cylinderGeometry args=[0.04*0.7, 0.04, 1, 5]`), per-instance matrix
+  from `(posX, posY+0.5*stemHeight*scale, posZ) + rotY + scale`.
+- **Color**: stem is always `#6b8f4a` (matches Wildflower.tsx) — material-level.
 
-CI step in S3:
+---
 
-```bash
-# package.json scripts
-"test:types": "tstyche lib/test/judge-fence.spec-types.ts"
-```
+## 4. App-layer `Instanced<Kind>Field` components
 
-Failure of either expectation = CI red.
-
-### 6.4 · Issue-on-straylight contract (FR-S3-4)
-
-After landing the brand-type fence, sprint S3 closes by opening one issue on `0xHoneyJar/loa-straylight`:
-
-> **Title**: compass adoption tracker [substrate-agentic-2026-05-12]
->
-> **Body**: Compass implements a compile-time verify⊥judge fence at `lib/domain/verify-fence.ts:1` using a `Verified<T>` brand. When Phase 23b ships the signed-assertion API, is this brand-shape compatible with that contract — i.e., would `Verified<T>` correspond to a `RecallReceipt<T>` or do we need to refactor to a different shape?
-
-## 7 · World substrate (S4 · D3)
-
-### 7.1 · `lib/world/` umbrella (ceremony→invocation rename per BB-011)
-
-NEW directory · 14 files maximum (G5b budget):
-
-```
-lib/world/
-├── SKILL.md                       # FR-S4-4 · agent navigation surface
-├── world.system.ts                # composes all systems · orchestrator
-├── awareness.port.ts              # what does awareness expose
-├── awareness.live.ts              # impl
-├── awareness.mock.ts              # test substrate
-├── awareness.test.ts
-├── observatory.port.ts            # read-only projection of world state
-├── observatory.live.ts
-├── observatory.mock.ts
-├── observatory.test.ts
-├── invocation.port.ts             # write-only command surface (renamed from ceremony)
-├── invocation.live.ts             # NOTE: lib/ceremony/ is reserved for UI animation utilities
-├── invocation.mock.ts
-└── invocation.test.ts
-```
-
-**Name collision avoided** (BB-011): existing `lib/ceremony/` contains `stone-copy.ts` (string utility) + `wedge-target.ts` (DOM geometry helper). These are pure functions for UI animation; not Services. The new write-only surface is named `invocation` to prevent name overload.
-
-If S4 task analysis at S0 reveals more systems are needed, operator pair-point per FR-S4-6.
-
-### 7.2 · Port shape contract
-
-Every `*.port.ts` follows this Effect Service pattern:
+All five components mirror the cycle-1 `InstancedLeafField.tsx` shape:
 
 ```typescript
-import { Context, Effect, Stream } from "effect"
-
-export interface AwarenessShape {
-  readonly currentState: Effect.Effect<AwarenessState, never, never>
-  readonly stateChanges: Stream.Stream<AwarenessChange, never, never>
-  readonly invoke: (cmd: AwarenessCommand) => Effect.Effect<AwarenessAck, AwarenessError, never>
+// Template (pseudocode):
+interface InstancedXFieldProps {
+  readonly specs: readonly XSpec[];
 }
 
-export class Awareness extends Context.Tag("compass/Awareness")<
-  Awareness,
-  AwarenessShape
->() {}
-```
+export function InstancedXField({ specs }: InstancedXFieldProps) {
+  // 1. Memo-build archetype(s) from specs.
+  const { archetype, /* side data */ } = useMemo(() => {
+    const arch = new Archetype<XCols>(X_COLUMN_SPECS, Math.max(8, specs.length));
+    // Populate columns from each spec.
+    // …
+    return { archetype, /* … */ };
+  }, [specs]);
 
-Three primitives per port: read · subscribe · write. This is the contract every system honors so the agent grep test works (Q operator-vibe-check).
+  // 2. Mount InstancedMesh ref(s) — one per geometry variant.
+  const meshRefs = /* one per variant */;
 
-### 7.3 · Wiring example component (FR-S4-3)
-
-For each new port, ship one Next.js component example at `app/_components/<system>-example.tsx`:
-
-```typescript
-"use client"
-import { useEffect, useState } from "react"
-import { runtime } from "@/lib/runtime/use-runtime"
-import { Awareness } from "@/lib/world/awareness.port"
-import { Effect, Stream } from "effect"
-
-export function AwarenessExample() {
-  const [state, setState] = useState<AwarenessState | null>(null)
+  // 3. useEffect uploads per-instance matrices + colors ONCE after mount
+  //    (no useFrame needed — geometry is static).
   useEffect(() => {
-    const fiber = runtime.runFork(
-      Effect.gen(function* () {
-        const awareness = yield* Awareness
-        const initial = yield* awareness.currentState
-        setState(initial)
-        yield* Stream.runForEach(awareness.stateChanges, (change) =>
-          Effect.sync(() => setState((s) => applyChange(s, change))),
-        )
-      }),
-    )
-    return () => runtime.runSync(fiber.interruptAsFork(fiber.id()))
-  }, [])
-  return <pre>{JSON.stringify(state, null, 2)}</pre>
+    // Walk archetype rows, compose matrix per row, setMatrixAt + setColorAt.
+    // …
+  }, [archetype]);
+
+  // 4. Render one <instancedMesh> per variant.
+  return (
+    <>
+      {/* per variant */}
+      <instancedMesh ref={meshRefs[v]} args={[geometry_v, material, count_v]}>
+        {/* meshToonMaterial WITHOUT vertexColors (cleaner pattern per §8.3) —
+            USE_INSTANCING_COLOR alone enables per-instance color when
+            setColorAt() has been called. NO baked color attribute needed
+            on the geometry. */}
+      </instancedMesh>
+    </>
+  );
 }
 ```
 
-Operator copy-pastes pattern into actual app routes when integrating.
+**Key differences from `InstancedLeafField`** (codex flatline 2026-05-17 corrections):
+1. **NO `useFrame`** — cycle-3 archetypes are static. Per-frame cost = ZERO.
+2. **`meshToonMaterial` WITHOUT `vertexColors` prop** — preserves cycle-1 cel-band
+   craft. The cleaner pattern per §8.3: omit `vertexColors`, rely on
+   `USE_INSTANCING_COLOR` alone (set automatically when `setColorAt()` is called).
+   NO baked per-vertex `color` attribute needed on the geometry. Earlier draft
+   recommended `meshLambertMaterial` based on a wrong diagnosis; codex verified
+   that Toon includes the `<color_vertex>` / `<color_fragment>` chunks (Lambert
+   was never the issue).
+3. **Multiple InstancedMesh per kind** (for Tree/Bush/Rock) — split by variant or
+   sub-archetype.
 
-### 7.4 · `lib/world/SKILL.md` template (FR-S4-4)
+---
 
-```markdown
-# Compass · world substrate
+## 5. HexPlot integration
 
-Agent: this directory is the umbrella for compass's world experience.
-Each system is one port + one live + one mock + one test.
-
-## Systems
-
-- `awareness` — what the world believes is happening (read+subscribe+write)
-- `observatory` — read-only projection of awareness for display
-- `invocation` — write-only command surface (NOT lib/ceremony/ which holds UI utilities)
-
-## How to add one (S1 pattern-lock template)
-
-1. Copy the awareness.* trio (port + live + mock + test).
-2. Update `lib/runtime/runtime.ts` AppLayer to merge the new Live Layer.
-3. Add a `<system>-example.tsx` showing how to wire it.
-4. Update this SKILL.md (Systems list + ownership matrix).
-5. Add the system to §7.7 state ownership matrix.
-
-## State ownership matrix (per BB-006 · enforced by grep)
-
-| System | Owns (writes) | Reads |
-|---|---|---|
-| awareness | awarenessRef · awarenessChanges PubSub | weather (read), activity (read) |
-| observatory | (read-only · NO writes to any Ref/PubSub) | awareness (read), weather (read) |
-| invocation | (publishes commandsPubSub) | (commands consumed by awareness) |
-
-## Guarantees
-
-- All cross-system events flow through `lib/runtime/runtime.ts` (single Effect.provide site).
-- All envelopes carry `output_type` ∈ Signal/Verdict/Artifact/Intent/Operator-Model.
-- No system reads or writes Solana directly; that's `lib/live/solana.live.ts`'s job.
-- A system MAY NOT write to a Ref it doesn't declare ownership of in this matrix (CI lint enforced).
-```
-
-### 7.7 · State ownership matrix (NEW · BB-006)
-
-Each system declares which Refs/PubSubs it OWNS (writes) vs READS. CI lint at S4 close:
-
-```bash
-# scripts/check-state-ownership.sh
-# For each lib/world/<system>.live.ts, parse the SKILL.md ownership matrix
-# Then grep for Ref.set\|PubSub.publish in <system>.live.ts
-# Fail if a system writes to a Ref/PubSub it doesn't own per matrix
-```
-
-This catches the gen_server-style invariant violations Erlang solved 35 years ago. Without this, multi-system writes to the same Ref produce undefined ordering · the operator's iteration speed pays the debug-time tax.
-
-### 7.5 · No persistence · no Solana writes (D4 enforcement)
-
-CI grep rules:
-
-```bash
-# any new file in lib/world/ MUST NOT import @solana/web3.js OR write to KV
-grep -rE "from ['\"]@solana|kvSet|kv\.put" lib/world/ # must be empty
-```
-
-### 7.6 · Operator iteration test (FR-S4-6)
-
-After S4 ships:
-
-```bash
-# Operator runs:
-git checkout -b test/rename-awareness
-git mv lib/world/awareness.{port,live,mock,test}.ts lib/world/{a-rename}.{port,live,mock,test}.ts
-# update lib/runtime/world.runtime.ts import path
-pnpm test  # must stay green in 1 commit
-```
-
-Pass = ship S4. Fail = re-design system layout.
-
-## 8 · Hand-port idiom guide (SDD-D3)
-
-### 8.1 · Default: `Schema.Struct`
+### 5.1 `suppressFixtures` prop
 
 ```typescript
-export const AgentIdentityPort = S.Struct({
-  agent_id: S.String,
-  display_name: S.String,
-  capabilities: S.Array(S.String),
-})
-```
-
-### 8.2 · `Schema.Class` ONLY when nominal identity matters
-
-```typescript
-export class AuditTrailEntryPort extends S.Class<AuditTrailEntryPort>("AuditTrailEntryPort")({
-  ts: S.DateFromString,
-  actor: S.String,
-  action: S.String,
-  evidence: S.Unknown,
-}) {}
-```
-
-Rationale: Class-based gives named identity in error messages, useful for audit-trail debugging. Plain Struct is enough for value types.
-
-### 8.3 · Brand types for verify⊥judge fence
-
-`Verified<T>` (§6.2) uses `unique symbol` brand. Operator-confirmed pattern · do NOT use `S.brand("...")` because we want the unbranding to happen ONLY through `verify()` not through arbitrary brand-stripping.
-
-## 9 · Drift-detection mechanism (SDD-D2 / Q10 · hardened per BB-004)
-
-### 9.1 · `pnpm hounfour:drift` script
-
-Three hardenings vs naive draft (all per BB-004):
-
-1. **Authenticate** with `GITHUB_TOKEN` (not raw URL) — uses GitHub API, gets authenticated rate limit
-2. **404 on stale SHA = CI red** (not silent pass) — operator must know if pin moved
-3. **Diff target = `vendored vs upstream-current-main`** (NOT vendored-SHA vs upstream-SHA) — what the operator actually wants to know is "has upstream evolved past my pin"
-
-`scripts/hounfour-drift.ts`:
-
-```typescript
-import { readdirSync, readFileSync } from "node:fs"
-import { join } from "node:path"
-import { Octokit } from "@octokit/rest"
-
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
-const portFiles = readdirSync("lib/domain")
-  .filter(f => f.endsWith(".hounfour-port.ts"))
-
-const reports: DriftReport[] = []
-const failures: Failure[] = []
-
-for (const file of portFiles) {
-  const content = readFileSync(join("lib/domain", file), "utf-8")
-  const sourceMatch = content.match(/Source: hounfour@(\w+):schemas\/(\S+\.schema\.json)/)
-  if (!sourceMatch) {
-    failures.push({ file, reason: "no Source: header" })
-    continue
-  }
-  const [, pinnedSha, schemaPath] = sourceMatch
-
-  // Verify pinned SHA still resolves (BB-004 hardening 2)
-  try {
-    await octokit.repos.getContent({
-      owner: "0xHoneyJar", repo: "loa-hounfour",
-      path: schemaPath, ref: pinnedSha,
-    })
-  } catch (e) {
-    failures.push({ file, reason: `pinned SHA ${pinnedSha} no longer resolves (404)` })
-    continue
-  }
-
-  // Diff vendored vs upstream-CURRENT-MAIN (BB-004 hardening 3)
-  const upstreamMain = await octokit.repos.getContent({
-    owner: "0xHoneyJar", repo: "loa-hounfour",
-    path: schemaPath, ref: "main",
-  })
-  const upstream = JSON.parse(Buffer.from((upstreamMain.data as any).content, "base64").toString())
-  const vendored = JSON.parse(readFileSync(`lib/domain/schemas/hounfour-${file.replace(".hounfour-port.ts", ".schema.json")}`, "utf-8"))
-
-  const diff = structuralDiff(upstream, vendored) // json-schema-diff package
-  if (diff.changes.length > 0) reports.push({ file, pinnedSha, mainBehindBy: diff })
+// HexPlot.tsx — additive prop
+interface HexPlotProps {
+  readonly plot: PlotT;
+  readonly size: number;
+  readonly triggerKey?: number;
+  readonly cornerYs?: readonly [number, number, number, number, number, number];
+  readonly edgeBottomYs?: readonly [readonly [number, number], /* ×6 */];
+  readonly suppressLeaves?: boolean;
+  /** NEW (cycle-3): per-kind opt-out for fixtures handled by InstancedXField. */
+  readonly suppressFixtures?: ReadonlySet<FixtureKindT>;  // default = empty Set
 }
-
-if (failures.length > 0) { console.error(failures); process.exit(1) }
-// emit report · open issue if delta > threshold
 ```
 
-### 9.2 · CI workflow (with auth)
+The fixture-dispatch switch in HexPlot.tsx changes to check `suppressFixtures`:
 
-`.github/workflows/hounfour-drift.yml`:
-
-```yaml
-name: hounfour drift detection
-on:
-  schedule:
-    - cron: "0 6 * * 1"  # Mondays 6am UTC
-  workflow_dispatch:
-
-jobs:
-  drift:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-      - run: pnpm install
-      - env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm hounfour:drift
-      - if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Hounfour drift detected ${new Date().toISOString().slice(0,10)}`,
-              body: require('fs').readFileSync('grimoires/loa/drift-reports/latest.md', 'utf-8'),
-              labels: ['drift']
-            })
+```typescript
+{plot.fixtures.map((fix, i) => {
+  if (suppressFixtures?.has(fix.kind)) return null;  // NEW
+  // existing dispatch (case "tree", case "rock", etc.)
+})}
 ```
 
-## 10 · Testing approach
+**Back-compat**: when `suppressFixtures` is omitted or empty, behavior is identical
+to today. Existing HexPlot callers (HexScene from cycle-1, BigRealmScene from
+cycle-2) work unchanged.
 
-### 10.1 · Layered tests
+### 5.2 `suppressLeaves` vs `suppressFixtures` — orthogonal axes
 
-| Layer | Test kind | Tool |
+| Prop | Meaning | Cycle |
 |---|---|---|
-| Schema decode | Round-trip + invalid input | vitest + Effect Schema decode |
-| Schema drift | Structural diff against vendored JSON | json-schema-diff |
-| Compile-time fence | Type-error assertion | expect-type (per BB-005 · pinned · drops tstyche alternation) |
-| Port + Live + Mock | Effect Layer composition test | vitest + Effect Layer.provide test layer |
-| World system integration | Composes all S4 systems · runs against mocks | vitest |
-| Existing tests | Continue to pass | vitest (pnpm test) |
+| `suppressLeaves` | Skip per-fixture `<LeafPuff>` JSX (leaves still rendered via cycle-1 InstancedLeafField) | cycle-1 |
+| `suppressFixtures: Set<"tree">` | Skip ENTIRE `<Tree>` JSX (tree-trunk + branches + leaves all suppressed; cycle-3 InstancedTreeField + cycle-1 InstancedLeafField render them) | cycle-3 |
 
-### 10.2 · No new test infrastructure
+Composition: BigRealmScene typically wants BOTH on for a given kind — `suppressFixtures.has("tree")` skips the Tree JSX, `suppressLeaves: true` ensures the leaves are aggregated into the leaf field (already-cycle-1 behavior). The two flags compose naturally without overlap.
 
-No Playwright. No Storybook. No new bench harness. Compass already has vitest; new tests slot in.
+---
 
-## 11 · CI / lint additions
+## 6. BigRealmScene integration
 
-### 11.1 · Per-sprint CI additions (per SP-005 · stale rule replaced)
+### 6.1 New `BigRealmSceneConfigT` field
 
-| Sprint | New CI step | Purpose |
+```typescript
+// VfxConfig.ts — extend BigRealmSceneConfigT
+interface BigRealmSceneConfigT {
+  // …existing fields…
+  /** Which fixture kinds to render via InstancedXField (instead of HexPlot JSX). */
+  useInstancedFixtures: ReadonlySet<FixtureKindT>;
+  /** Toggles cycle-1 leaf field for leaves. Composes with useInstancedFixtures. */
+  useInstancedLeaves: boolean;  // already exists
+}
+```
+
+**HMR-stale-ref backfill** (cycle-2 doctrine): the `useInstancedFixtures` field needs
+backfilling at `registerKnobs` time so new schema fields don't trip HMR-preserved refs.
+Pattern from cycle-2 `d3c411fa` commit (fix(sprint-2-comp): backfill new default fields
+into HMR-stale config refs).
+
+### 6.2 New composer section
+
+In `BigRealmScene.tsx`, after the existing `{config.showTileContent && plots.map(...)}`
+section, add a block that:
+
+1. Gathers per-kind specs from all plots
+2. Mounts one `InstancedXField` per kind in `useInstancedFixtures`
+3. Passes `suppressFixtures: useInstancedFixtures` to each `<HexPlot>` so JSX paths
+   for those kinds are skipped
+
+```typescript
+// Sketch:
+const fixtureSpecs = useMemo(() => {
+  const worldPositions = plots.map(p => hexToWorld(p.coord, config.hexSize));
+  return {
+    tree: treeSpecsFromPlots(plots, worldPositions),
+    bush: bushSpecsFromPlots(plots, worldPositions),
+    rock: rockSpecsFromPlots(plots, worldPositions),
+    mushroom: mushroomSpecsFromPlots(plots, worldPositions),
+    wildflower: wildflowerSpecsFromPlots(plots, worldPositions),
+  };
+}, [plots, config.hexSize]);
+
+// In JSX:
+{config.useInstancedFixtures.has("tree") && (
+  <InstancedTreeField specs={fixtureSpecs.tree} />
+)}
+{config.useInstancedFixtures.has("bush") && (
+  <InstancedBushField specs={fixtureSpecs.bush} />
+)}
+// …same for rock, mushroom, wildflower
+```
+
+And on the HexPlot mount:
+
+```typescript
+<HexPlot
+  plot={plot}
+  size={config.hexSize}
+  triggerKey={triggerKey}
+  suppressLeaves={config.useInstancedLeaves}
+  suppressFixtures={config.useInstancedFixtures}  // NEW
+/>
+```
+
+---
+
+## 7. Data flow: extractor → archetype → InstancedMesh
+
+```
+plots: PlotT[]  ─▶  fixtureExtractors.<kind>SpecsFromPlots(plots, worldPositions)
+                          └─ walks plot.fixtures
+                          └─ for kind == "tree" → produces TreeSpec[]
+                          └─ for kind == "bush" → produces BushSpec[]
+                          └─ …
+                    ▼
+                    specs: TreeSpec[] / BushSpec[] / …
+                          (one entry per fixture, plain TS objects)
+                    ▼
+Instanced<Kind>Field
+  ├─ useMemo([specs]):
+  │     archetype = new Archetype(X_COLUMN_SPECS, specs.length)
+  │     for each spec: archetype.add({ posX, posY, posZ, rotY, scale, … })
+  ├─ useEffect([archetype]):
+  │     walk rows, compose per-instance Matrix4
+  │     mesh.setMatrixAt(i, M); mesh.setColorAt(i, color)
+  │     instanceMatrix.needsUpdate = true; instanceColor.needsUpdate = true
+  └─ Render <instancedMesh args=[geometry, material, count]>
+```
+
+**Determinism**: extractors use `mulberry32(seed)` for variant selection (per existing
+fixture extractor patterns). Given a fixed `scatterSeed`, the spec output is
+byte-for-byte reproducible.
+
+**Float32 discipline**: TreeSpec / BushSpec / RockSpec / MushroomSpec / WildflowerSpec
+interfaces use plain `number` (Float64), but the archetype `add()` converts to Float32
+slabs. Tests must use `toBeCloseTo(..., 6)` for math-parity assertions (cycle-1
+pattern from `sway-system.test.ts`).
+
+---
+
+## 8. BLACK-leaves fix (S1 commit 1, standalone) — REVISED 2026-05-17 post-codex flatline
+
+### 8.1 The actual root cause (codex flatline a7030a10a29806747 verified)
+
+> **The cycle-1 distillation's diagnosis was wrong.** `meshToonMaterial` DOES include
+> the `<color_vertex>` and `<color_fragment>` chunks that consume `instanceColor`
+> (verified at `three.module.js:565` / `:567` for Lambert, `:545` / `:547` for Toon).
+> Lambert attempt 1 (commit `558707eb`) failed for the SAME reason Toon was failing,
+> not because Lambert lacks color support.
+
+The real chain in Three.js 0.184:
+
+```
+material.vertexColors = true
+  → parameters.vertexColors → '#define USE_COLOR' (in vertex prefix at line 6798)
+  → vertex shader declares: attribute vec3 color;
+  → vertex shader runs color_vertex chunk (line 341):
+      vColor = vec4(1.0);
+      vColor.rgb *= color;            // ← THE PROBLEM
+      vColor.rgb *= instanceColor.rgb;
+```
+
+`IcosahedronGeometry` ships with NO `color` attribute. Per the Khronos GLES 3.0.6 spec
+(§1057-1059, §1201), an unbound `attribute vec3 color` resolves to `vec3(0,0,0)`.
+Three.js only supplies `defaultAttributeValues` for `ShaderMaterial`, not standard
+materials like `MeshToonMaterial` (`three.core.js:37479`, `:37672`). So
+`vColor.rgb *= color` = `vColor.rgb *= vec3(0)` = `vec3(0)`, and the subsequent
+`vColor.rgb *= instanceColor.rgb` operates on zero.
+
+Result: every leaf renders pure black. NOT because of a shader-chunk gap — because
+of a missing per-vertex `color` attribute on the geometry.
+
+### 8.2 Fix as implemented (commit `96d1668b`, attempt 2)
+
+`InstancedLeafField.tsx` now:
+
+1. Constructs `IcosahedronGeometry` imperatively (not via JSX) inside a `useMemo`.
+2. Bakes a per-vertex `color` attribute of `Float32Array(vertexCount * 3).fill(1)`
+   so `vColor.rgb *= color` = `vColor.rgb * vec3(1)` = no-op.
+3. The subsequent `vColor.rgb *= instanceColor.rgb` carries per-instance color into
+   `vColor`, and the fragment shader's `<color_fragment>` chunk applies it via
+   `diffuseColor.rgb *= vColor.rgb`.
+4. Material stays `meshToonMaterial` (cel-band gradient preserved on leaves —
+   the cycle-1 craft signal is intact).
+5. `useEffect` dispose-on-unmount prevents GPU memory leak.
+
+### 8.3 The CLEANER pattern for the 5 cycle-3 archetypes (recommended)
+
+> **All NEW archetypes (Tree / Bush / Rock / Mushroom / Wildflower) SHOULD use this
+> pattern, NOT the InstancedLeafField pattern.**
+
+The simpler approach (codex flatline finding, MEDIUM priority): omit `vertexColors`
+entirely and rely on `USE_INSTANCING_COLOR` alone.
+
+```tsx
+<meshToonMaterial
+  gradientMap={DEFAULT_TOON_GRADIENT}
+  color="#ffffff"
+  // NO vertexColors prop
+/>
+```
+
+In Three.js 0.184, when `InstancedMesh.instanceColor !== null` (i.e. `setColorAt()`
+has been called at least once), the renderer sets `USE_INSTANCING_COLOR`. This
+define enables the `vColor.rgb *= instanceColor.rgb` line in the vertex shader
+AND enables `<color_fragment>` (`diffuseColor.rgb *= vColor.rgb`) in the fragment
+shader. Critically, with `USE_INSTANCING_COLOR` set but `USE_COLOR` NOT set in the
+vertex prefix (vertex prefix uses `parameters.vertexColors` alone at line 6798,
+NOT OR'd), the `vColor.rgb *= color` line does NOT execute, so the unbound `color`
+attribute issue never arises — no baked attribute needed.
+
+Per codex: "Keeping vertexColors means every future leaf geometry must keep a
+nonzero color attribute" (maintenance footgun). The cleaner pattern avoids that.
+
+### 8.4 Why InstancedLeafField keeps the workaround pattern
+
+`InstancedLeafField.tsx` ships at commit `96d1668b` with the vertexColors + baked
+color attribute pattern. It works correctly. Refactoring to the cleaner pattern
+mid-cycle adds risk (operator already visually validated this pattern); the
+operator visual gate is the load-bearing signal, and pattern simplification is
+LOW-severity per codex code review.
+
+> **Cycle-4 cleanup candidate**: refactor InstancedLeafField to drop vertexColors
+> + the baked color attribute, aligning with the pattern used by cycle-3 archetypes.
+> Strict additive constraint applies: no behavior change visible to operators.
+
+### 8.5 Operator visual validation gate (FR-1.2) — RESULT
+
+`vfx-lab → hex-scene` with `useInstancedLeaves` ON (commit `96d1668b`):
+- Per-instance leaf colors render correctly ✅
+- Cel-band gradient on leaves preserved ✅
+- Ink outline (drei `<Outlines>`) lost on instanced leaves — **expected**, matches
+  cycle-1 accepted regression per sprint.md NFR-1 (drei `<Outlines>` builds an
+  inverted-hull mesh that doesn't natively support InstancedMesh)
+
+### 8.6 Why the fix landed FIRST in S1 (vs folded into TreeArchetype)
+
+- **Standalone scope**: targeted commit, easy to revert; clear visual evaluation.
+- **Validates render path for ALL 5 archetypes**: per §8.3, the cleaner pattern
+  is now confirmed across vertex + fragment shader prefixes. The 5 cycle-3
+  archetypes can adopt the cleaner pattern with confidence.
+- **Cheap visual gate**: ~15-min visual eval at S1 commit-1; if pivot was needed,
+  blast radius was contained to InstancedLeafField only.
+- **Codex flatline corroboration**: source-grounded verification of the diagnosis
+  at the time the fix landed (rather than discovering shader-chain issues later).
+
+---
+
+## 9. Test strategy
+
+### 9.1 Existing tests stay green (NFR-2)
+
+- `lib/engine/ecs/archetype.test.ts` — Archetype mechanics (swap-remove, capacity grow,
+  zero-fill-on-add). Cycle-1 baseline.
+- `lib/engine/animation/sway-system.test.ts` — Leaf sway math + Float32 discipline.
+- `lib/hex/plot.test.ts` — PlotT decode/encode (cycle-2 baseline).
+
+### 9.2 New tests (G8, P2)
+
+Per-archetype determinism tests:
+```typescript
+describe("treeSpecsFromPlots", () => {
+  it("produces deterministic specs for fixed seed", () => {
+    const plots = [/* 2 plots with tree fixtures */];
+    const specs1 = treeSpecsFromPlots(plots, [[0, 0], [10, 0]]);
+    const specs2 = treeSpecsFromPlots(plots, [[0, 0], [10, 0]]);
+    expect(specs1.length).toBe(specs2.length);
+    for (let i = 0; i < specs1.length; i++) {
+      expect(specs1[i].posX).toBeCloseTo(specs2[i].posX, 6);
+      // …
+    }
+  });
+
+  it("trunk + 4 branches per tree (default branchCount)", () => {
+    const specs = treeSpecsFromPlots(/* 1 tree fixture */, [[0, 0]]);
+    expect(specs.trunks).toHaveLength(1);
+    expect(specs.branches).toHaveLength(4);
+  });
+});
+```
+
+Per-archetype factory tests (mirror Archetype mechanics tests):
+```typescript
+describe("TreeTrunkArchetype", () => {
+  it("zero-fills omitted columns", () => {
+    const arch = new Archetype<TreeTrunkCols>(TREE_TRUNK_COLUMN_SPECS);
+    arch.add({ posX: [5] });
+    expect(arch.columnArray("posY")[0]).toBe(0);
+  });
+});
+```
+
+### 9.3 What's NOT tested (operator visual gates)
+
+- Per-instance color rendering (requires GL context — operator visual eval)
+- Visual parity instanced vs non-instanced (requires browser — operator visual eval)
+- Outline regression on instanced fixtures (known accepted regression)
+- 60 fps @ 25×25 convergence (requires browser — operator perf eval)
+
+---
+
+## 10. Sequencing / rollout
+
+### 10.1 Sprint shape (matches PRD §FR-1/2/3/4)
+
+```
+S1: BLACK-leaves fix + Tree archetype path
+    commit 1: InstancedLeafField → meshLambertMaterial (FR-1)
+              [OPERATOR VISUAL GATE — proceed only if visual acceptable]
+    commit 2: TreeTrunkArchetype + TreeBranchArchetype + InstancedTreeField
+              + treeSpecsFromPlots extractor
+    commit 3: HexPlot suppressFixtures prop + BigRealmScene useInstancedFixtures
+              config + InstancedTreeField mount
+    commit 4: scale-test 10×10 with tree-instanced ON; PerfReadout shows GEO drop;
+              operator visual A/B
+              [S1→S2 pair-point]
+
+S2: Bush + Rock + Mushroom + Wildflower archetypes
+    commit 5: BushArchetype + InstancedBushField + canonical bush variants
+              [OPERATOR PAIR-POINT: per-bush canonical vs per-puff fanout]
+    commit 6: RockArchetype + RockChunkArchetype + InstancedRockField
+              + canonical rock variants per shape
+    commit 7: MushroomArchetype + InstancedMushroomField
+    commit 8: WildflowerArchetype + InstancedWildflowerField
+    commit 9: HexPlot suppressFixtures extends to all 5 kinds; BigRealmScene
+              mounts all 5 InstancedXFields
+              [S2→S3 pair-point]
+
+S3: Scale-test convergence + RESULTS.md + cycle close
+    commit 10: scale-test 5×5 / 10×10 / 25×25 with all instanced ON, ambients OFF
+    commit 11: scale-test 5×5 / 10×10 / 25×25 with all instanced ON, ambients ON
+    commit 12: RESULTS.md captures measurements + visual A/B observations
+              [S3 close pair-point — if not converged, name cycle-4 earned-next]
+```
+
+Per cycle 1+2 Path B convention: each commit is a sprint task tracked in beads,
+each sprint runs through `/run sprint-plan` (implement → review → audit cycle) with
+cross-model dissent (Opus + GPT via cheval, 2-model DEGRADED mode) at REVIEW and
+AUDIT gates. The visual gates at commit 1 + S1→S2 + S2→S3 are operator pair-points.
+
+### 10.2 Each sprint earns its keep
+
+| Sprint | Earns when | Doesn't earn |
 |---|---|---|
-| S1 | `pnpm envelope-coverage` (regex bash script per §4.4) | FR-S1-2 100% output_type tagging |
-| S1 | `grep -c "ManagedRuntime\.make"` lib/+app/ MUST equal 1 (per §5.3 · canonical primitive after BB-001) | FR-S1-4 single Effect.provide site |
-| S2 | `pnpm hounfour:drift` (manual until S6 cron) | Q10 drift detection |
-| S3 | `pnpm test:types` (vitest with expect-type · per BB-005) | Q6 compile-time fence |
-| S4 | `find compass/lib -name '*card*' -o -name '*battle*'` empty | Q card-game-stays-out gate |
-| S4 | `grep -rE "from ['\"]@solana\|kvSet" lib/world/` empty | D4 in-memory enforcement |
-| S4 | `find lib -path '*adapter*'` empty | D5 no adapters folder |
-| S4 | `scripts/check-state-ownership.sh` (per §7.7 · BB-006) | State ownership matrix enforcement |
-| S4 | `scripts/check-system-name-uniqueness.sh` (excludes world.system.ts orchestrator · per SP-009) | System Layer naming discipline |
-| S6 | `find . -path '*/construct-translation-layer*'` empty | §2.3 cuts list (CI lint forever) |
+| S1 | InstancedTreeField at 10×10 shows GEO drop AND visual parity with non-instanced | OR pivots BLACK-leaves fix to onBeforeCompile / custom shader if Lambert visual fails |
+| S2 | All 4 remaining archetypes integrate via suppressFixtures without breaking back-compat | OR pair-points on BushArchetype design if canonical-variants approach feels too restrictive |
+| S3 | 60+ fps @ 25×25 ambients ON (G1 met) OR PARTIAL close with named cycle-4 earned-next | — (S3 always closes; PARTIAL is a valid close per cycles 1+2 precedent) |
 
-### 11.2 · Suffix discipline lint (NFR-MAINT-1)
+---
 
-NEW `eslint-plugin-local` rule OR simpler: `scripts/check-suffixes.sh`:
+## 11. Risks (architecture-specific, complements PRD §Risks)
 
-```bash
-# every *.live.ts must have a sibling *.port.ts
-# every *.live.ts SHOULD have a sibling *.mock.ts
-# enforced as warning (not error) initially
-```
+| Risk | Mitigation |
+|---|---|
+| TWO archetype split for Tree (trunk + branch) diverges from operator's "ONE TreeArchetype" mental model | Surface explicitly in this SDD §3.1. Architecture preserves visual parity (load-bearing); naming-divergence is cosmetic. If operator wants single-archetype shape, refactor S1 commit 2 to bake N-branches into a packed branch-columns layout (one row per tree with 4×8-float branch column packed) — workable but messier. Pair-point at S1 if operator flags. |
+| Bush canonical-variants loses per-bush shape variety | Operator visual gate at S2 commit 5. If miss is felt, refactor to per-puff fanout (BushPuffArchetype). One bush = 4-6 instance rows. Loses merged-geo craft (separate outlines per puff). |
+| Rock canonical-variants loses per-rock shape variety | Same as Bush. Operator gate at S2 commit 6. Likely less visible than Bush because rocks read as silhouette + texture, not finely individuated. |
+| `meshLambertMaterial` swap on InstancedLeafField regresses leaf cel-band visibly | S1 commit 1 operator visual gate. Pivot to onBeforeCompile or custom shader before TreeArchetype work begins. |
+| Sub-archetype geometry merging produces MORE InstancedMeshes than expected (e.g., InstancedRockField at 9 variants × 2 chunks-archetypes = 27 InstancedMeshes) | Cap variant count: Rock at 2 variants per shape (= 6 primaries + 3 chunks = 9 InstancedMeshes). Bush at 2 variants (= 2 InstancedMeshes). Tree at 2 (trunk + branches). Mushroom + Wildflower at 1 each. Total ceiling: 9 + 2 + 2 + 1 + 1 = 15 InstancedMeshes for fixtures. Acceptable (target ~10-30). |
+| Static-archetype design assumes fixtures don't animate; if operator wants whole-tree wind sway later, add a TreeWindSystem then | Defer until requested. The substrate supports adding systems incrementally (cycle-1 pattern). |
+| Per-instance color upload (`setColorAt`) in useEffect doesn't trigger on prop change without reseed | Memoize `colorsHex` array on `specs`; useEffect depends on it. Same pattern as cycle-1 InstancedLeafField. |
+| Operator-untracked files in vfx/effects/ (e.g., LeafSwirl.tsx, Mist.tsx, RippleField.tsx, …) accidentally edited | Additive constraint: NEW files only for archetypes + InstancedXField + fixtureExtractors. Modifications restricted to HexPlot.tsx, BigRealmScene.tsx, InstancedLeafField.tsx, lib/engine/index.ts, VfxConfig.ts. Each commit reviewed for additive-only compliance. |
 
-## 12 · Deployment considerations
+---
 
-### 12.1 · Vercel-safe imports
+## 12. File-creation manifest
 
-All vendored JSON Schemas are bundled at build time (Next.js handles `require("./schemas/*.json")` natively). No operator-machine paths in compiled output.
-
-### 12.2 · No new env vars this cycle
-
-Hand-port pattern needs no API keys. Drift detection runs against public GitHub raw URLs (no auth).
-
-### 12.3 · No Solana program changes
-
-D4 in-memory enforcement preserves current Solana posture. The deployed Anchor program is untouched.
-
-## 13 · File inventory by sprint
-
-### 13.1 · S0 (no code · only docs)
-
-- `grimoires/loa/context/12-hounfour-conformance-map.md` — FR-S0-1
-- `grimoires/loa/specs/upstream-issue-templates.md` — FR-S0-3 templates
-- `NOTES.md` decision log entry — FR-S0-4 + Q7 promotion gate result
-- PRD §10.5 SHA-pin manifest filled in
-
-### 13.2 · S1 (envelope shell + lift activity/population per FR-S1-3.5 · per BB-002)
-
-NEW:
-- `lib/domain/schemas/construct-handoff.schema.json` (vendored)
-- `lib/domain/schemas/room-activation-packet.schema.json` (vendored)
-- `lib/domain/schemas/README.md`
-- `lib/domain/handoff.schema.ts`
-- `lib/domain/validate-envelope.ts`
-- `lib/activity/activity.port.ts` (NEW · BB-002 lift)
-- `lib/activity/activity.live.ts` (NEW · BB-002 lift · wraps existing `activityStream` until callers migrate)
-- `lib/activity/activity.mock.ts` (NEW)
-- `lib/activity/__tests__/activity.test.ts` (NEW)
-- `lib/sim/population.port.ts` (NEW · BB-002 lift)
-- `lib/sim/population.live.ts` (NEW · BB-002 lift)
-- `lib/sim/population.mock.ts` (NEW)
-- `lib/sim/__tests__/population.test.ts` (NEW)
-- `scripts/check-envelope-coverage.sh` (per §4.4 · regex · zero deps)
-- `scripts/check-single-runtime.sh` (per §5.3)
-- `.github/workflows/envelope-coverage.yml`
-- `.github/workflows/single-runtime.yml`
-- `grimoires/loa/specs/lift-pattern-template.md` (S1 pattern-lock per BB-012)
-
-MODIFIED:
-- `lib/runtime/runtime.ts` — extend AppLayer with `ActivityLive` + `PopulationLive` (NOT a new file per BB-001)
-- `lib/activity/index.ts` — add re-exports of new Layer surface · keep legacy `subscribe(cb)` until `app/` callers migrate (deprecation comment)
-- `lib/sim/population.system.ts` — add re-exports of new Layer surface · keep legacy `subscribe(cb)` until callers migrate
-- `packages/peripheral-events/src/world-event.ts` — add `output_type: S.Literal(...)` annotation to every union variant
-- `tsconfig.json` — verify `resolveJsonModule: true` + ESM JSON imports work
-
-NOT added: `app/layout.tsx` does NOT need editing — runtime wiring is already in `lib/runtime/runtime.ts` and React bridge in `lib/runtime/react.ts` (per BB-001 verification).
-
-LOC budget revision (per BB-002): S1 was undersized in v1. Realistic: +200 LOC for 8 new files (port+live+mock+test ×2) + ~30 LOC modified across runtime + activity + population + world-event. Counts toward G5a (conformance) budget · still fits ≤0 net IF the legacy `subscribe(cb)` removal happens at S2 close (-80 LOC).
-
-### 13.3 · S2 (hand-port hounfour)
-
-NEW (per candidate schema · §5.1.1 · ~5-8 schemas):
-- `lib/domain/<name>.hounfour-port.ts`
-- `lib/domain/<name>.mock.ts`
-- `lib/domain/__tests__/<name>.port.test.ts`
-- `lib/domain/__tests__/<name>.drift.test.ts`
-- `lib/domain/schemas/hounfour-<name>.schema.json` (vendored copy)
-- `scripts/hounfour-drift.ts`
-
-MODIFIED:
-- `lib/domain/handoff.schema.ts` — narrow `verdict: S.Unknown` → discriminated union of hand-ported types
-
-### 13.4 · S3 (force-chain doc + compile-time fence)
-
-NEW:
-- `grimoires/loa/context/13-force-chain-mapping.md`
-- `lib/domain/verify-fence.ts`
-- `lib/test/judge-fence.spec-types.ts`
-- (one issue opened on loa-straylight via FR-S3-4)
-
-MODIFIED:
-- `package.json` — `expect-type` added (per BB-005 · NOT tstyche) · `test:types` script
-- `.github/workflows/test-types.yml` — CI step for compile-time fence
-
-### 13.5 · S4 (world substrate · applies S1 pattern-lock per BB-012)
-
-S4 = "apply S1 pattern N times." Each new system follows the lift-pattern-template (`grimoires/loa/specs/lift-pattern-template.md`).
-
-NEW (per §7.1 · 14 files):
-- `lib/world/SKILL.md` (with §7.7 state ownership matrix baked in)
-- `lib/world/world.system.ts` (orchestrator)
-- `lib/world/awareness.{port,live,mock,test}.ts` (4 files)
-- `lib/world/observatory.{port,live,mock,test}.ts` (4 files)
-- `lib/world/invocation.{port,live,mock,test}.ts` (4 files · renamed from ceremony per BB-011)
-- `app/_components/awareness-example.tsx`
-- `app/_components/observatory-example.tsx`
-- `app/_components/invocation-example.tsx`
-- `scripts/check-world-discipline.sh` (D4 enforcement grep · NO solana imports · NO KV writes)
-- `scripts/check-state-ownership.sh` (per BB-006 §7.7)
-- `scripts/check-system-name-uniqueness.sh` (per BB-009 · system names appear exactly once in runtime.ts AppLayer)
-
-MODIFIED:
-- `lib/runtime/runtime.ts` — extend AppLayer with `AwarenessLive` + `ObservatoryLive` + `InvocationLive` (NOT a new file)
-
-### 13.6 · S5 (multi-world playbook)
-
-NEW:
-- `grimoires/loa/specs/per-world-adoption-playbook.md`
-
-### 13.7 · S6 (distill upstream)
-
-MODIFIED (in `~/Documents/GitHub/loa-constructs/packs/effect-substrate/` or wherever `construct-effect-substrate` lives):
-- pack manifest: `status: candidate` → `status: validated · 1-project`
-- SKILL.md: add hand-port pattern reference
-- examples/: add `compass-adoption-example.md`
-
-NEW:
-- `.github/workflows/hounfour-drift.yml` (cron · per §9.2)
-- Possibly: `compass-conformance.test.ts` PR'd upstream into hounfour CI (SDD-D4 · operator-decided)
-
-## 14 · Sequencing & rollback (NFR-ROLLBACK)
-
-### 14.1 · Per-sprint feature branches
+### 12.1 New files (additive)
 
 ```
-main
-└── feat/substrate-agentic-adoption
-    ├── feat/sa-s0-conformance-audit       # PR · merge to feat/sa parent
-    ├── feat/sa-s1-envelope-shell          # PR · merge to feat/sa parent
-    ├── feat/sa-s2-hand-port-hounfour      # PR · merge to feat/sa parent
-    ├── feat/sa-s3-force-chain-fence       # PR · merge to feat/sa parent
-    ├── feat/sa-s4-world-substrate         # PR · merge to feat/sa parent
-    ├── feat/sa-s5-multi-world-playbook    # PR · merge to feat/sa parent
-    └── feat/sa-s6-distill-upstream        # PR · merge to feat/sa parent
-# Final: PR feat/substrate-agentic-adoption → main · cycle close
+lib/engine/ecs/
+  tree-trunk-archetype.ts
+  tree-branch-archetype.ts
+  bush-archetype.ts
+  rock-archetype.ts
+  mushroom-archetype.ts
+  wildflower-archetype.ts
+  tree-trunk-archetype.test.ts        (G8, P2)
+  tree-branch-archetype.test.ts       (G8, P2)
+  bush-archetype.test.ts              (G8, P2)
+  rock-archetype.test.ts              (G8, P2)
+  mushroom-archetype.test.ts          (G8, P2)
+  wildflower-archetype.test.ts        (G8, P2)
+
+app/battle-v2/_components/vfx/effects/
+  InstancedTreeField.tsx
+  InstancedBushField.tsx
+  InstancedRockField.tsx
+  InstancedMushroomField.tsx
+  InstancedWildflowerField.tsx
+  fixtureExtractors.ts
+  fixtureGeometryVariants.ts
+  fixtureExtractors.test.ts           (G8, P2)
 ```
 
-### 14.2 · Atomic commit contract (NFR-ROLLBACK-3)
+### 12.2 Modified files (additive only — no behavior change for existing callers)
 
-Each S2 hand-port = one commit per schema (`adopt-hounfour-<name>: hand-port + drift test + mock`). `git revert` of one commit removes one schema cleanly.
+```
+lib/engine/index.ts                                         (re-exports)
+app/battle-v2/_components/vfx/effects/HexPlot.tsx           (add suppressFixtures prop)
+app/battle-v2/_components/vfx/effects/BigRealmScene.tsx     (mount InstancedXFields)
+app/battle-v2/_components/vfx/effects/InstancedLeafField.tsx  (meshToon → meshLambert)
+app/battle-v2/_components/vfx/VfxConfig.ts (or schema dir)  (add useInstancedFixtures field)
+```
 
-### 14.3 · Test-failure pause threshold (NFR-ROLLBACK-2)
+### 12.3 Files NOT touched (operator in-flight work — additive constraint)
 
-If `pnpm test` fails > 5 simultaneously after any S1-S4 commit, sprint pauses + operator pair-point. CI auto-comments on the PR.
+```
+ALL other operator-untracked .tsx files in app/battle-v2/_components/vfx/effects/
+  (LeafSwirl, Mist, RippleField, Embers, DustMotes, Sparks, PuruhaniWalker,
+   ZoneMonument, MountainRing, ZoneScene, PollenMotes, RealmScene, etc.)
+ALL files in app/battle-v2/_components/world/ (palette, Foliage, clusterGeometry)
+ALL files in lib/hex/ (plot, biome, decorator, zone, etc.)
+ALL files in lib/wuxing/ (element, resonance, timeOfDay)
+```
 
-### 14.4 · Inter-sprint rollback
+---
 
-Each `feat/sa-sN-*` branch is independently revertable to `feat/substrate-agentic-adoption`. No cross-sprint commits in S0-S5.
+## 13. Provenance
 
-## 15 · Bridgebuilder findings reconciliation (post-r1 patch)
-
-| Finding | Sev | Where addressed |
-|---|---|---|
-| BB-001 (Runtime.fromLayer doesn't exist · use ManagedRuntime.make) | HIGH | §5 fully rewritten · §13.2 modified |
-| BB-002 (5 Live Layers don't exist · S1 must lift) | HIGH | §13.2 NEW files for activity + population lift · LOC budget revision · FR-S1-3.5 (PRD update) |
-| BB-003 (require() vs ESM JSON) | HIGH | §3.1 + §4.2 use `import ... with { type: "json" }` |
-| BB-004 (drift detection auth/cache/error) | MED | §9 hardened · GITHUB_TOKEN auth · 404=CI red · diff vs main |
-| BB-005 (drop tstyche alternation) | MED | §2.2 + §6.3 + §10.1 + §13.4 pin expect-type |
-| BB-006 (state ownership matrix) | MED | NEW §7.7 + SKILL.md template + scripts/check-state-ownership.sh |
-| BB-007 (envelope-coverage tooling) | MED | §4.4 pinned bash regex script · zero deps |
-| BB-008 (verdict narrowing migration) | MED | NEW §4.2.1 grep-or-additive procedure |
-| BB-009 (system name uniqueness CI) | LOW | §13.5 NEW scripts/check-system-name-uniqueness.sh |
-| BB-010 (brand disambiguation) | LOW | SDD-D3 brand disambiguation paragraph added |
-| BB-011 (ceremony name collision) | MED | §7.1 renamed to invocation throughout |
-| BB-012 (S1+S4 same shape) | REFRAME | §5.4 pattern-lock template at S1 close · S4 applies mechanically |
-| BB-013 (vendor + AJV pattern) | PRAISE | preserved · §4.3 unchanged |
-| BB-014 (compile-time brand-type fence) | PRAISE | preserved · §6.2 unchanged |
-| BB-015 (SOUL.md complement) | SPEC | captured for N+2 cycle · NOT in scope |
-
-## 16 · Open SDD-level decisions (none currently · all PRD §11 closed via D1-D6 + SDD-D1-D4 · all bridgebuilder HIGH/MED resolved)
-
-Anything that emerges during S0-S6 implementation surfaces via NOTES.md decision log + operator pair-point.
+- Session 19, 2026-05-17
+- Operator: zksoju
+- Branch: `feat/ecs-leaves-2026-05-17`
+- Method: `/simstim-workflow` Path B — focused SDD, no full Flatline SDD ceremony
+- Mode: ARCH (OSTROM) + craft lens (ALEXANDER) + k-hole-as-teacher
+- Operator pacing: kaironic + teaching · pair-points at sprint boundaries
+- Architectural decisions surfaced for operator pair-point:
+  - **Tree split into TWO archetypes** (trunk + branch) instead of operator brief's "ONE TreeArchetype" — preserves per-branch matrix variety
+  - **Bush + Rock use canonical-variants** instead of per-fixture procedural geometry — preserves cycle-1 craft quality (merged-geo + one outline) at the cost of per-fixture shape variety
+  - **Cycle-3 archetypes are STATIC (no useFrame)** — sway already lives in cycle-1 leaf field; Bush whole-bush sway is dropped on the instanced path (operator visual gate decides)
+  - **All instanced fixtures use `meshLambertMaterial`** — same shader-path constraint as BLACK-leaves fix; loses toon 2-band on instanced paths (accepted, same trade-off cycle-1 made for leaves)

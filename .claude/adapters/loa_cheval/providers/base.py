@@ -459,6 +459,51 @@ def http_post_stream(
 # --- Token Estimation ---
 
 
+# -----------------------------------------------------------------------------
+# Headless adapter subprocess env helper (closes issues #879 / #880)
+# -----------------------------------------------------------------------------
+
+# Auth-class env vars that headless adapters MUST strip from their subprocess
+# environment by default. The CLI tools (claude / codex / gemini) prefer their
+# OAuth-subscription auth path, but if any of these vars are exported in the
+# parent process the CLI falls back to API mode — defeating the headless
+# adapter's purpose. Operators who explicitly want API-mode routing through
+# the CLI opt in via LOA_HEADLESS_KEEP_API_KEY=1.
+_HEADLESS_STRIPPED_AUTH_VARS: tuple = (
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "GOOGLE_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+)
+
+
+def build_headless_subprocess_env(parent_env=None) -> Dict[str, str]:
+    """Return an env dict suitable for headless adapter subprocess.run(env=...).
+
+    Default: copy parent env (or os.environ if parent_env is None) and remove
+    auth-class vars per `_HEADLESS_STRIPPED_AUTH_VARS`. Operator opt-out via
+    `LOA_HEADLESS_KEEP_API_KEY=1` preserves the auth vars verbatim.
+
+    The kwarg is ALWAYS supposed to be passed explicitly by callers — even
+    when no key needs stripping. The headless adapter's contract is
+    "never inherit subprocess env"; an explicit env= makes the contract
+    visible at the call site.
+
+    Closes issues #879 / #880 (and symmetric for codex / gemini).
+    """
+    import os as _os
+    base = dict(parent_env if parent_env is not None else _os.environ)
+    keep_opt_in = base.get("LOA_HEADLESS_KEEP_API_KEY", "").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+    if keep_opt_in:
+        return base
+    for var in _HEADLESS_STRIPPED_AUTH_VARS:
+        base.pop(var, None)
+    return base
+
+
 def estimate_tokens(messages: List[Dict[str, Any]]) -> int:
     """Best-effort token estimation (SDD §4.2.4).
 
@@ -513,7 +558,28 @@ def enforce_context_window(
 
 
 class ProviderAdapter(ABC):
-    """Base class for model provider adapters (SDD §4.2.3)."""
+    """Base class for model provider adapters (SDD §4.2.3).
+
+    Cycle-110 sprint-2b2a: `auth_type` class attribute declares which
+    auth_type bucket this adapter's circuit-breaker writes route to
+    (per FR-2.3 / SDD §3.2). Subclasses override:
+
+    | Adapter                       | auth_type   |
+    |-------------------------------|-------------|
+    | OpenAIAdapter / GoogleAdapter | "http_api"  |
+    | AnthropicAdapter              | "http_api"  |
+    | BedrockAdapter                | "aws_iam"   |
+    | ClaudeHeadlessAdapter         | "headless"  |
+    | CodexHeadlessAdapter          | "headless"  |
+    | GeminiHeadlessAdapter         | "headless"  |
+
+    Eliminates the sprint-1 `getattr(adapter, "auth_type", "http_api")` fallback
+    (closes BB #903 F-001 + F7 fully — adapter labels itself at construction).
+    """
+
+    # Default — overridden by subclasses. The default itself is informational:
+    # any concrete HTTP-API adapter inherits this; bedrock + headless override.
+    auth_type: str = "http_api"
 
     def __init__(self, config: ProviderConfig):
         self.config = config

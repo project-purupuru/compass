@@ -31,38 +31,34 @@
  *   - No recipient arg (collection lands in the script-runner's wallet)
  */
 
-import { existsSync, readFileSync } from "node:fs"
-import { homedir } from "node:os"
-import { resolve } from "node:path"
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { resolve } from "node:path";
 
-import {
-  createNft,
-  mplTokenMetadata,
-} from "@metaplex-foundation/mpl-token-metadata"
+import { createNft, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
   keypairIdentity,
   percentAmount,
   type PublicKey as UmiPublicKey,
-} from "@metaplex-foundation/umi"
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults"
-import { base58 } from "@metaplex-foundation/umi/serializers"
+} from "@metaplex-foundation/umi";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { base58 } from "@metaplex-foundation/umi/serializers";
 
 // ── Configuration ────────────────────────────────────────────────────
 
-const DEVNET_RPC =
-  process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com"
+const DEVNET_RPC = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 
 // Metadata URI · GitHub raw URL pointing to fixtures/collection-metadata.json.
 // (Branch will be `main` after this lands · for now, the feature branch.)
 const METADATA_URI =
-  "https://raw.githubusercontent.com/project-purupuru/purupuru-ttrpg/feat/awareness-layer-spine/fixtures/collection-metadata.json"
+  "https://raw.githubusercontent.com/project-purupuru/purupuru-ttrpg/feat/awareness-layer-spine/fixtures/collection-metadata.json";
 
 // Solana CLI default keypair location · this account pays + becomes
 // collection update authority. For sprint-2 we use the operator's id.json
 // (sponsored-payer is reserved for runtime mints, not bootstrapping).
-const DEFAULT_KEYPAIR_PATH = resolve(homedir(), ".config/solana/id.json")
-const KEYPAIR_PATH = process.env.SOLANA_PAYER_KEYPAIR ?? DEFAULT_KEYPAIR_PATH
+const DEFAULT_KEYPAIR_PATH = resolve(homedir(), ".config/solana/id.json");
+const KEYPAIR_PATH = process.env.SOLANA_PAYER_KEYPAIR ?? DEFAULT_KEYPAIR_PATH;
 
 // ── Pre-flight checks ────────────────────────────────────────────────
 
@@ -73,32 +69,30 @@ if (!existsSync(KEYPAIR_PATH)) {
 Either:
   - Generate with:    solana-keygen new
   - Or set env:       export SOLANA_PAYER_KEYPAIR=/path/to/keypair.json
-`)
-  process.exit(1)
+`);
+  process.exit(1);
 }
 
 // ── Set up Umi (Metaplex modern SDK runtime) ─────────────────────────
 
-console.log(`🔧 Setting up Umi (RPC: ${DEVNET_RPC})...`)
+console.log(`🔧 Setting up Umi (RPC: ${DEVNET_RPC})...`);
 
-const umi = createUmi(DEVNET_RPC)
-umi.use(mplTokenMetadata())
+const umi = createUmi(DEVNET_RPC);
+umi.use(mplTokenMetadata());
 
-const keypairBytes = JSON.parse(readFileSync(KEYPAIR_PATH, "utf-8")) as number[]
-const payerKeypair = umi.eddsa.createKeypairFromSecretKey(
-  new Uint8Array(keypairBytes),
-)
-umi.use(keypairIdentity(payerKeypair))
+const keypairBytes = JSON.parse(readFileSync(KEYPAIR_PATH, "utf-8")) as number[];
+const payerKeypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(keypairBytes));
+umi.use(keypairIdentity(payerKeypair));
 
-const payerPubkey: UmiPublicKey = umi.identity.publicKey
-console.log(`   Payer / collection authority: ${payerPubkey.toString()}`)
+const payerPubkey: UmiPublicKey = umi.identity.publicKey;
+console.log(`   Payer / collection authority: ${payerPubkey.toString()}`);
 
 // ── Wrap in main() for tsx CJS ───────────────────────────────────────
 
 async function main() {
-  const balanceLamports = await umi.rpc.getBalance(payerPubkey)
-  const balanceSol = Number(balanceLamports.basisPoints) / 1e9
-  console.log(`   Payer balance: ${balanceSol.toFixed(4)} SOL`)
+  const balanceLamports = await umi.rpc.getBalance(payerPubkey);
+  const balanceSol = Number(balanceLamports.basisPoints) / 1e9;
+  console.log(`   Payer balance: ${balanceSol.toFixed(4)} SOL`);
 
   // Collection NFT bootstrap is ~0.012 SOL · keep buffer
   if (balanceSol < 0.05) {
@@ -106,19 +100,17 @@ async function main() {
 ❌ Payer balance too low (need ≥0.05 SOL · this is one-time mint)
 
 Run: solana airdrop 1 --url devnet
-`)
-    process.exit(1)
+`);
+    process.exit(1);
   }
 
   // Generate fresh mint keypair · this becomes the collection's permanent identity
-  const collectionMintSigner = generateSigner(umi)
-  console.log(
-    `\n🌳 Collection mint pubkey (PASTE THIS into env + anchor const):`,
-  )
-  console.log(`   ${collectionMintSigner.publicKey.toString()}`)
+  const collectionMintSigner = generateSigner(umi);
+  console.log(`\n🌳 Collection mint pubkey (PASTE THIS into env + anchor const):`);
+  console.log(`   ${collectionMintSigner.publicKey.toString()}`);
 
-  console.log(`\n🌬 Sending createNft (isCollection:true) to devnet...`)
-  console.log(`   Metadata URI: ${METADATA_URI}`)
+  console.log(`\n🌬 Sending createNft (isCollection:true) to devnet...`);
+  console.log(`   Metadata URI: ${METADATA_URI}`);
 
   try {
     const result = await createNft(umi, {
@@ -131,18 +123,18 @@ Run: solana airdrop 1 --url devnet
       tokenOwner: umi.identity.publicKey, // collection stays with us
     }).sendAndConfirm(umi, {
       confirm: { commitment: "confirmed" },
-    })
+    });
 
-    const [signatureString] = base58.deserialize(result.signature)
+    const [signatureString] = base58.deserialize(result.signature);
 
-    console.log(`\n✅ COLLECTION MINT CONFIRMED`)
-    console.log(`   Tx: ${signatureString}`)
+    console.log(`\n✅ COLLECTION MINT CONFIRMED`);
+    console.log(`   Tx: ${signatureString}`);
     console.log(
       `   Tx Explorer:    https://explorer.solana.com/tx/${signatureString}?cluster=devnet`,
-    )
+    );
     console.log(
       `   Token Explorer: https://explorer.solana.com/address/${collectionMintSigner.publicKey.toString()}?cluster=devnet`,
-    )
+    );
 
     console.log(`
 ═══════════════════════════════════════════════════════════════════════
@@ -159,15 +151,15 @@ Run: solana airdrop 1 --url devnet
        anchor build && anchor deploy --provider.cluster devnet
 
 ═══════════════════════════════════════════════════════════════════════
-`)
+`);
   } catch (err) {
-    console.error(`\n❌ COLLECTION MINT FAILED`)
-    console.error(err)
-    process.exit(1)
+    console.error(`\n❌ COLLECTION MINT FAILED`);
+    console.error(err);
+    process.exit(1);
   }
 }
 
 main().catch((err) => {
-  console.error("\n❌ Script failed:", err)
-  process.exit(1)
-})
+  console.error("\n❌ Script failed:", err);
+  process.exit(1);
+});

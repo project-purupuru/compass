@@ -1,0 +1,233 @@
+  .arena-speakers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  /* Entering: speakers walk in during weather reveal */
+  .arena-speakers--entering .speaker--player {
+    animation: speaker-walk-in-player 800ms var(--ease-puru-settle) 400ms both;
+  }
+  .arena-speakers--entering .speaker--opponent {
+    animation: speaker-walk-in-opponent 800ms var(--ease-puru-settle) 600ms both;
+  }
+
+  @keyframes speaker-walk-in-player {
+    0%   { opacity: 0; transform: translateX(-40px) translateY(20px); }
+    100% { opacity: 1; transform: translateX(0) translateY(0); }
+  }
+  @keyframes speaker-walk-in-opponent {
+    0%   { opacity: 0; transform: translateX(30px) translateY(-15px); }
+    100% { opacity: 1; transform: translateX(0) translateY(0); }
+  }
+
+  .speaker {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    transition:
+      opacity var(--duration-slow) var(--ease-puru-settle),
+      transform var(--duration-slow) var(--ease-puru-settle);
+  }
+
+  .speaker--player {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    left: var(--space-xs);
+    --speaker-left: var(--space-xs);
+    align-items: flex-start;
+  }
+  .speaker--opponent {
+    /* Top respects iOS safe-area + a 24px hard buffer so the portrait
+       NEVER clips against the viewport top edge. */
+    top: calc(env(safe-area-inset-top, 0px) + 24px);
+    right: var(--space-xs);
+    --speaker-right: var(--space-xs);
+    --speaker-top: calc(env(safe-area-inset-top, 0px) + 24px);
+    align-items: flex-end;
+  }
+
+  @media (min-width: 640px) {
+    .speaker--player {
+      left: var(--space-md);
+      --speaker-left: var(--space-md);
+    }
+    .speaker--opponent {
+      top: calc(env(safe-area-inset-top, 0px) + clamp(40px, 8vh, 80px));
+      right: var(--space-md);
+      --speaker-right: var(--space-md);
+      --speaker-top: calc(env(safe-area-inset-top, 0px) + clamp(40px, 8vh, 80px));
+    }
+  }
+
+  .speaker-face {
+    object-fit: contain;
+    object-position: bottom center;
+    flex-shrink: 0;
+    transition: opacity 300ms var(--ease-puru-settle), transform 300ms var(--ease-puru-settle);
+  }
+
+  .speaker-face--player {
+    width: 120px;
+    height: 160px;
+    opacity: 0.85;
+  }
+  @media (min-width: 640px) {
+    .speaker-face--player {
+      width: clamp(140px, 22vw, 200px);
+      height: clamp(180px, 28vw, 260px);
+    }
+  }
+
+  .speaker-face--opponent {
+    width: 64px;
+    height: 80px;
+    opacity: 0.5;
+  }
+  @media (min-width: 640px) {
+    .speaker-face--opponent {
+      width: clamp(80px, 14vw, 120px);
+      height: clamp(100px, 18vw, 150px);
+    }
+  }
+
+  /* Idle speakers */
+  .arena-speakers--idle .speaker-face--player { opacity: 0.7; }
+  .arena-speakers--idle .speaker-face--opponent { opacity: 0.35; }
+
+  /* Speaking side lights up */
+  .speaker.speaking .speaker-face {
+    opacity: 1;
+    animation: face-peek 480ms var(--ease-puru-settle) forwards;
+  }
+
+  @keyframes face-peek {
+    0% { opacity: 0; transform: scaleY(0.85) translateY(8px); }
+    60% { opacity: 0.9; transform: scaleY(1.04) translateY(-2px); }
+    100% { opacity: inherit; transform: scaleY(1) translateY(0); }
+  }
+
+  /* Opponent flinch */
+  .speaker.reacting .speaker-face--opponent {
+    opacity: 0.7;
+    animation: opponent-flinch 300ms var(--ease-puru-bounce) forwards;
+  }
+
+  @keyframes opponent-flinch {
+    0%   { transform: scale(1) translateX(0); }
+    30%  { transform: scale(0.92) translateX(4px); }
+    60%  { transform: scale(1.05) translateX(-2px); }
+    100% { transform: scale(1) translateX(0); }
+  }
+
+  /* ═══ RESULT SPATIAL TRANSITION ═══ */
+  .arena-speakers--result { z-index: 1; }
+
+  .arena-speakers--player-won .speaker--player {
+    transform: translate(calc(50vw - var(--speaker-left) - 50%), -20vh);
+    align-items: center;
+  }
+  .arena-speakers--player-won .speaker-face--player {
+    width: 140px;
+    height: 180px;
+    opacity: 1;
+  }
+  .arena-speakers--player-won .speaker--opponent { opacity: 0; }
+
+  .arena-speakers--opponent-won .speaker--opponent {
+    transform: translate(calc(-50vw + 50% + var(--speaker-right)), calc(80vh - 100% - var(--speaker-top)));
+    align-items: center;
+  }
+  .arena-speakers--opponent-won .speaker-face--opponent {
+    width: 120px;
+    height: 160px;
+    opacity: 1;
+    filter: none;
+  }
+  .arena-speakers--opponent-won .speaker--player { opacity: 0; }
+
+  .arena-speakers--result:not(.arena-speakers--player-won):not(.arena-speakers--opponent-won) .speaker-face {
+    opacity: 0.85;
+  }
+
+  @media (min-width: 640px) {
+    .arena-speakers--player-won .speaker-face--player {
+      width: clamp(160px, 24vw, 220px);
+      height: clamp(200px, 30vw, 280px);
+    }
+    .arena-speakers--opponent-won .speaker-face--opponent {
+      width: clamp(140px, 20vw, 180px);
+      height: clamp(180px, 26vw, 240px);
+    }
+  }
+
+  /* Element glow */
+  .speaker-face[data-element='wood']  { filter: drop-shadow(0 0 8px oklch(0.81 0.144 112.7 / 0.35)); }
+  .speaker-face[data-element='fire']  { filter: drop-shadow(0 0 8px oklch(0.64 0.181 28.4 / 0.35)); }
+  .speaker-face[data-element='earth'] { filter: drop-shadow(0 0 8px oklch(0.85 0.153 83.8 / 0.35)); }
+  .speaker-face[data-element='metal'] { filter: drop-shadow(0 0 8px oklch(0.52 0.126 309.7 / 0.35)); }
+  .speaker-face[data-element='water'] { filter: drop-shadow(0 0 8px oklch(0.53 0.180 266.2 / 0.35)); }
+
+  /* Speech bubbles */
+  .speaker-bubble {
+    max-width: 180px;
+    padding: var(--space-xs) var(--space-2_5);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 400;
+    line-height: 1.4;
+    margin: 0;
+    opacity: 0;
+  }
+  .speaker--player .speaker-bubble {
+    transform-origin: left center;
+    animation: bubble-bleed-left 420ms var(--ease-puru-settle) forwards;
+  }
+  .speaker--opponent .speaker-bubble {
+    transform-origin: right center;
+    animation: bubble-bleed-right 420ms var(--ease-puru-settle) forwards;
+  }
+
+  .speaker-bubble--player {
+    color: var(--puru-ink-rich);
+    /* Theme-aware paper — was hardcoded oklch(0.95 0.035 85 / 0.8) which
+       stayed bright cream in dark mode and read as fluorescent paper. */
+    background: oklch(from var(--puru-cloud-bright) l c h / 0.85);
+    border-left: 2.5px solid var(--puru-honey-base);
+    border-radius: 2px 10px 10px 2px;
+    transform: rotate(-0.8deg);
+  }
+
+  @keyframes bubble-bleed-left {
+    0% { opacity: 0; transform: scaleX(0.82) rotate(-0.8deg); }
+    60% { opacity: 0.9; transform: scaleX(1.02) rotate(-0.8deg); }
+    100% { opacity: 1; transform: scaleX(1) rotate(-0.8deg); }
+  }
+  @keyframes bubble-bleed-right {
+    0% { opacity: 0; transform: scaleX(0.82) rotate(0.8deg); }
+    60% { opacity: 0.9; transform: scaleX(1.02) rotate(0.8deg); }
+    100% { opacity: 1; transform: scaleX(1) rotate(0.8deg); }
+  }
+
+  /* ── Dark mode ── */
+  [data-theme='old-horai'] .speaker-bubble--player {
+    background: oklch(0.25 0.025 85 / 0.85);
+    color: var(--puru-ink-rich);
+  }
+  [data-theme='old-horai'] .speaker-face[data-element='wood']  { filter: drop-shadow(0 0 12px oklch(0.81 0.144 112.7 / 0.5)); }
+  [data-theme='old-horai'] .speaker-face[data-element='fire']  { filter: drop-shadow(0 0 12px oklch(0.64 0.181 28.4 / 0.5)); }
+  [data-theme='old-horai'] .speaker-face[data-element='earth'] { filter: drop-shadow(0 0 12px oklch(0.85 0.153 83.8 / 0.5)); }
+  [data-theme='old-horai'] .speaker-face[data-element='metal'] { filter: drop-shadow(0 0 12px oklch(0.52 0.126 309.7 / 0.5)); }
+  [data-theme='old-horai'] .speaker-face[data-element='water'] { filter: drop-shadow(0 0 12px oklch(0.53 0.180 266.2 / 0.5)); }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .speaker-bubble--player { background: oklch(0.25 0.025 85 / 0.85); color: var(--puru-ink-rich); }
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .speaker-face { animation: none; }
+    .speaker-bubble { animation: none; opacity: 1; }
+    .speaker { transition-duration: 0.01ms; }
+  }

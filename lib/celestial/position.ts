@@ -27,10 +27,7 @@
 // most latitudes outside polar regions.
 
 import { getSafe } from "@/lib/storage-safe";
-import {
-  SUNRISE_STORAGE_KEY,
-  SUNSET_STORAGE_KEY,
-} from "@/lib/theme/resolve";
+import { SUNRISE_STORAGE_KEY, SUNSET_STORAGE_KEY } from "@/lib/theme/resolve";
 
 export type CelestialBody = "sun" | "moon";
 
@@ -131,11 +128,7 @@ function arcPosition(
   return arcAt(body, Math.max(0, Math.min(1, t)), isApproximate);
 }
 
-function arcAt(
-  body: CelestialBody,
-  t: number,
-  isApproximate: boolean,
-): CelestialPosition {
+function arcAt(body: CelestialBody, t: number, isApproximate: boolean): CelestialPosition {
   const xPct = EAST_EDGE_PCT + (WEST_EDGE_PCT - EAST_EDGE_PCT) * t;
   const yPct = HORIZON_Y_PCT - Math.sin(Math.PI * t) * ARC_HEIGHT_PCT;
   // Opacity rolls in from the horizon — body fades up over the first

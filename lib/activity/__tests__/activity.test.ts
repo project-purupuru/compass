@@ -33,8 +33,22 @@ describe("ActivityLive lift", () => {
 
   it("recent returns seeded events newest-first", async () => {
     const seed: JoinActivity[] = [
-      { id: "a", kind: "join", origin: "off-chain", element: "wood", actor: "w1", at: "2026-05-12T01:00:00Z" },
-      { id: "b", kind: "join", origin: "off-chain", element: "metal", actor: "w2", at: "2026-05-12T02:00:00Z" },
+      {
+        id: "a",
+        kind: "join",
+        origin: "off-chain",
+        element: "wood",
+        actor: "w1",
+        at: "2026-05-12T01:00:00Z",
+      },
+      {
+        id: "b",
+        kind: "join",
+        origin: "off-chain",
+        element: "metal",
+        actor: "w2",
+        at: "2026-05-12T02:00:00Z",
+      },
     ];
     const program = Effect.gen(function* () {
       const a = yield* Activity;

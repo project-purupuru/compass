@@ -48,7 +48,7 @@ for (const vector of vectors) {
       actual,
       expected,
       `divergence on ${vector.id}: got ${JSON.stringify(actual.toString("utf8"))}, ` +
-        `expected ${JSON.stringify(vector.expected)}`
+        `expected ${JSON.stringify(vector.expected)}`,
     );
   });
 }

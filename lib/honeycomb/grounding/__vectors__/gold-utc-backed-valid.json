@@ -1,0 +1,26 @@
+{
+  "_test_purpose": "gold UTC-backed with directionally-correct learning · full anti-spiral tether · should VALIDATE",
+  "_expected_outcome": "valid",
+  "envelope": {
+    "envelope_id": "00000000-0000-4000-8000-000000000003",
+    "artifact_path": "grimoires/loa/context/taste-tokens/villager-bear-warmth.md",
+    "tier": "gold",
+    "grounding_status": "grounded",
+    "linked_utcs": [
+      {
+        "canvas_url": "https://github.com/0xHoneyJar/hivemind-laboratory/blob/main/labs/compass/UTC-battle-v2-bear-resonance-2026-05-14.md",
+        "quote_hash": "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+        "confidence": 0.85,
+        "learning_status": "directionally-correct"
+      }
+    ],
+    "blessed_by": "operator",
+    "operator_signed": true,
+    "asserted_at": "2026-05-16T15:40:00Z",
+    "contract_version": "1.0.0",
+    "metadata": {
+      "utc_capture_session": "session-12-2026-05-14",
+      "promotion_context": "validated by 3 operator playtests"
+    }
+  }
+}

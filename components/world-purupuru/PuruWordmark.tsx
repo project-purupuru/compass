@@ -48,22 +48,14 @@ function zuboraVars(i: number): React.CSSProperties {
   };
 }
 
-export function PuruWordmark({
-  variant = "honey",
-  width = 240,
-  className,
-  gradient,
-}: Props) {
+export function PuruWordmark({ variant = "honey", width = 240, className, gradient }: Props) {
   const reactId = useId();
   const fid = `wm-${reactId.replace(/[^a-z0-9-]/gi, "")}-${variant}`;
   const turbRef = useRef<SVGFETurbulenceElement | null>(null);
 
   const isGradient = variant === "honey" || variant === "cloud";
   const isCloud = variant === "cloud";
-  const g = useMemo(
-    () => gradient ?? (isCloud ? CLOUD : HONEY),
-    [gradient, isCloud],
-  );
+  const g = useMemo(() => gradient ?? (isCloud ? CLOUD : HONEY), [gradient, isCloud]);
 
   // Animate baseFrequency on the noise filter — the same gentle sine wobble
   // the Svelte original runs.
@@ -122,11 +114,7 @@ export function PuruWordmark({
             yChannelSelector="G"
             result="displaced"
           />
-          <feGaussianBlur
-            in="displaced"
-            stdDeviation={isGradient ? 2.5 : 0.3}
-            result="blur"
-          />
+          <feGaussianBlur in="displaced" stdDeviation={isGradient ? 2.5 : 0.3} result="blur" />
           {isGradient && (
             <>
               <feColorMatrix

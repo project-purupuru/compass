@@ -11,18 +11,12 @@ import {
   AgentLifecycleStatePort,
   AgentLifecycleStateUpstreamSchema,
 } from "../agent-lifecycle-state.hounfour-port";
-import {
-  AgentIdentityPort,
-  AgentIdentityUpstreamSchema,
-} from "../agent-identity.hounfour-port";
+import { AgentIdentityPort, AgentIdentityUpstreamSchema } from "../agent-identity.hounfour-port";
 import {
   AuditTrailEntryPort,
   AuditTrailEntryUpstreamSchema,
 } from "../audit-trail-entry.hounfour-port";
-import {
-  DomainEventPort,
-  DomainEventUpstreamSchema,
-} from "../domain-event.hounfour-port";
+import { DomainEventPort, DomainEventUpstreamSchema } from "../domain-event.hounfour-port";
 import {
   CapabilityScopedTrustPort,
   CapabilityScopedTrustUpstreamSchema,
@@ -62,7 +56,9 @@ describe("hounfour hand-ports · smoke", () => {
     });
     it("upstream schema is well-formed JSON object", () => {
       expect(typeof AgentIdentityUpstreamSchema).toBe("object");
-      expect((AgentIdentityUpstreamSchema as { required?: string[] }).required).toContain("agent_id");
+      expect((AgentIdentityUpstreamSchema as { required?: string[] }).required).toContain(
+        "agent_id",
+      );
     });
   });
 
@@ -92,7 +88,9 @@ describe("hounfour hand-ports · smoke", () => {
       ).toThrow();
     });
     it("upstream schema is well-formed JSON object", () => {
-      expect((AuditTrailEntryUpstreamSchema as { required?: string[] }).required).toContain("entry_id");
+      expect((AuditTrailEntryUpstreamSchema as { required?: string[] }).required).toContain(
+        "entry_id",
+      );
     });
   });
 
@@ -137,7 +135,9 @@ describe("hounfour hand-ports · smoke", () => {
       ).toThrow();
     });
     it("upstream schema is well-formed JSON object", () => {
-      expect((CapabilityScopedTrustUpstreamSchema as { required?: string[] }).required).toContain("default_level");
+      expect((CapabilityScopedTrustUpstreamSchema as { required?: string[] }).required).toContain(
+        "default_level",
+      );
     });
   });
 });

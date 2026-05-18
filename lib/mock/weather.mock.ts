@@ -26,8 +26,7 @@ function nextState(prev: WeatherState): WeatherState {
   const temperature_c = Math.round(clamp(prev.temperature_c + tDelta, 8, 22) * 10) / 10;
 
   const tSec = Date.now() / 1000;
-  const cosmic =
-    0.5 + 0.25 * Math.sin(tSec / 53) + 0.15 * Math.sin(tSec / 17 + 0.7);
+  const cosmic = 0.5 + 0.25 * Math.sin(tSec / 53) + 0.15 * Math.sin(tSec / 17 + 0.7);
   const cosmic_intensity = Math.round(clamp(cosmic, 0, 1) * 100) / 100;
 
   const amp = 0.85 + 0.3 * Math.sin(tSec / 38);
