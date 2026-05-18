@@ -1017,6 +1017,18 @@ const BIG_REALM_SCENE_DEF: VfxEffectDefinition<BigRealmSceneConfigT> = {
         label: "instanced rocks",
       },
     );
+    debug.addBinding(
+      config as unknown as Record<string, unknown>,
+      "useStatsPanel",
+      {
+        // Cycle-3 S2 perf-investigation toggle. ON: mount drei <Stats />
+        // panel in the canvas — shows MS (vsync-independent) alongside
+        // FPS, revealing actual frame-render-time even when PerfReadout's
+        // FPS reads 60-capped. Use this to measure optimization gains
+        // that PerfReadout would otherwise hide behind the vsync ceiling.
+        label: "stats panel (uncapped ms)",
+      },
+    );
   },
 };
 

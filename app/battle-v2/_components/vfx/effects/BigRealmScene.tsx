@@ -53,6 +53,8 @@ import {
 
 import type { BigRealmSceneConfigT } from "../VfxConfig";
 
+import { Stats } from "@react-three/drei";
+
 import { gatherLeavesFromPlots } from "./leafExtractors";
 import { HexOutline } from "./HexOutline";
 import { HexPlot } from "./HexPlot";
@@ -597,6 +599,12 @@ export function BigRealmScenePreview({
       ))}
 
       {config.debugPerf && <PerfReadout />}
+      {/* Cycle-3 S2 perf-investigation: drei Stats panel shows MS
+       *  (vsync-independent) alongside FPS. Reveals actual frame-render-
+       *  time even when PerfReadout's FPS reads 60-capped at the display
+       *  refresh rate. Toggle via debug → "stats panel (uncapped ms)".
+       *  Panel renders in DOM (top-left by default), not in the canvas. */}
+      {config.useStatsPanel && <Stats />}
     </group>
   );
 }

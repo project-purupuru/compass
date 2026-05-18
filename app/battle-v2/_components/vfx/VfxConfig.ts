@@ -714,6 +714,27 @@ export const BigRealmSceneConfig = S.extend(
      * architecturally novel archetype after Tree, before Bush).
      */
     useInstancedRocks: S.Boolean,
+
+    /**
+     * Show drei `<Stats />` panel (stats.js) in addition to PerfReadout.
+     *
+     * Why both: PerfReadout's FRAME ms is `1000 / fps`, which is vsync-
+     * capped at 16.7ms (60 Hz refresh). Even when our actual per-frame
+     * RENDER work is much less (say 5ms), PerfReadout shows 16.7ms because
+     * rAF only fires at the display refresh rate. drei's Stats panel
+     * shows the MS panel = actual JS+render time inside the rAF callback
+     * (Performance.now() bracketed), which is vsync-INDEPENDENT and
+     * reveals the real headroom.
+     *
+     * Added cycle-3 S2 perf-investigation (2026-05-17, codex flatline
+     * caught: "current audit appears capped around 60 FPS … any
+     * optimization beyond +4 FPS may be invisible without uncapped frame
+     * timing or GPU timer data"). Use this knob to see what's actually
+     * costing time, not just whether we're at vsync.
+     *
+     * Reads: top-left corner panel with FPS / MS / MB.
+     */
+    useStatsPanel: S.Boolean,
   }),
 );
 
@@ -753,4 +774,5 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   useInstancedLeaves: false,
   useInstancedTrees: false,
   useInstancedRocks: false,
+  useStatsPanel: false,
 };
