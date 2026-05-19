@@ -37,10 +37,10 @@ export const PALETTE = {
   bush: ["#5f9b3a", "#74ad4c"],
 
   // ── Stone ───────────────────────────────────────────────────────────────
-  // Restored on merge 2026-05-17 — main's palette dropped stone entries but
-  // cycle-3 Rock.tsx + fixtureExtractors.ts + InstancedRockField.tsx depend
-  // on them. Cool-leaning blue-gray (4 hues for cluster variance) + warm
-  // grey-green lichen accents (~20% chance per Rock.tsx hue selection).
+  // Cool-leaning blue-gray — reads as STONE not dirt (per operator
+  // 2026-05-16). 4 hues for cluster variance, still warm enough to sit in
+  // the Ghibli palette but distinctly cooler than soil. Lichen accents
+  // ~20% for grounded organic feel.
   stone: ["#9aa0a8", "#7e858f", "#aab0b6", "#6c737e"],
   stoneLichen: ["#90a26d", "#7c9059"],
 

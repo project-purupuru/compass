@@ -789,3 +789,58 @@ export const BIG_REALM_SCENE_DEFAULTS: BigRealmSceneConfigT = {
   useInstancedFallenLogs: false,
   useStatsPanel: false,
 };
+
+// ── card-composition (Session 2026-05-18 — kitchen primitive) ──────────────
+//
+// The kitchen surface for codex-authored cards (Gumi's purupuru-card-meker
+// pipeline). Reads /codex/cards.jsonl + per-card /codex/cards/<slug>/layers.json
+// and renders side-by-side with the baked composite.webp so the operator and
+// agent can see convergence at a glance.
+//
+// V0 panes: AUTHORED (live layer stack) · COMPOSITE (Gumi's webp).
+// V0 knobs: card pick · preview scale · 3D depth stub (CSS perspective) ·
+//           toggle composite pane visibility.
+
+export const CardCompositionConfig = S.extend(
+  VfxEffectBase,
+  S.Struct({
+    kind: S.Literal("card-composition"),
+    /** Codex slug (e.g. "earth-jani"). Resolved against /codex/cards.jsonl. */
+    cardSlug: S.String,
+    /** Render scale for the AUTHORED + COMPOSITE panes. 1.0 = full 733×1024. */
+    previewScale: S.Number,
+    /**
+     * Paper-puppet depth stub. 0 = flat. 1 = full pop-up tilt (perspective +
+     * per-layer translateZ proportional to zIndex). V0 = CSS only; V1 wires
+     * a real R3F plane-stack with shaders.
+     */
+    depthStub: S.Number,
+    /** Show the COMPOSITE (Gumi-baked) pane. Off = AUTHORED only, full-width. */
+    showComposite: S.Boolean,
+    /** Show the convergence-status footer (pantry size · cooking · errors). */
+    showStatus: S.Boolean,
+    /**
+     * Debug overlay — outlines every rendered layer + draws DECLARED bboxes
+     * (pink dashed) for image layers. Pink bbox vs. cyan layer outline reveals
+     * declared-vs-actual geometry drift (the card-meker full-canvas export
+     * convention, surfaced session 2026-05-18).
+     */
+    debug: S.Boolean,
+  }),
+);
+
+export type CardCompositionConfigT = S.Schema.Type<typeof CardCompositionConfig>;
+
+export const CARD_COMPOSITION_DEFAULTS: CardCompositionConfigT = {
+  id: "card-composition.default",
+  surface: "dom",
+  duration: "infinite",
+  trigger: "manual",
+  kind: "card-composition",
+  cardSlug: "earth-jani",
+  previewScale: 0.45,
+  depthStub: 0,
+  showComposite: true,
+  showStatus: true,
+  debug: false,
+};
