@@ -223,3 +223,20 @@ Render saved at `public/art/mockups/clash/a.png` (3MB). Visible at `/kit/ui-expl
 Three open next-moves: (A) fire 4 more element battle prompts cold-mode to build full set, (B) composite the legible text via rsvg-convert+magick to prove end-to-end pipeline, (C) start React/CSS port against Image #6 as visual gold standard.
 
 Recommended next: Move A with WATER (Ruan + ripple-circles + harbor-pier-at-rain). Pin Ruan in proper water register (addresses SKY EYES finding she's most visually-inconsistent caretaker) + ripple-circles is the most distinct motif from ember-trails so element-separation gain is biggest on first additional element.
+
+## SDD Grounding · 2026-05-19 (session 23 architect)
+
+Cycle-1 substrate paths verified:
+- `lib/lab/pointer-chain/{port,live,schema}.ts` — schema v1.0 LOCKED (4 PointerSegment kinds: Pantry, Primitive, Consumer, Scene)
+- `lib/lab/adapter-registry/{port,live,types}.ts` — static-registration (ADR-12), InspectableNode + EntityTreeNode explicit
+- `lib/lab/state/{workspace,inspector}.{port,live}.ts` — Effect Context.Tag pattern + Stream
+- `app/battle-v2/_components/lab/` — Inspector.tsx · PointerBreadcrumb.tsx · WorkspacesTabs.tsx · ComposabilityPanel (3 shapes A/B/C)
+- `app/battle-v2/_components/puppet/` — PaperPuppet3D · PaperPuppetSprite · PaperPuppetMotion (DOCTRINE LOCKED)
+- `app/battle-v2/vfx-lab/` — current vfx-lab page (S2 target rename → /honeycomb)
+- `app/battle-v2/page.tsx` — current /battle-v2 (S1 target rename → /play)
+- `.husky/pre-commit` — existing regression substrate (cycle-1)
+- 9 VFX_REGISTRY effects all adapter-retrofitted (S5.T1-T8 cycle-1)
+
+Versions locked: next 16.2.6 · react 19.2.4 · effect ^3.10.0 · tailwind ^4.3.0 · three ^0.184.0 · playwright ^1.60.0 · @react-three/fiber ^9.6.1 · @react-three/drei ^10.7.7 · motion ^12.38.0
+
+Pre-commit substrate present (.husky/pre-commit + .claude/hooks/pre-commit) — cycle-2 EXTENDS with craft gate, no replacement.

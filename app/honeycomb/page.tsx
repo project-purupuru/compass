@@ -1,14 +1,17 @@
 /**
- * /battle-v2/vfx-lab — sandbox for VFX iteration.
+ * /honeycomb — engine surface for architectural observability.
  *
- * Session-14 build. 3-pane shape: EffectPicker (left) · PreviewPane (center)
- * · KnobPane (right). Substrate-coupled via @effect/schema configs in
+ * Renamed from /battle-v2/vfx-lab in cycle-2 S0 (route taxonomy /play +
+ * /honeycomb · same substrate). Cycle-1 3-pane shape preserved: EffectPicker
+ * (left) · PreviewPane (center) · KnobPane (right). Cycle-2 S2 rebuilds this
+ * surface on shadcn primitives; S3 re-verbs the tabs to BUILD + LIBRARY + Play.
+ *
+ * Substrate-coupled via @effect/schema configs in
  * `_components/vfx/VfxConfig.ts`; effects render in isolation; layering
- * primitive included via Composition.ts (sequence + parallel; trigger-chain
- * stubbed for v2).
+ * primitive included via Composition.ts.
  *
- * Operator-locked decisions (session 14):
- *   - sandbox-first (no gameplay wiring this session)
+ * Cycle-1 operator-locked decisions preserved (session 14):
+ *   - sandbox-first (no gameplay wiring)
  *   - vanilla tweakpane in useEffect
  *   - @effect/schema for configs (not Zod)
  *   - 2 effects ship v1: tree-fall + water-splash
@@ -29,9 +32,9 @@ import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 // Visible spine (PointerBreadcrumb + WorkspacesTabs) lives INSIDE the existing
 // absolute-positioned header — no overlay, no FAB, no conflict with rails.
 import { IconProvider } from "@/lib/ui/icons/provider";
-import { ensureAdaptersRegistered } from "../_components/lab/adapter-init";
-import { PointerBreadcrumb } from "../_components/lab/PointerBreadcrumb";
-import { WorkspacesTabs, useActiveWorkspace } from "../_components/lab/workspaces/WorkspacesTabs";
+import { ensureAdaptersRegistered } from "@/app/battle-v2/_components/lab/adapter-init";
+import { PointerBreadcrumb } from "@/app/battle-v2/_components/lab/PointerBreadcrumb";
+import { WorkspacesTabs, useActiveWorkspace } from "@/app/battle-v2/_components/lab/workspaces/WorkspacesTabs";
 import type { PointerChain, PointerSegment } from "@/lib/lab/pointer-chain/schema";
 
 import {
@@ -51,37 +54,37 @@ import {
   type TreeFallConfigT,
   type WaterSplashConfigT,
   type ZoneSceneConfigT,
-} from "../_components/vfx/VfxConfig";
+} from "@/app/battle-v2/_components/vfx/VfxConfig";
 import {
   COMPOSITION_WOOD_VS_WATER,
   runComposition,
-} from "../_components/vfx/Composition";
-import { TreeFallPreview } from "../_components/vfx/effects/TreeFall";
-import { WaterSplashPreview } from "../_components/vfx/effects/WaterSplash";
+} from "@/app/battle-v2/_components/vfx/Composition";
+import { TreeFallPreview } from "@/app/battle-v2/_components/vfx/effects/TreeFall";
+import { WaterSplashPreview } from "@/app/battle-v2/_components/vfx/effects/WaterSplash";
 import {
   VFX_REGISTRY,
   getDefinition,
   type PreviewProps,
-} from "../_components/vfx/VfxRegistry";
-import { EffectPicker } from "./_components/EffectPicker";
-import { KnobPane } from "./_components/KnobPane";
-import { PostPane } from "./_components/PostPane";
+} from "@/app/battle-v2/_components/vfx/VfxRegistry";
+import { EffectPicker } from "@/app/battle-v2/vfx-lab/_components/EffectPicker";
+import { KnobPane } from "@/app/battle-v2/vfx-lab/_components/KnobPane";
+import { PostPane } from "@/app/battle-v2/vfx-lab/_components/PostPane";
 import {
   deriveTiltShiftLine,
   POST_DEFAULTS,
   type PostConfig,
-} from "./_components/postConfig";
-import { PreviewPane } from "./_components/PreviewPane";
+} from "@/app/battle-v2/vfx-lab/_components/postConfig";
+import { PreviewPane } from "@/app/battle-v2/vfx-lab/_components/PreviewPane";
 
 const FIRST_EFFECT_ID = VFX_REGISTRY[0].id;
 
 /**
- * /battle-v2/vfx-lab — sandbox for VFX iteration.
+ * /honeycomb — engine surface for architectural observability.
  *
  * Wrapped in IconProvider so the IconRegistry substrate works for any
  * <Icon> consumers. Adapters register silently on mount (cycle-DoD).
  * Visible chrome (breadcrumb · inspector · composability panel · workspaces)
- * deferred to follow-up cycle.
+ * rebuilds on shadcn primitives in cycle-2 S2.
  */
 export default function VfxLabPage() {
   useEffect(() => {

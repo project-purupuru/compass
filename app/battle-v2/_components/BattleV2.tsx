@@ -32,7 +32,7 @@ import type { BeatFireRecord } from "@/lib/purupuru/presentation/sequencer";
 import type { ClashEvent } from "@/lib/cards/battle";
 import { useClashEvents } from "@/lib/runtime/react";
 
-import type { PackPayload } from "../page";
+import type { PackPayload } from "@/app/play/page";
 
 import { createAnchorStore } from "./anchors/anchorStore";
 import { ClashArena } from "./clash/ClashArena";

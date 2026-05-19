@@ -28,10 +28,10 @@ export default function Home() {
             observatory
           </h1>
           <a
-            href="/battle-v2"
+            href="/play"
             className="inline-block self-start rounded border border-puru-wood-vivid px-4 py-2 font-puru-mono text-xs uppercase tracking-[0.2em] text-puru-wood-vivid hover:bg-puru-wood-vivid hover:text-puru-cloud-bright transition-colors"
           >
-            → /battle-v2 · cycle-1 wood vertical slice
+            → /play · cycle-1 wood vertical slice (renamed from /battle-v2)
           </a>
           <p className="max-w-xl text-base leading-puru-normal text-puru-ink-soft">
             A live awareness layer fusing on-chain, IRL weather, and wuxing state. This page renders
