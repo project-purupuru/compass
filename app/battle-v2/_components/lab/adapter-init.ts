@@ -20,14 +20,26 @@ import { AdapterRegistry } from "@/lib/lab/adapter-registry/adapter-registry.por
 import type { EffectAdapter } from "@/lib/lab/adapter-registry/types";
 import { cardCompositionAdapter } from "@/app/battle-v2/_components/vfx/effects/CardCompositionAdapter";
 import { hexSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/HexSceneAdapter";
+// S5 retrofit · all 9 effects participate per IMP-006 (no silent deferral)
+import { cardLabAdapter } from "@/app/battle-v2/_components/vfx/effects/CardLabAdapter";
+import { miniSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/MiniSceneAdapter";
+import { bigRealmSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/BigRealmSceneAdapter";
+import { realmSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/RealmSceneAdapter";
+import { zoneSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/ZoneSceneAdapter";
+import { treeFallAdapter } from "@/app/battle-v2/_components/vfx/effects/TreeFallAdapter";
+import { waterSplashAdapter } from "@/app/battle-v2/_components/vfx/effects/WaterSplashAdapter";
 
-// All known adapters · grows in S5
+// All 9 adapters · cycle DoD G6 met per IMP-006 (no silent deferral)
 const ADAPTERS: readonly EffectAdapter[] = [
   cardCompositionAdapter,
+  cardLabAdapter,
   hexSceneAdapter,
-  // S5 will add: cardLabAdapter, miniSceneAdapter,
-  // bigRealmSceneAdapter, realmSceneAdapter, zoneSceneAdapter,
-  // treeFallAdapter, waterSplashAdapter
+  miniSceneAdapter,
+  bigRealmSceneAdapter,
+  realmSceneAdapter,
+  zoneSceneAdapter,
+  treeFallAdapter,
+  waterSplashAdapter,
 ];
 
 let _registered = false;
