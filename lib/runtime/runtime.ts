@@ -28,6 +28,8 @@ import { RegressionCheckNoopLive } from "@/lib/regression/regression.noop";
 import { AdapterRegistryLive } from "@/lib/lab/adapter-registry/adapter-registry.live";
 import { InspectorStateLive } from "@/lib/lab/state/inspector.live";
 import { PointerChainResolverLive } from "@/lib/lab/pointer-chain/pointer-chain.live";
+// S4 · Workspaces state (per-workspace layout state via Effect Ref).
+import { WorkspaceLive } from "@/lib/lab/state/workspace.live";
 
 // THE single Effect.provide site for the app. Lint check: a grep for
 // `ManagedRuntime.make` in lib/ or app/ should return exactly one match
@@ -64,6 +66,8 @@ const PrimitivesLayer = Layer.mergeAll(
   // S1b UI substrate: AdapterRegistry (R=never) + InspectorState (R=never).
   AdapterRegistryLive,
   InspectorStateLive,
+  // S4 workspace state (R=never).
+  WorkspaceLive,
 );
 const AwarenessOnPrimitives = Layer.provide(AwarenessLive, PrimitivesLayer);
 const ObservatoryOnAwareness = Layer.provide(ObservatoryLive, AwarenessOnPrimitives);
