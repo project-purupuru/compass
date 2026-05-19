@@ -1,1133 +1,1343 @@
 ---
-cycle: lab-evolution-2026-05-18
-session: 22 (entry)
-type: SDD
-status: candidate
-date: 2026-05-18
-mode: ARCH (OSTROM) + craft lens (ALEXANDER)
-simstim_id: simstim-20260518-f581af5a
-prd: grimoires/loa/prd.md
-branch_root: feat/ecs-leaves-2026-05-17
-operator_pacing: kaironic + simstim (pair-points at sprint boundaries)
-load_bearing_decisions:
-  - "@phosphor-icons/react ^2.1.10 already installed (lab + game-UI provider)"
-  - "Effect ^3.10.0 already installed — Effect/Schema via `effect` namespace, not @effect/schema"
-  - "No zustand in repo — state primitive = Effect.Context + React Context bridge (substrate-consistent)"
-  - "Vitest ^3.2.4 installed; @vitest/snapshot built-in"
-  - "lib/honeycomb/*.{port,live,mock}.ts is the canonical Effect substrate pattern"
-references:
-  - prd.md (this cycle)
-  - lib/honeycomb/battle.port.ts (reference port pattern)
-  - lib/cards/codex/* (consumer pattern for substrate primitives)
-  - app/battle-v2/_components/vfx/VfxRegistry.ts (canonical registry pattern)
+title: SDD · Blender Adapter · Python Addon (v0)
+cycle: blender-adapter-2026-05-18
+status: candidate r2 · FR-12 escape hatch dropped from v0 · companion to sprint.md r3
+revision: r2
+revised: 2026-05-19
+revision_source: a2a/flatline/sdd-review.json (r1) · a2a/flatline/sprint-review-r2.json SKP-001-cluster (r2 · FR-12 drop)
+tier: bronze
+operator_signed: unsigned
+authored_by: opus-4-7-1m via /architect (minimal mode) · r1 + r2 direct-edit integration
+created: 2026-05-18
+companion_to: ./prd.md (r2) · ./sprint.md (r3)
+resolves_open_questions:
+  - Q-SDD-1 · threading shape + context_override
+  - Q-SDD-2 · connection lifecycle
+  - Q-SDD-3 · cmdId LRU eviction policy
+  - Q-SDD-4 · traceback sanitizer approach
+  - Q-SDD-5 · pytest with bpy mocked
+  - Q-SDD-6 (r1) · per-connection response correlation
+  - Q-SDD-7 (r1) · addon lifecycle invariants (thread join + timer cleanup)
+  - "Q-SDD-8 (r1 · r2 MOOT) · escape-hatch security policy — FR-12 deferred to v1"
+  - "Q-SDD-9 (r1 · r2 MOOT) · escape-hatch timeout enforcement — FR-12 deferred to v1"
+  - Q-SDD-10 (r1) · lazy-import discipline for bpy in handler modules
+  - Q-SDD-11 (r1) · cross-language field-mapping table + protocol_version
+related_artifacts:
+  - lib/blender/wire.ts (TS substrate · pinning protocol)
+  - lib/blender/data.port.ts (TS substrate · pinning op signatures)
+  - lib/blender/data.mock.ts (parity contract for live)
+  - lib/blender/__tests__/data.test.ts (10/10 · the contract under test)
+  - grimoires/loa/cycles/blender-adapter-2026-05-18/prd.md
+  - grimoires/loa/context/blender-adapter-design-brief-2026-05-18.md
 ---
 
-# SDD · Lab Evolution Cycle — 2026-05-18
+# SDD · Blender Adapter · Python Addon (v0)
 
-> Six threads, one cycle, substrate-first. This SDD specifies how each PRD functional requirement lands in code: file paths, port signatures, hook integration, adapter contracts, state model, migration mechanics.
+> Translates `prd.md` FR-1..FR-13 into module-level design. Minimal-mode SDD. Section §3 resolves the 5 Q-SDD-* questions; everything else is the module shape + interfaces engineers need to start S0/S1.
 
----
+## 0. Scope of This Document
 
-## §1 · Architecture overview
+> **⚠️ r2 · 2026-05-19 · GLOBAL SUPERSEDE**: This SDD was authored at r1 with the FR-12 escape hatch in scope. **FR-12 is deferred to v1** (operator decision 2026-05-19 · see Revision Notes r2 + companion PRD r2). **Every reference below to FR-12 / `run_python_code` / `escape.py` / `lib/ops/escape.py` / `lib/safety/timeout.py` / the auth-gate / bearer tokens / `~/.blender-mcp/` / `auth_token` / `BLENDER_MCP_ENABLE_ESCAPE` / Q-SDD-8 / Q-SDD-9 / AP-7 is SUPERSEDED** — retained verbatim as v1 design input, NOT a v0 requirement. The normative v0 module shape is `sprint.md` r3 Appendix D. r2 also adopts: `lib/wire/` is a package (not flat `wire.py`); schema source-of-truth at `lib/wire/wire.schema.json` exported from TS Effect Schema; Python validation is stdlib-only (no `jsonschema`).
 
-### §1.1 — System map
+In scope:
+- Module + class shape inside `tools/blender-addon/` (PRD §5.3 · **normative tree: sprint.md r3 Appendix D**)
+- Threading model (FR-4, FR-5, FR-6) end-to-end
+- Wire framing on the Python side (FR-1, FR-2, FR-3)
+- Op-handler registry + 5 CRUD handlers (FR-7..FR-11) — **r2: escape hatch FR-12 removed from v0 scope**
+- Resolution of open questions Q-SDD-1..Q-SDD-7, Q-SDD-10, Q-SDD-11 (**Q-SDD-8 + Q-SDD-9 moot — FR-12 deferred**)
+- Testing strategy that reaches PRD §5.5 coverage target (≥85%)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       VFX LAB SHELL (app/battle-v2/vfx-lab)         │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │  WorkspacesTabs (S4)        IconSwapToggle (S1.demo)          │  │
-│  │  PointerBreadcrumb (S2)                                       │  │
-│  │  ┌────────────┬─────────────────────────────┬────────────┐    │  │
-│  │  │            │                             │            │    │  │
-│  │  │ Composab.  │       Viewport              │ Inspector  │    │  │
-│  │  │ Panel (S3) │   (Effect Preview)          │  (S2)      │    │  │
-│  │  │ [A/B/C]    │                             │            │    │  │
-│  │  │            │                             │            │    │  │
-│  │  └────────────┴─────────────────────────────┴────────────┘    │  │
-│  │  KnobPane (existing)                                          │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-           ▲           ▲           ▲                ▲
-           │           │           │                │
-   ┌───────┴───┐  ┌────┴────┐  ┌───┴─────┐  ┌──────┴────────┐
-   │ lib/ui/   │  │ lib/    │  │ lib/    │  │ lib/regress./ │
-   │ icons     │  │ lab/    │  │ lab/    │  │ port + live   │
-   │ (S1)      │  │ pointer │  │ adapt.  │  │ (S1)          │
-   │           │  │ chain   │  │ registry│  │               │
-   │ Registry  │  │ (S2)    │  │ (S2-S5) │  │ + Hook (S1)   │
-   │           │  │         │  │         │  │ + Vitest (S1) │
-   └───────────┘  └─────────┘  └─────────┘  └───────────────┘
-                      ▲                          ▲
-                      │                          │
-                      └────────── effects ───────┘
-                       (CardComposition · CardLab · HexScene · MiniScene ·
-                        BigRealmScene · RealmScene · TreeFall ·
-                        WaterSplash · ZoneScene)
-                                  │
-              ┌───────────────────┴───────────────────┐
-              │       .claude/hooks/pre-tool-use/     │
-              │   lab-render-regression.sh (S1)       │
-              │   ← triggers on Write/Edit to         │
-              │     validated render paths            │
-              └───────────────────────────────────────┘
-```
+Out of scope (pushed to sprint plan or v1+):
+- Concrete op-handler bodies beyond signatures (sprint task)
+- Operator/Context/NodeGraph/Asset seams (PRD §6.2)
+- MCP protocol export (PRD §6.2)
+- ~~TS-side `data.live.ts` design~~ **r1: NOW IN SCOPE** — promoted from PRD R-4 to S1 deliverable per PRD-flatline IMP-001. Design covered in this SDD §2.3 (new).
 
-### §1.2 — Construct discipline
+## Revision Notes (r1 · 2026-05-18)
 
-- **lib/** = substrate (port/live/mock pattern, Effect-based)
-- **app/battle-v2/** = surface (renders substrate output)
-- **.claude/hooks/** = enforcement (substrate fuse)
-- **tests/** = baseline + canary (substrate proof)
+Integrates 10 high-consensus + 11 blocker findings from `a2a/flatline/sdd-review.json` (76% agreement · 3-model: codex + claude + gemini · full confidence). Composes with PRD r1 revision notes.
 
-Adapter pattern is the seam between any new effect/primitive and the substrate. Substrate never reaches into `app/`; surface registers adapters.
+| Finding | Source | r0 issue | r1 resolution (where applied below) |
+|---|---|---|---|
+| **RESP-CORRELATION** | IMP-004 (875) + SKP-002 PRD (855) | Single shared `outbox` queue → reconnecting client receives responses to commands it never issued | §1.1 mermaid revised · §1.2 threading section rewritten · §2.2 ConnHandler owns per-connection `out_queue` · §3.6 Q-SDD-6 new |
+| **QUEUE-BACKPRESSURE** | SKP-001 (CRIT 870) + IMP-005 (845) + SKP-001 main-thread-freeze (CRIT 850) | `queue.Queue()` defaults to unbounded · main-thread `put()` on bounded queue freezes UI | §2.2 wire constants `MAX_QUEUE_SIZE=512` · main-thread `put_nowait` + drop-and-close-connection on `queue.Full` · §1.2 threading section |
+| **MAX-FRAME-BYTES** | SKP-003 (CRIT 820) + SKP-002 (HIGH 750) + SKP-003 (HIGH 720) | 4-byte length → 4GB OOM via adversarial or buggy client | §2.2 `MAX_FRAME_BYTES=10MB` const · §4.1 wire schema · FrameReader closes connection on oversized header (not just drops frame) |
+| **STREAM-CORRUPTION** | SKP-004 (HIGH 720) | Corrupted length field misaligns subsequent recv() offsets · all following frames apparent-BadParams · operator debugs wrong layer | §2.2 `FrameReader._corrupt` flag · §5 connection-level `kind="FrameError"` · ConnHandler closes socket on stream-corruption signal |
+| **ESCAPE-RCE + AUTH** | SKP-001 (CRIT 900) + SKP-002 (HIGH 780) + IMP-010 (807.5) | Unauthenticated escape hatch · TCP server has no auth/authz/origin beyond localhost-binding | §3.8 Q-SDD-8 new (bearer-token + restricted-builtins + AST-prescan policy) · §2.2 escape.py signature revised · §4.4 auth_token field added to WireCommand for escape op |
+| **TIMEOUT-MAIN-THREAD** | SKP-002 (CRIT 850) + IMP-006 (835) | Python cannot preempt main-thread code · `signal.alarm()` POSIX-only · escape hatch can stall timer drain | §3.9 Q-SDD-9 new (cooperative + AST pre-scan · honest semantics documented · AP-7 enforces) |
+| **LAZY-IMPORTS** | SKP-005 (HIGH 710) | Top-level `import bpy` in handler modules caches before monkeypatch · non-deterministic CI failure | §3.10 Q-SDD-10 new · §2.2 mandate lazy-import discipline · new AP-8 in test_antipatterns.py |
+| **SCHEMA-MAPPING** | IMP-001 (905) | Python snake_case ↔ TS camelCase silent contract-break · "3am production defect" | §3.11 Q-SDD-11 new · §4.3 normative field-mapping table · `protocol_version="1.0"` in every frame · CI parity gate |
+| **MALFORMED-RESP-CMD-ID** | IMP-002 (900) | Spec requires cmd_id in every response · malformed JSON has no cmd_id | §5.2 wire-layer: un-parseable frames produce connection-level `FrameError` with `cmd_id="<unparseable>"` sentinel · last frame before connection close |
+| **ACCEPT-LOOP-BACKLOG** | IMP-003 (862.5) | OS TCP backlog + SYN-queue RST timing is platform-dependent (macOS vs Linux vs Blender runtime) | §3.2 revised: AcceptLoop explicitly `accept()` + `close()` + send `FrameError(kind="ServerBusy")` for second connection · deterministic across platforms |
+| **LIFECYCLE-INVARIANTS** | IMP-009 (800) | BG threads + `bpy.app.timers` survive `unregister()` · port stays bound across addon-reload | §3.7 Q-SDD-7 new · §2.2 addon.py unregister sequence pinned · explicit `stop_event` + `thread.join(timeout=2.0)` + `bpy.app.timers.unregister(drainer)` + socket close |
+| **TIMER-INTERVAL** | composed: PRD-flatline SKP-001 (870) | 100ms timer makes p50 ≤ 50ms SLA impossible | §2.2 + §3.6 reference: `TIMER_INTERVAL_S = 0.016` (60-FPS) · drain returns 0.016 to bpy |
+| **TS-DATA-LIVE-DESIGN** | PRD IMP-001 (902.5) | `data.live.ts` deferred but goals gate on it | §2.3 new section · TS-side socket client design (≤200 LOC target) · reconnect-on-disconnect + bearer-token handshake · this SDD's §4 schema is its contract |
+| **HALF-OPEN-CONNECTIONS** | SKP-003 (HIGH 720) | Silent client disconnect → ConnHandler waits in recv() indefinitely → DoS until restart | §2.2 `SO_RCVTIMEO` socket option · ConnHandler `recv` deadline 30s (no-data) · close-and-return-to-AcceptLoop |
+| **INTEGRATION-FIXTURE** | IMP-013 DISPUTED (740/750) | Real-Blender integration fixture non-trivial · undefined creates schedule risk | §7 sprint phases: S5 inherits explicit fixture-shape from S0 spike output · tabled per operator-decide |
 
-### §1.3 — Substrate composition (Effect substrate-style)
+### Findings NOT integrated
 
-All cycle primitives compose via the existing Effect Context.Tag pattern:
+- **IMP-011 SDD** (stress test client model · DISPUTED 700): tabled — S5 fixture spec resolves this naturally (stress test inherits S0's framing client; not a separate decision).
+- **IMP-012 SDD** (remove `PollFailed` error kind · DISPUTED 620): kept in error taxonomy for v1 operator-seam composition · zero v0 cost.
 
-```ts
-// lib/regression/regression.port.ts
-export interface RegressionCheck {
-  readonly snapshot: (target: RenderTarget) => Effect.Effect<Snapshot, RegressionError>;
-  readonly diff: (a: Snapshot, b: Baseline) => Effect.Effect<DiffResult, never>;
-  readonly approve: (target: RenderTarget, snapshot: Snapshot) => Effect.Effect<void, never>;
-}
-export const RegressionCheck = Context.GenericTag<RegressionCheck>("RegressionCheck");
+## Revision Notes (r2 · 2026-05-19 · FR-12 escape hatch dropped)
 
-// lib/runtime/runtime.ts — single provide site
-const AppLayer = Layer.mergeAll(
-  /* existing */ BattleLive, /* ... */,
-  RegressionCheckLive,
-  IconRegistryLive,
-  InspectorAdapterRegistryLive,
-);
-```
+The sprint plan derived from this SDD was Flatline-reviewed twice during `/sprint-plan`. The **SKP-001 cluster** (`a2a/flatline/sprint-review.json` + `sprint-review-r2.json` · 3 CRITICALs) established that the FR-12 escape hatch cannot be made safe within v0: restricting `__builtins__` + AST pre-scanning is defeated by MRO traversal (`().__class__.__mro__[-1].__subclasses__()`); cooperative timeout cannot contain CPU-bound code. **Operator decision 2026-05-19: drop FR-12 from v0.** A credible escape hatch needs OS-level isolation (subprocess + seccomp/AppArmor), a v1 effort.
 
----
+| r1 SDD element | r2 disposition |
+|---|---|
+| §3.8 Q-SDD-8 (escape-hatch security policy) · §3.9 Q-SDD-9 (escape-hatch timeout) | **MOOT** — both resolved questions are FR-12-internal. Retained as v1 design input. |
+| §1.1 component diagram `AUTH` gate · `ESCAPE` node · `AUTHFILE` (`~/.blender-mcp/<session>.auth`) | **Superseded.** v0 has no auth gate, no escape node, no auth file. The BG-thread → INQ → drain → handler → OUTQ path is unchanged for CRUD ops. |
+| §1.2 threading boundary "auth-token verification (escape ops)" · "AST pre-scan for escape" | **Superseded.** BG thread does framing + JSON decode only; main thread does cmdId cache + routing + `bpy.*` + traceback sanitization. No auth, no AST pre-scan. |
+| §2.1 file layout: `lib/ops/escape.py` · `lib/safety/timeout.py` · `tests/test_escape.py` | **REMOVED.** §2.1 also r2-corrected: `lib/wire/` is a package (`framing.py` + `case.py` + `schemas.py` + `wire.schema.json`), NOT a flat `wire.py` (the flat module would collide with the `wire/` dir — sprint-Flatline IMP-003). |
+| §2.2 `lib/config.py` escape constants (`AUTH_DIR`, `BLENDER_MCP_ESCAPE_IMPORTS`, …) · `WireCommand.auth_token` field · `escape.py` signature | **Superseded.** `WireCommand` has no `auth_token` field in v0. `EscapeHatchError` / `AuthFailed` error kinds may remain in the taxonomy for v1 forward-compat (zero v0 cost) but are never emitted. |
+| §2.3 TS-side `data.live.ts` bearer-token handshake · `authTokenPath` | **Superseded.** v0 `data.live.ts` is CRUD-only. r2 adds a **bounded reconnect policy** (max-5-retry · exponential backoff 100ms→5s cap · then structured `BlenderNotReachable`) — sprint-Flatline SKP-003 760. |
+| §4.4 `auth_token` field on WireCommand for escape op | **Superseded.** No escape op in v0. |
+| AP-7 (unbounded-loop escape code) | **REMOVED** from the regression suite — FR-12-only. v0 suite is AP-1..AP-6, AP-8 (7 patterns). |
 
-## §2 · Tech stack (confirmed)
+**Companion artifacts**: PRD r2 (matching §-level deferrals) + sprint.md r3 (S4 collapsed to safety hardening — traceback sanitizer + FR-6 audit only). The detailed FR-12 design in §2.2 / §3.8 / §3.9 below is **v1 design input**, preserved for whoever picks up the escape hatch with proper isolation.
 
-| Concern | Tech | Status |
-|---|---|---|
-| Effect primitives | `effect` ^3.10.0 | Installed; use `Schema as S` from `effect` namespace |
-| Icon provider 1 | `@phosphor-icons/react` ^2.1.10 | **Already installed** (no new install) |
-| Icon provider legacy | `lucide-react` ^1.14.0 | Installed; phased out into IconRegistry |
-| Test runner | `vitest` ^3.2.4 + `@vitest/snapshot` | Installed |
-| Image diff | `pixelmatch` ^7.x | **NEW install** (S1) |
-| PNG codec | `pngjs` ^7.x | **NEW install** (S1, peer of pixelmatch) |
-| **Snapshot rendering backend** | **`playwright` ^1.x — REQUIRED** | **NEW install** (S1, locked decision per Flatline cluster-A) |
-| Layout testing only (no rendering) | `happy-dom` (already in repo via vitest) | Existing — used ONLY for non-layout unit tests |
-| Baseline pinning | Docker (commits Dockerfile to tests/snapshots/) | **NEW** (S1, per Flatline SKP-002) |
-| State (panel selection, workspace) | Effect.Context + React Context bridge | No zustand; bridge pattern below |
+## 1. System Architecture
 
-**Locked decision (Flatline SDD review · 2026-05-18): Playwright is the snapshot backend.** Earlier draft listed jsdom as primary with Playwright optional. Multi-model Flatline review (SKP-001 950 / SKP-001 920 / SKP-003 720 / SKP-003 710) converged: jsdom cannot compute cqw, render canvas, load fonts faithfully, or run Three.js. The session-22 F5#4 regression (cqw fallback bug) is exactly what jsdom would silently approve. Baselines MUST be browser-faithful. Playwright runs headless Chromium for every snapshot capture; jsdom is reserved for non-layout unit tests only.
+### 1.1 Component Overview (r1 · per-connection out-queue · 60FPS drain · MAX_FRAME_BYTES + auth gate)
 
-### §2.1 — State management decision: NO zustand
+```mermaid
+graph TD
+    subgraph TS["TypeScript Substrate"]
+        TSCLIENT[data.live.ts<br/>socket client · reconnect · token-handshake<br/>r1: in S1 scope]
+        TSWIRE[wire.ts<br/>encodeCommand / WireResponseDecoder]
+    end
 
-The repo doesn't use zustand. To stay substrate-consistent and avoid introducing a new state library:
+    subgraph SOCKET["Localhost TCP 127.0.0.1:9876"]
+        FRAME[length-prefixed frames<br/>4B BE uint32 + UTF-8 JSON<br/>MAX_FRAME_BYTES = 10MB]
+    end
 
-```ts
-// lib/lab/state/inspector.port.ts
-export interface InspectorState {
-  readonly current: Effect.Effect<Selection | null, never>;
-  readonly select: (selection: Selection) => Effect.Effect<void, never>;
-  readonly clear: () => Effect.Effect<void, never>;
-  readonly stream: Stream.Stream<Selection | null>;
-}
+    subgraph PY["tools/blender-addon"]
+        subgraph BGTHREAD["Daemon Background Thread"]
+            ACCEPT[AcceptLoop<br/>second-conn → close+ServerBusy]
+            RECV[ConnHandler · owns conn_id<br/>FrameReader · FrameWriter<br/>SO_RCVTIMEO 30s · _corrupt flag]
+            INQ[(inbox queue.Queue<br/>maxsize=512)]
+            OUTQ_PER[(out_queue · per-conn<br/>maxsize=512)]
+            AUTH[auth_gate<br/>bearer-token check<br/>escape ops only]
+        end
 
-// app/battle-v2/_components/lab/InspectorContext.tsx
-// React Context wraps a Ref-backed Effect implementation.
-// useInspectorSelection() returns the current selection + setters.
-```
+        subgraph MAINTHREAD["Blender Main Thread"]
+            TIMER[bpy.app.timers<br/>drain @ 0.016s · 60FPS<br/>MAX_DRAIN_PER_TICK=20]
+            ROUTER[op_router.dispatch<br/>UnknownOp / ProtocolMismatch]
+            DEDUP[CmdIdCache LRU 256]
+            HANDLERS[ops/*.handler<br/>lazy-import bpy]
+            ESCAPE[escape.run_python_code<br/>AST pre-scan<br/>restricted __builtins__<br/>audit log]
+            SANIT[safety.traceback_sanitizer]
+        end
 
-Rationale: this pattern already exists in `lib/honeycomb/` (battle.port.ts uses Ref + Stream for state). We reuse the substrate idiom. If a flat-state primitive is needed and the substrate idiom is awkward, S2 may introduce a tiny wrapper (`lib/lab/use-ref-state.ts`) — NEVER a 3rd-party state library.
+        BPY[(bpy.data · bpy.ops)]
+        AUTHFILE[~/.blender-mcp/&lt;session&gt;.auth<br/>mode 0600 · written at register]
+    end
 
-### §2.2 — Persistence layer per state slice (per Flatline IMP-011 · operator-ratified)
-
-Inconsistent persistence boundaries would produce reproducibility bugs that surface worst during demos. The table below LOCKS storage layer per cycle-introduced slice. Default is memory; sessionStorage is reserved for chrome-toggles that must survive a navigation but not a tab close.
-
-| State slice | Storage layer | Reset on |
-|---|---|---|
-| `Selection` (active inspector target) | memory (Ref) | Tab close · workspace switch · primitive switch |
-| `ActiveEntity` (breadcrumb anchor) | memory (Ref) | Tab close · primitive switch |
-| `WorkspaceState.activeEntity` | memory (Ref, keyed by workspace) | Tab close |
-| `WorkspaceState.panelCollapse` | sessionStorage (key: `lab.workspace.<id>.panelCollapse`) | Tab close |
-| `WorkspaceState.knobValues` | memory (delegated to existing effect knob system) | Workspace switch · effect switch |
-| `WorkspaceState.camera/scrub` | memory (Ref) | Tab close · workspace switch |
-| `IconProvider` toggle (Phosphor / Stub) | sessionStorage (key: `lab.iconProvider`) | Tab close |
-| `ActiveWorkspace` (Compose/Preview/Export) | sessionStorage (key: `lab.activeWorkspace`) | Tab close |
-| `ComposabilityShape` (A / B / C selection) | sessionStorage (key: `lab.composabilityShape`) | Tab close |
-| `PointerChain` resolution cache | memory (in-memory Map) | Effect adapter unmount |
-| Snapshot baselines (test infra) | filesystem (`tests/snapshots/lab/`) | git commit |
-| Audit log (hook events) | filesystem (`.run/audit.jsonl`) | manual rotation |
-
-Rule: NO `localStorage` (avoids cross-session bleed that breaks demos). NO URL params (avoids encoding state in routes — those are zone-owned per `project_zone-as-composable-module.md`).
-
-Implementation: a single helper `lib/lab/state/persisted-ref.ts` wraps `sessionStorage.{getItem,setItem}` with a Ref-backed Effect; consumed by the 3 sessionStorage slices above.
-
----
-
-## §3 · Component / module design
-
-### §3.1 — `lib/regression/` (Sprint 1)
-
-```
-lib/regression/
-  ├─ regression.port.ts        Effect Context.Tag + interface
-  ├─ regression.live.ts        Production implementation (Vitest + pixelmatch)
-  ├─ regression.mock.ts        In-memory mock for non-snapshot tests
-  ├─ schema.ts                 Effect Schema for Snapshot/Baseline/DiffResult/RenderTarget
-  ├─ baseline-store.ts         Read/write tests/snapshots/lab/*.{png,json}
-  ├─ matrix-permutations.ts    Scale matrix: [0.5, 1, 2] × theme: [light, dark]
-  ├─ inspector-adapter.ts      Type contract for primitives
-  ├─ composability-adapter.ts  Type contract for primitives
-  ├─ adapter-registry.ts       Effect Context.Tag for AdapterRegistry
-  └─ __tests__/
-      ├─ regression.port.test.ts
-      ├─ baseline-store.test.ts
-      └─ matrix-permutations.test.ts
+    TSCLIENT -->|encodeCommand + protocol_version + auth_token?| FRAME
+    FRAME -->|recv| ACCEPT
+    ACCEPT --> RECV
+    RECV -->|parsed cmd · conn_id · out_queue_ref| AUTH
+    AUTH -->|escape: token-ok| INQ
+    AUTH -.->|escape: token-fail| OUTQ_PER
+    AUTH -->|crud: bypass| INQ
+    INQ -.->|drain @ 0.016s| TIMER
+    TIMER --> DEDUP
+    DEDUP -->|miss| ROUTER
+    DEDUP -.->|hit| OUTQ_PER
+    ROUTER --> HANDLERS
+    ROUTER --> ESCAPE
+    HANDLERS --> BPY
+    ESCAPE --> BPY
+    HANDLERS -->|exception| SANIT
+    ESCAPE -->|AST-reject or exc| SANIT
+    HANDLERS -->|response| OUTQ_PER
+    ESCAPE -->|response| OUTQ_PER
+    SANIT -->|sanitized error| OUTQ_PER
+    OUTQ_PER --> RECV
+    RECV -->|framed bytes| FRAME
+    FRAME -->|chunks| TSWIRE
+    AUTHFILE -.->|read at handshake| TSCLIENT
+    AUTHFILE -.->|verify| AUTH
 ```
 
-**Snapshot envelope schema:**
+Force-chain mapping: socket bytes (observation) → parsed+authed cmd (memory) → cached-or-dispatched (belief) → handler invocation (instruction) → bpy mutation (action) → response written (commitment). r1 adds an explicit auth-gate stage between memory and belief for escape ops.
 
-```ts
-const Snapshot = S.Struct({
-  imageRef: S.String,            // path under tests/snapshots/lab/
-  boundingBox: S.Struct({        // PRIMARY assertion source (geometry as invariant)
-    width: S.Number,
-    height: S.Number,
-    x: S.Number,
-    y: S.Number,
+### 1.2 Threading Boundary (load-bearing · r1 · per-conn correlation + bounded queues)
+
+Two threads, mediated by bounded `queue.Queue` instances with non-blocking put discipline:
+
+- **BG thread** owns: socket fd, `select()`/recv loop, frame parsing (with `MAX_FRAME_BYTES` enforcement), JSON decode, auth-token verification (escape ops), `inbox.put_nowait()`, per-connection `out_queue.get()`, frame encode, send. **NEVER touches `bpy.*`.**
+- **Main thread** owns: timer drain at 0.016s (60FPS-equivalent), cmdId cache, op routing, ALL `bpy.*` invocation, AST pre-scan for escape, traceback sanitization, `out_queue.put_nowait()`. **NEVER does blocking I/O. NEVER blocks on a full queue.**
+
+`queue.Queue(maxsize=512)` is the synchronization primitive — `threading.Lock`-backed in CPython, safe under the GIL for the put/get pattern used here. Both queues are bounded; both producers use `put_nowait()` and have an explicit `queue.Full` path:
+
+- BG `inbox.put_nowait` on `queue.Full`: emit `WireResponseError(kind="Backpressure")` directly via `out_queue` for this connection (short-circuit · no main-thread roundtrip). Continue serving.
+- Main `out_queue.put_nowait` on `queue.Full`: drop the response, set per-connection `force_close` flag. BG thread observes the flag, closes connection, returns to AcceptLoop.
+
+**Correlation**: each `ConnHandler` owns a private `out_queue: queue.Queue(maxsize=512)`. Inbound cmd envelope: `(WireCommand, conn_id: int, out_queue: queue.Queue)`. Main-thread `TimerDrainer` puts response onto `cmd.out_queue`, not a shared outbox. On disconnect: `ConnHandler` drains+discards its queue.
+
+**Cross-thread mutable state**: ONLY the two queues per connection + a single `stop_event: threading.Event` for shutdown + a per-connection `force_close: threading.Event`. Nothing else.
+
+**Anti-pattern boundaries** (PRD FR-13):
+- **AP-2** static AST scan in `test_antipatterns.py` walks `lib/socket_server.py` for any `bpy.` attribute access · fails the build if found
+- **AP-8 (r1)** AST scan of `lib/ops/data_handlers.py` + `lib/ops/escape.py` rejects top-level `import bpy` · handler modules MUST lazy-import inside function bodies
+
+### 1.3 Architectural Pattern
+
+**Single-process actor-with-mailbox**, where:
+- BG thread = mailbox reader
+- Main thread = single-consumer actor
+- The two queues = the mailboxes (one per direction)
+
+Justification: matches `bpy`'s reality (main-thread-only API per Blender 4.x docs), avoids asyncio (PRD AP-6), avoids any need for cross-process IPC, fits in <600 LOC.
+
+Alternative considered: `asyncio` with `loop.call_soon_threadsafe` + `run_in_executor`. **Rejected** because (a) Blender doesn't run an event loop on the main thread — we'd be bolting one on, and (b) PRD AP-6 explicitly forbids it (the ProactorEventLoop class of bugs).
+
+## 2. Module Shape
+
+### 2.1 File Layout (concrete, matches PRD §5.3)
+
+```
+tools/blender-addon/
+├── README.md
+├── addon.py                     # bl_info + register/unregister + UI panel
+├── pyproject.toml               # pytest + ruff + coverage config
+├── requirements-dev.txt         # pytest, pytest-cov, ruff, fake-bpy-module-latest
+├── lib/
+│   ├── __init__.py              # public re-exports (start_server, stop_server)
+│   ├── config.py                # port, host, queue-size, lru-size constants + env override
+│   ├── wire.py                  # FrameReader, FrameWriter, WireCommand/Response (dataclasses)
+│   ├── socket_server.py         # AcceptLoop, ConnHandler — BG-thread only
+│   ├── main_thread.py           # TimerDrainer — main-thread only
+│   ├── cmd_cache.py             # CmdIdCache (collections.OrderedDict-backed LRU)
+│   ├── ops/
+│   │   ├── __init__.py
+│   │   ├── registry.py          # OP_HANDLERS dict + register decorator
+│   │   ├── data_handlers.py     # 5 CRUD handlers (FR-7..FR-11)
+│   │   └── escape.py            # run_python_code handler (FR-12)
+│   └── safety/
+│       ├── __init__.py
+│       ├── traceback_sanitizer.py
+│       └── timeout.py           # used only inside escape.py
+└── tests/
+    ├── conftest.py              # bpy fixture (fake-bpy-module), tmp_port fixture
+    ├── test_wire.py             # FrameReader/Writer round-trip + chunk-boundary cases
+    ├── test_cmd_cache.py        # LRU eviction + dedup behavior
+    ├── test_data_ops.py         # 5 CRUD handlers · uses fake-bpy
+    ├── test_escape.py           # run_python_code: success / syntax / bpy-err / timeout
+    ├── test_traceback_sanitizer.py
+    ├── test_antipatterns.py     # 6 regression tests (FR-13)
+    ├── test_socket_server.py    # framing + LRU dedup at socket level
+    └── test_stress.py           # G-5 1000-cmd loop · marker `slow`
+```
+
+### 2.2 Key Interfaces (pseudo-Python signatures)
+
+#### `lib/config.py` (r1 · single source of constants)
+
+```python
+# Wire framing
+HEADER_BYTES = 4
+MAX_FRAME_BYTES = 10 * 1024 * 1024            # 10MB · FR-17 · env: BLENDER_MCP_MAX_FRAME_BYTES
+PROTOCOL_VERSION = "1.0"
+
+# Threading + queues
+MAX_QUEUE_SIZE = 512                          # FR-16 · env: BLENDER_MCP_QUEUE_SIZE
+TIMER_INTERVAL_S = 0.016                      # 60FPS · FR-5 r1 · was 0.1
+MAX_DRAIN_PER_TICK = 20                       # drain at most N cmds per timer fire
+THREAD_JOIN_TIMEOUT_S = 2.0                   # FR-15 · unregister bound
+
+# Socket I/O
+SO_RCVTIMEO_S = 30.0                          # half-open detection · FR-15
+INCOMPLETE_FRAME_DEADLINE_S = 30.0            # FR-17 partial-frame deadline
+LISTEN_HOST = "127.0.0.1"                     # SDD §5.6 · no override in v0
+LISTEN_PORT = 9876                            # env: BLENDER_MCP_PORT
+
+# Escape hatch (r1)
+ESCAPE_ENABLED = os.environ.get("BLENDER_MCP_ENABLE_ESCAPE", "0") == "1"  # default OFF
+AUTH_DIR = os.path.expanduser("~/.blender-mcp")
+AUTH_FILE_MODE = 0o600
+AUTH_DIR_MODE = 0o700
+ESCAPE_BUILTIN_ALLOWLIST = frozenset({
+    "len", "range", "enumerate", "zip", "map", "filter", "list", "dict",
+    "tuple", "set", "str", "int", "float", "bool", "print", "round",
+    "min", "max", "sum", "abs", "all", "any", "sorted", "reversed",
+    "isinstance", "type",
+})
+ESCAPE_IMPORT_ALLOWLIST = frozenset({"bpy", "mathutils", "math"})
+# Operator can extend via env: BLENDER_MCP_ESCAPE_IMPORTS=foo,bar
+```
+
+#### `lib/wire.py` (r1 · MAX_FRAME_BYTES + corruption recovery + new error kinds)
+
+```python
+# Dataclasses (NOT pydantic) — keeps fake-bpy-module test path zero-dep.
+@dataclass(frozen=True)
+class WireCommand:
+    cmd_id: str
+    op: str
+    params: Any                  # validated by op handler, NOT here
+    ts: float
+    protocol_version: str        # r1 · FR-14 · must equal PROTOCOL_VERSION
+    auth_token: str | None = None  # r1 · FR-12b · required for escape ops
+
+@dataclass(frozen=True)
+class WireResponse:
+    """Tagged union; _tag is "Success" | "Error"."""
+    _tag: Literal["Success", "Error"]
+    cmd_id: str                  # "<unparseable>" sentinel for FrameError
+    ts: float
+    protocol_version: str        # r1 · always equals PROTOCOL_VERSION
+    # Success-only
+    result: Any | None = None
+    # Error-only — r1 adds: FrameError, AuthFailed, Backpressure, ProtocolMismatch
+    message: str | None = None
+    kind: Literal[
+        "BadParams", "PollFailed", "BlenderError",
+        "Timeout", "UnknownOp", "EscapeHatchError",
+        "FrameError",        # r1 · stream-level (header oversized, decode-fail)
+        "AuthFailed",        # r1 · escape op without valid bearer token
+        "Backpressure",      # r1 · inbox full · retry-after-backoff signal
+        "ProtocolMismatch",  # r1 · protocol_version != PROTOCOL_VERSION
+        "ServerBusy",        # r1 · second concurrent connection
+    ] | None = None
+    traceback: str | None = None  # already sanitized via lib/safety/traceback_sanitizer
+
+class FrameReader:
+    """Streaming-safe decoder · r1 enforces MAX_FRAME_BYTES + stream-corruption recovery.
+
+    Owned by ConnHandler on the BG thread. Feed bytes from each recv();
+    drain() returns 0..N parsed WireCommand instances + optional FrameError.
+
+    Invariants:
+      - Header decode oversized (> MAX_FRAME_BYTES): set _corrupt=True,
+        return a synthesized FrameError, ConnHandler MUST close the socket.
+        Stream is untrustworthy; subsequent recv() offsets are misaligned.
+      - JSON decode failure on a properly-sized body: return BadParams keyed
+        to the cmd_id IF parseable, else FrameError(cmd_id="<unparseable>").
+      - protocol_version mismatch: return ProtocolMismatch.
+    """
+    def feed(self, chunk: bytes) -> None: ...
+    def drain(self) -> list[WireCommand | WireResponse]: ...  # responses are errors
+    def pending_bytes(self) -> int: ...
+
+    @property
+    def is_corrupt(self) -> bool: ...  # ConnHandler checks each tick
+
+class FrameWriter:
+    """Encode a WireResponse to length-prefixed bytes. Stateless · never exceeds MAX_FRAME_BYTES."""
+    @staticmethod
+    def encode(resp: WireResponse) -> bytes: ...
+```
+
+Wire-level parity check (r1): `tests/test_wire.py` cross-validates two ways:
+
+1. **Forward parity** — TS `encodeCommand()` produces 50 fixtures committed to `fixtures/ts-roundtrip-cases.json`; Python `FrameReader.drain()` decodes each and asserts field-for-field equality against `expected_decoded.json`.
+2. **Reverse parity** — Python `FrameWriter.encode(WireResponse(...))` produces bytes; TS `WireResponseDecoder` parses them; byte-identical round-trip is the CI contract.
+
+The fixture generator (`tools/blender-addon/tests/regen-fixtures.sh`) runs the TS encoder under Node and writes both files. CI fails the build if `lib/blender/wire.ts` is newer than `fixtures/ts-roundtrip-cases.json` (PRD FR-14 drift gate).
+
+#### `lib/socket_server.py` (BG thread · r1 · per-conn out_queue + deterministic accept-loop + half-open detection)
+
+```python
+class AcceptLoop:
+    """Owns the listening socket. One AcceptLoop per addon lifecycle · r1.
+
+    Connection policy (r1, replaces r0 RST-via-backlog):
+      - accept() returns a new socket
+      - if a ConnHandler is already alive: immediately send a single framed
+        WireResponse(kind="ServerBusy", cmd_id="<no-cmd>") and close.
+        Deterministic across platforms (no reliance on TCP backlog timing).
+      - otherwise: spawn ONE ConnHandler with a freshly-allocated conn_id
+        and a freshly-allocated out_queue. Hold ref so unregister can clean.
+    """
+    def __init__(self, inbox: Queue, stop_event: Event,
+                 host: str = LISTEN_HOST, port: int = LISTEN_PORT): ...
+    def run(self) -> None: ...  # BG thread entrypoint
+    def shutdown(self) -> None: ...  # called by addon unregister · closes listen + waits join
+
+class ConnHandler:
+    """One client connection · r1 · owns out_queue + force_close.
+
+    Constructor:
+      - conn_id: int (monotonic; from AcceptLoop counter)
+      - sock: socket.socket (already accept()'d; SO_RCVTIMEO set to SO_RCVTIMEO_S)
+      - inbox: shared inbox Queue (BG → main, maxsize=MAX_QUEUE_SIZE)
+      - out_queue: PRIVATE per-connection Queue (main → BG, maxsize=MAX_QUEUE_SIZE)
+      - force_close: threading.Event (main thread sets on queue.Full to signal disconnect)
+      - stop_event: shared shutdown event
+
+    Run loop (single thread within BG):
+      while not stop_event.is_set() and not force_close.is_set():
+        - select on [sock]
+        - recv() with deadline; on EAGAIN/empty after INCOMPLETE_FRAME_DEADLINE_S: close
+        - reader.feed(chunk); for each parsed item in reader.drain():
+            if isinstance(item, WireCommand):
+                cmd_envelope = (item, self.conn_id, self.out_queue)
+                try inbox.put_nowait(cmd_envelope)
+                except queue.Full:
+                  # short-circuit: emit Backpressure directly back to this client
+                  resp = make_error(item.cmd_id, "Backpressure", "server inbox full")
+                  send_via_writer(resp)
+            elif isinstance(item, WireResponse):  # FrameError/BadParams from reader
+                send_via_writer(item)
+                if item.kind == "FrameError":
+                    break  # stream is untrustworthy
+        - drain my out_queue with get_nowait(); for each:
+            send_via_writer(resp)
+      cleanup: close sock, purge out_queue, log conn_close
+
+    Invariants:
+      - NEVER calls bpy.* (AST-checked by AP-2)
+      - NEVER blocks on out_queue (uses get_nowait + select-based polling)
+      - On reader.is_corrupt: send pending FrameError frame, close, return
+      - On force_close set: cleanly close socket, drop pending responses
+    """
+    def run(self) -> None: ...
+```
+
+#### `lib/main_thread.py` (Blender main thread · r1 · 60FPS drain + put_nowait + escape gate)
+
+```python
+class TimerDrainer:
+    """bpy.app.timers callback. Runs at TIMER_INTERVAL_S = 0.016s (r1; was 0.1s).
+
+    Drains inbox until empty OR until MAX_DRAIN_PER_TICK (20) is hit.
+    Each drained envelope (cmd, conn_id, out_queue):
+      1. protocol-version check: if cmd.protocol_version != PROTOCOL_VERSION,
+         push ProtocolMismatch via out_queue.put_nowait, continue
+      2. cmd_cache.try_hit(cmd_id) → if hit, push cached response, continue
+      3. AUTH GATE (r1): if cmd.op startswith "blender.escape.":
+            - if not ESCAPE_ENABLED: push EscapeHatchError("disabled"), continue
+            - if cmd.auth_token != current_session_token: push AuthFailed, continue
+      4. op_handler = registry.lookup(cmd.op) → if None, push UnknownOp
+      5. response = op_handler(cmd.params)  # handler owns try/except
+         (router wraps in defense-in-depth try/except → synthesized BlenderError)
+      6. cmd_cache.put(cmd_id, response)
+      7. try out_queue.put_nowait(response)
+         except queue.Full: log + set conn_handlers[conn_id].force_close
+         # DO NOT block · DO NOT freeze Blender UI
+
+    Returns TIMER_INTERVAL_S so bpy reschedules. NEVER returns None.
+    """
+    def __init__(self, inbox: Queue, cache: CmdIdCache,
+                 registry: OpRegistry, session_token: str,
+                 conn_handler_index: ConnHandlerIndex): ...
+    def __call__(self) -> float: ...  # bpy timer callback signature
+```
+
+#### `lib/safety/timeout.py` (r1 · cooperative-only + AST pre-scan)
+
+```python
+import ast
+
+UNBOUNDED_LOOP_NODES: tuple[type, ...] = (ast.While,)
+
+def reject_unbounded_loops(code: str) -> str | None:
+    """Return None if code is loop-bounded; else a reason string.
+
+    Rejected patterns:
+      - while True / while 1 (constant truthy test)
+      - for x in itertools.count(...) (unbounded iterator)
+      - direct self-recursion without depth-cap check (best-effort)
+
+    NOT a runtime sandbox — operator-authored code that PASSES this check
+    can still misbehave; AP-7 enforces this is at least the floor.
+    """
+    tree = ast.parse(code, mode="exec")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.While):
+            test = node.test
+            if isinstance(test, ast.Constant) and test.value in (True, 1):
+                return "while True / while 1 — use while <bounded-cond> or for x in range(N)"
+        if isinstance(node, ast.For):
+            iter_ = node.iter
+            if (isinstance(iter_, ast.Call) and
+                isinstance(iter_.func, ast.Attribute) and
+                isinstance(iter_.func.value, ast.Name) and
+                iter_.func.value.id == "itertools" and
+                iter_.func.attr == "count"):
+                return "for x in itertools.count() — use range(N) or itertools.islice"
+    return None
+
+
+def restricted_builtins() -> dict:
+    """Builtins allowlist for escape exec namespace."""
+    import builtins as _b
+    return {name: getattr(_b, name) for name in ESCAPE_BUILTIN_ALLOWLIST
+            if hasattr(_b, name)}
+```
+
+#### `lib/cmd_cache.py`
+
+```python
+class CmdIdCache:
+    """Bounded insertion-order LRU. See §3.3 for eviction-policy decision."""
+    MAX_ENTRIES = 256
+    def __init__(self, max_entries: int = MAX_ENTRIES): ...
+    def try_hit(self, cmd_id: str) -> WireResponse | None: ...
+    def put(self, cmd_id: str, resp: WireResponse) -> None: ...
+    def __len__(self) -> int: ...  # used by stress test
+```
+
+#### `lib/ops/registry.py`
+
+```python
+# Op-handler protocol. Each handler is a callable(params) -> WireResponse.
+# Handlers OWN their own try/except — they translate exceptions to
+# WireResponse(_tag="Error", kind=...) themselves. The router never sees
+# an exception escape a handler.
+
+OpHandler = Callable[[Any], WireResponse]
+OP_HANDLERS: dict[str, OpHandler] = {}
+
+def register(op_name: str) -> Callable[[OpHandler], OpHandler]:
+    """Decorator. Registers handler in OP_HANDLERS dict."""
+
+# Wired in ops/__init__.py:
+# from .data_handlers import *  # registers blender.data.*
+# from .escape import *         # registers blender.escape.run_python_code
+
+# r1 NOTE (AP-8 enforcement): handler modules MUST lazy-import bpy inside
+# function bodies, never at module level. AST scan in test_antipatterns.py
+# rejects top-level `import bpy` / `from bpy import …` under lib/ops/.
+```
+
+#### `lib/ops/escape.py` (r1 · security-gated · new shape)
+
+```python
+# Lazy-imported inside the function — NEVER at top of module (AP-8).
+
+@register("blender.escape.run_python_code")
+def run_python_code(params: dict) -> WireResponse:
+    """v0 escape hatch · security-gated · cooperative-only timeout.
+
+    Param shape (validated below):
+      {
+        "code": str,
+        "timeout_ms": int (optional · default 5000),
+        "auth_token": str (required · matched against session token)
+      }
+
+    Pre-conditions (validated in this order; first failure short-circuits):
+      1. ESCAPE_ENABLED env flag set → else EscapeHatchError("disabled")
+      2. auth_token present and equal to current session token (constant-time
+         compare via hmac.compare_digest) → else AuthFailed
+      3. ast.parse(code) succeeds → else EscapeHatchError("parse-error")
+      4. reject_unbounded_loops(code) returns None → else EscapeHatchError(reason)
+      5. AST walk: no Import / ImportFrom outside ESCAPE_IMPORT_ALLOWLIST
+      6. AST walk: no Attribute access on __builtins__ / __import__ / etc.
+
+    Execution (only if all 6 preconditions hold):
+      - namespace = {
+          "__builtins__": restricted_builtins(),
+          "bpy": __import__("bpy"),          # lazy; only if available
+          "mathutils": __import__("mathutils"),
+          "math": __import__("math"),
+        }
+      - capture stdout + stderr via contextlib.redirect_stdout/_stderr
+      - exec(compiled_code, namespace) inside try/except
+      - record budget_consumed_ms; if > timeout_ms emit Timeout (advisory)
+
+    Audit log (every invocation, allowed OR denied):
+      append to ~/.blender-mcp/<session-id>.audit.log mode 0600:
+        ISO-ts | cmd_id | auth_token[:8] | code[:200-sanitized] | result_tag
+    """
+    ...
+```
+
+### 2.3 TypeScript-Side `lib/blender/data.live.ts` (r1 · new · promoted from R-4)
+
+PRD r1 §6.1 + IMP-001 (902.5): goals G-1 + G-2 are unverifiable without the TS socket client. r1 promotes `data.live.ts` from "future risk" to S1 deliverable. Design pinned here.
+
+**Module layout** (compass-side, mirrors `tools/blender-addon/lib/socket_server.py`):
+
+```typescript
+// lib/blender/data.live.ts — Effect Layer that connects to the Python addon
+// over the same length-prefixed wire protocol.
+
+export const BlenderDataLive = Layer.scoped(
+  BlenderData,
+  Effect.gen(function* () {
+    const config = yield* BlenderLiveConfig
+    const conn = yield* connectWithRetry(config)  // exponential backoff
+    return makeBlenderDataLive(conn)
   }),
-  metadata: S.Struct({
-    primitive: S.String,         // "CodexCardFace", "DustPuff", etc.
-    scale: S.Number,             // 0.5 | 1 | 2
-    theme: S.Literal("light", "dark"),
-    props: S.Record({ key: S.String, value: S.Unknown }),
-  }),
-  capturedAt: S.String,          // ISO timestamp
-  sha256: S.String,              // image hash (deterministic regen check)
-});
-```
-
-Per dig 2 finding: **boundingBox is the primary assertion**, image diff is the secondary. This collapses the antialiasing-noise problem (Olah/Nguyen Chromatic finding) by checking geometry mathematically, falling back to image diff only for visual changes that aren't dimensional.
-
-**DiffResult discriminated union:**
-
-```ts
-const DiffResult = S.Union(
-  S.TaggedStruct("Match", {}),
-  S.TaggedStruct("GeometryDrift", {
-    dimension: S.Literal("width", "height", "x", "y"),
-    expected: S.Number,
-    actual: S.Number,
-    deltaPx: S.Number,
-    deltaPct: S.Number,
-  }),
-  S.TaggedStruct("PixelDrift", {
-    diffPixels: S.Number,
-    diffPct: S.Number,
-    diffImagePath: S.String,
-  }),
-  S.TaggedStruct("BaselineMissing", {
-    primitive: S.String,
-  }),
-);
-```
-
-**Tolerance defaults:**
-- Geometry: ±0.5px (anti-floating-point) per dimension
-- Pixel: < 0.5% diff pixels (anti-antialiasing) before flagging
-
-### §3.2 — `lib/ui/icons/` (Sprint 1, parallel)
-
-```
-lib/ui/icons/
-  ├─ Icon.tsx                  Public consumer surface: <Icon name="pantry" size={16} />
-  ├─ registry.ts               Map<SemanticName, IconResolver>
-  ├─ provider.tsx              <IconProvider value="phosphor" | "stub">
-  ├─ providers/
-  │   ├─ phosphor.ts           Map semantic names to Phosphor components
-  │   ├─ stub.ts               Text-fallback renderer (proves the swap)
-  │   └─ lucide.ts             For migration of existing lucide-react usages (transitional)
-  ├─ names.ts                  TS literal union of all valid semantic names
-  └─ __tests__/
-      └─ registry.test.ts
-```
-
-**Public API:**
-
-```tsx
-<Icon name="pantry" size={16} weight="regular" />
-<Icon name="workspace-compose" />  // size + weight default to provider defaults
-```
-
-**Provider toggle (for the swap demo, FR-S2.3):**
-
-```tsx
-<IconProvider value={iconProvider}>
-  <App />
-</IconProvider>
-```
-
-The provider is read via React Context. Lab chrome renders an `<IconSwapToggle />` that flips between providers. Game-UI (battle-v2) inherits the same provider.
-
-**Lint rule (FR-S2.4 hard-stop):**
-
-S5 will add an ESLint rule `no-direct-icon-imports`:
-```ts
-// .eslintrc.js
-"no-restricted-imports": ["error", {
-  paths: [
-    { name: "@phosphor-icons/react", message: "Use `Icon` from lib/ui/icons" },
-    { name: "lucide-react", message: "Use `Icon` from lib/ui/icons" },
-  ],
-}]
-```
-Exception: `lib/ui/icons/providers/*` files.
-
-### §3.3 — `lib/lab/pointer-chain/` (Sprint 2 · Thread A)
-
-```
-lib/lab/pointer-chain/
-  ├─ pointer-chain.port.ts     Effect Context.Tag
-  ├─ pointer-chain.live.ts     Resolves chains from adapter registry
-  ├─ types.ts                  PointerSegment, PointerChain, ChainKind
-  └─ __tests__/
-
-app/battle-v2/_components/lab/
-  ├─ PointerBreadcrumb.tsx     Sticky breadcrumb at top of viewport
-  ├─ PointerSegment.tsx        Single segment renderer
-  └─ active-entity-context.tsx React Context bridging substrate stream
-```
-
-**PointerSegment shape:**
-
-```ts
-type ChainKind =
-  | { kind: "pantry"; slug: string; path: string }            // "/codex/cards/earth-jani"
-  | { kind: "primitive"; name: string; path: string }         // "vfx/effects/CardComposition"
-  | { kind: "consumer"; consumers: string[] }                 // ["card-lab", "battle"]
-  | { kind: "scene"; name: string; path: string };            // future: scene composition
-
-type PointerSegment = ChainKind & { displayLabel: string };
-type PointerChain = readonly PointerSegment[];
-```
-
-### §3.4 — `lib/lab/adapter-registry/` (Sprint 2-5)
-
-The substrate-to-surface seam. Each effect registers its inspector and composability adapters.
-
-```
-lib/lab/adapter-registry/
-  ├─ adapter-registry.port.ts
-  ├─ adapter-registry.live.ts
-  └─ types.ts
-
-// types.ts — types LOCKED per Flatline SDD review (closed-ADR)
-export interface InspectorAdapter {
-  readonly primitiveId: string;
-  readonly listInspectableNodes: (state: unknown) => readonly InspectableNode[];
-  readonly resolveChain: (nodeId: string) => PointerChain;
-}
-
-export interface ComposabilityAdapter {
-  readonly primitiveId: string;
-  readonly tree: (state: unknown) => readonly EntityTreeNode[];
-}
-
-// Defined explicitly per Flatline SKP-005 · was phantom-type in earlier draft.
-// Aligned with EntityTreeNode shape so shared rendering primitives work across
-// ComposabilityPanel and Inspector.
-export interface InspectableNode {
-  readonly id: string;                           // primitive-local node identifier
-  readonly label: string;                        // human-readable label
-  readonly kind: "entity" | "layer" | "knob" | "param" | "scene";
-  readonly pointerChain: PointerChain;           // FULL chain from pantry/source to this node
-  readonly inspectable: boolean;                 // false = visible but read-only (e.g., scene roots)
-  readonly metadata: Readonly<Record<string, unknown>>;
-}
-
-export interface EntityTreeNode {
-  readonly id: string;
-  readonly label: string;
-  readonly kind: "layer" | "effect" | "scene" | "group";
-  readonly children: readonly EntityTreeNode[];
-  readonly pointerChain: PointerChain;
-  readonly inspectable: boolean;
-}
-```
-
-**Adapter location LOCKED (closed-ADR · per Flatline SKP-006):**
-
-Adapters live at `app/battle-v2/_components/vfx/effects/<effect>/adapter.ts` (**surface-side**). Each effect owns its adapter file alongside its component.
-
-Rationale: adapters reference effect-specific React state and render context that `lib/` cannot know about. The substrate contract is enforced by the TypeScript interface in `lib/lab/adapter-registry/types.ts` — file location is independent of contract enforcement. `AdapterRegistryLive` (lib/) accepts adapter values matching the interface at registration time. This pattern matches the existing `lib/honeycomb/*.live.ts` convention where the live implementation imports the port type but lives where the operational details require.
-
-Migration: §7 file map updated to reflect surface-side adapter locations. S2 Thread B ships first adapter at `app/battle-v2/_components/vfx/effects/CardComposition/adapter.ts` (effect folder may need to be created — currently the file is `CardComposition.tsx`; S2 normalizes to a folder).
-
-Each effect's `index.ts` exports an `adapter` object; `VfxRegistry` adds a single line per effect to wire it.
-
-### §3.5 — `app/battle-v2/_components/lab/Inspector.tsx` (Sprint 2 · Thread B)
-
-```
-app/battle-v2/_components/lab/
-  ├─ Inspector.tsx             Right-rail panel, ~320px
-  ├─ inspector/
-  │   ├─ PointerChainTab.tsx
-  │   ├─ DataTab.tsx
-  │   ├─ RenderTab.tsx
-  │   └─ EditTab.tsx
-  └─ inspector-context.tsx     Wraps selection-port state
-```
-
-**Selection model:**
-
-```ts
-type Selection = {
-  primitiveId: string;
-  nodeId: string;
-  source: "viewport-click" | "composability-click" | "breadcrumb-click";
-};
-```
-
-### §3.6 — `app/battle-v2/_components/lab/ComposabilityPanel.tsx` (Sprint 3 · Thread C)
-
-```
-app/battle-v2/_components/lab/composability/
-  ├─ ComposabilityPanel.tsx    Container + shape switcher (header)
-  ├─ shapes/
-  │   ├─ ShapeA-FigmaLiteral.tsx
-  │   ├─ ShapeB-FigmaPointerChain.tsx
-  │   └─ ShapeC-GodotTree.tsx
-  └─ shape-context.tsx         Persists active shape choice
-```
-
-**Shape switcher header (FR-S5.2):**
-
-```tsx
-<div className="panel-header">
-  <Icon name="layers" />
-  <span>Composability</span>
-  <ShapeToggle value={shape} onChange={setShape}>
-    <ShapeToggle.Option value="A">Figma layers</ShapeToggle.Option>
-    <ShapeToggle.Option value="B">Figma + chain</ShapeToggle.Option>
-    <ShapeToggle.Option value="C">Tree</ShapeToggle.Option>
-  </ShapeToggle>
-</div>
-```
-
-### §3.7 — `app/battle-v2/_components/lab/WorkspacesTabs.tsx` (Sprint 4 · Thread D)
-
-```
-app/battle-v2/_components/lab/workspaces/
-  ├─ WorkspacesTabs.tsx        Top horizontal tabs
-  ├─ workspace-context.tsx     Per-workspace layout state
-  ├─ ComposeWorkspace.tsx
-  ├─ PreviewWorkspace.tsx
-  └─ ExportWorkspace.tsx
-```
-
-**Workspace state shape:**
-
-```ts
-type WorkspaceState = {
-  activeEntity: Selection | null;
-  panelCollapse: {
-    composability: boolean;
-    inspector: boolean;
-  };
-  knobValues: Record<string, unknown>;  // delegated to effect's existing knob system
-};
-
-type WorkspacesState = Record<WorkspaceId, WorkspaceState>;
-```
-
-Stored in a Ref-backed Effect inside `lib/lab/state/workspace.port.ts`. Workspace switches re-hydrate the new workspace's state.
-
----
-
-## §4 · Hook integration (re-spec per Flatline sprint review · ADR-10)
-
-**Hook posture (post-Flatline-sprint-review):** Pre-commit hook in `.husky/pre-commit` is the **authoritative substrate fuse**. PostToolUse:Write|Edit|Bash hook in Claude Code emits **WARN-only** (non-blocking) for fast feedback. This decouples the fuse from the per-edit latency budget and covers ALL agents (Codex, Loa autonomous, manual) — not just Claude Code sessions.
-
-Earlier draft sections describing PreToolUse:Write|Edit as the blocking gate are SUPERSEDED by ADR-10.
-
-### §4.1 — Hook 1: Pre-commit (`.husky/pre-commit`) · AUTHORITATIVE GATE per ADR-10
-
-**Contract:**
-```bash
-#!/usr/bin/env bash
-# Triggered by git commit (any agent: Claude Code, Codex, Loa, manual)
-# Exits 0 (allow commit) or 1 (BLOCK commit) with stderr message
-# Bypass: LOA_REGRESSION_HOOK_BYPASS=1 (audited per ADR-11)
-```
-
-**Behavior:**
-```bash
-[[ "$LOA_REGRESSION_HOOK_BYPASS" == "1" ]] && { audit_emit "regression-bypass" "$USER"; exit 0; }
-
-# Find staged files matching protected paths
-STAGED_PROTECTED=$(git diff --cached --name-only | grep -E "$(IFS='|'; echo "${PROTECTED_PATHS[*]}")")
-[[ -z "$STAGED_PROTECTED" ]] && exit 0  # nothing to check
-
-# Run regression check on staged content
-PRIMITIVES=$(resolve_primitives_for_paths "$STAGED_PROTECTED")
-pnpm regression:check --staged-only --primitives "$PRIMITIVES"
-RC=$?
-
-if [[ $RC -ne 0 ]]; then
-  echo "[regression-substrate] commit BLOCKED: regression detected on $PRIMITIVES" >&2
-  echo "  To approve baseline changes: pnpm regression:approve <primitive> --reason '...'" >&2
-  echo "  To bypass (audited): LOA_REGRESSION_HOOK_BYPASS=1 git commit ..." >&2
-  exit 1
-fi
-exit 0
-```
-
-**Why this works as the authoritative fuse:**
-- Fires on every `git commit` regardless of which agent (Claude/Codex/Loa) wrote the changes — resolves SKP-001 (880) coverage gap
-- Cannot create self-locking loop: bypass via env var works even if hook itself is broken; revert the offending commit recovers fully (resolves SKP-002 820)
-- Latency cost paid at commit time, not per-Edit — agent autonomy preserved (resolves SKP-001 920)
-- Audit trail to `.run/audit.jsonl` for every block + bypass
-
-### §4.1b — Hook 2: PostToolUse:Write|Edit|Bash (`.claude/hooks/post-tool-use/lab-render-regression.sh`) · WARN-only
-
-**Contract:**
-```bash
-# Triggered by Claude Code PostToolUse:Write|Edit|Bash (fires AFTER mutation)
-# Non-blocking — always exit 0 — emits stderr WARN for operator awareness
-# stdin JSON: { tool, file_path | command, ... }
-```
-
-**Path matching (shared by both hooks):**
-```bash
-PROTECTED_PATHS=(
-  "app/battle-v2/_components/cards/"
-  "app/battle-v2/_components/vfx/effects/"
-  "app/battle-v2/_components/CardFace.tsx"
-  "lib/cards/codex/"
 )
+
+interface BlenderLiveConfig {
+  readonly host: string                  // default 127.0.0.1
+  readonly port: number                  // default 9876
+  readonly authTokenPath?: string        // ~/.blender-mcp/<session>.auth (when escape enabled)
+  readonly reconnect: {
+    readonly maxAttempts: number          // 5
+    readonly baseDelayMs: number          // 200
+  }
+}
 ```
 
-NOT in protected-path set: `.claude/hooks/settings.hooks.json`, `lib/regression/*`, `lib/ui/icons/*` — so the hook can never lock itself out of its own configuration (per ADR-11).
+**Wire client invariants** (must hold byte-identical with Python `lib/wire.py`):
 
-**PostToolUse behavior (WARN-only):**
-- Resolve affected primitives from `file_path` or `git diff --name-only HEAD` (Bash case)
-- Run `pnpm regression:check --primitives "$AFFECTED" --post-mutation`
-- If regression detected, emit stderr WARN with diff summary + remediation steps
-- Always exit 0 — never block (the pre-commit hook is the gate)
-- Audit emit `regression.warn` with primitive + outcome
-- Latency: best-effort; not load-bearing on the iteration loop
+1. **Length-prefix**: 4-byte BE uint32 + UTF-8 JSON body; never sends > MAX_FRAME_BYTES (10MB).
+2. **Protocol version**: every encoded command carries `protocol_version: "1.0"` (PRD FR-14). Mismatched response → typed `BlenderDataError._tag = "ProtocolMismatch"`.
+3. **Reconnect-on-disconnect**: on TCP RST or FIN, retry with exponential backoff (200ms → 400ms → 800ms → 1.6s → 3.2s · max 5 attempts). On retries-exhausted, fail the calling Effect with `BlenderDataError._tag = "ConnectionLost"`.
+4. **Per-cmd response correlation**: client maintains `Map<cmdId, Deferred<WireResponse>>`. Send path puts cmd, registers deferred. Receive path resolves the right deferred based on `cmd_id`. Server-side per-connection out_queue + cmd_id matching ensures one-shot delivery.
+5. **Bearer-token handshake** (only when an escape op is invoked): read `authTokenPath`, attach `auth_token` field to the WireCommand. CRUD ops do NOT carry the token (server-side gate is escape-only).
+6. **Backpressure handling**: on `kind="Backpressure"`, retry the cmd with exponential backoff (4 attempts · 100ms base). Surface as typed error if exhausted.
+7. **Error mapping**: every wire `kind` maps to a typed `BlenderDataError` variant. The mapping is part of this contract:
 
-The earlier section's Edit-patch reconstruction (now retained for the PostToolUse:Write case where reconstruction adds context to the WARN message) and worktree staging remain valid technique — they just don't BLOCK anymore.
+| Wire `kind` | TS `_tag` | Recoverable? |
+|---|---|---|
+| `BadParams` | `BadParams` | no (caller bug) |
+| `BlenderError` | `BlenderError` | depends on op |
+| `Timeout` | `Timeout` | yes (retry-with-budget) |
+| `UnknownOp` | `UnknownOp` | no (version skew) |
+| `EscapeHatchError` | `EscapeHatchError` | depends |
+| `FrameError` | `FrameError` (connection lost) | yes (reconnect) |
+| `AuthFailed` | `AuthFailed` | no (token issue) |
+| `Backpressure` | (retry transparently) | yes (internal) |
+| `ProtocolMismatch` | `ProtocolMismatch` | no (incompatible) |
+| `ServerBusy` | `ServerBusy` | yes (retry with backoff) |
 
-**Edit-patch reconstruction (per Flatline SKP-003 · 840):**
+**Size budget**: ≤200 LOC; new test file `lib/blender/__tests__/live.test.ts` validates wire-level round-trip against a Python addon launched by a S5 integration fixture.
 
-The hook MUST reconstruct the proposed file content before staging:
-```bash
-case "$tool" in
-  Write)
-    # Full content provided
-    PROPOSED_CONTENT="$content"
-    ;;
-  Edit)
-    # Read current on-disk file
-    CURRENT=$(cat "$file_path")
-    # Apply patch: replace old_string with new_string (respecting replace_all flag)
-    PROPOSED_CONTENT=$(apply_edit_patch "$CURRENT" "$old_string" "$new_string" "$replace_all")
-    # If reconstruction fails (e.g., old_string not found), exit 1 — Claude Code's
-    # own Edit semantics would also fail, but we surface BLOCK explicitly with reason.
-    ;;
-esac
+**Sprint impact**: S1 grows to include `data.live.ts` (~half-day-incremental over Python wire). S5 runs `lib/blender/__tests__/data.test.ts` (the 10/10 contract) against `BlenderDataLive` Layer with a real Blender; passing this is the PRD G-2 closure.
+
+## 3. Open-Question Resolutions
+
+### 3.1 Q-SDD-1 · Threading shape vs `context_override`
+
+**Question**: How does the timer drain interact with `bpy.context_override` for ops requiring specific context?
+
+**Decision**: Out of scope for v0. The 5 data-seam CRUD ops (FR-7..FR-11) operate on `bpy.data.*`, which does NOT require a context override — only `bpy.ops.*` invocations need a specific area/region/active-object context. Since v0 ships zero operator-seam ops, the context_override question doesn't bite yet.
+
+For the escape hatch (FR-12): operator-authored code runs in the timer-drain frame, so `bpy.context` is already the addon-trigger context. If the operator's code needs an override, they write `with bpy.context.temp_override(...):` themselves inside the code string. The addon doesn't try to second-guess them.
+
+**When this becomes load-bearing**: v1 operator-seam cycle. At that point, each operator-seam handler declares its required context shape (e.g., `area='VIEW_3D'`, `active_object` required) and the router wraps the call in `bpy.context.temp_override(**required)` — falling back to `WireResponseError(kind="PollFailed")` if `op.poll()` returns False under the override.
+
+**Implementation note for v0**: `main_thread.py:TimerDrainer.__call__` runs in the addon-registered context (`bpy.context.window`, `bpy.context.scene`). All `bpy.data.*` reads/writes are valid here. No override needed.
+
+**Rationale**: PRD §6.1/§6.2 explicitly defers operator-seam to v1; resolving context_override now is premature optimization. The TimerDrainer interface is shaped to ACCEPT a per-handler context-override declaration later without breaking the v0 contract.
+
+### 3.2 Q-SDD-2 · Connection lifecycle (r1 · deterministic accept+close · half-open detection)
+
+**Question**: Accept multiple sequential TS clients (test process disconnects, integration test reconnects)? Or single persistent connection only?
+
+**Decision**: **Single concurrent connection, unlimited sequential reconnects · r1 deterministic across platforms.**
+
+Concretely:
+- `AcceptLoop` accepts ONE client at a time
+- r1: While a `ConnHandler` is alive, the second `accept()` returns a new socket which the AcceptLoop **immediately** sends a single `FrameWriter.encode(WireResponse(kind="ServerBusy", cmd_id="<no-cmd>"))` to and closes. **r0's reliance on TCP backlog / SYN-queue RST timing was platform-dependent (macOS vs Linux vs CI vs Blender runtime); r1's explicit accept+close+ServerBusy is deterministic** (per SDD-flatline IMP-003 severity 862.5).
+- When the active client disconnects (clean FIN, broken pipe, or `SO_RCVTIMEO` expiry on a half-open connection), `ConnHandler` purges its `out_queue`, cleans up, returns to `AcceptLoop`, and the next connection is accepted.
+- **r1 half-open detection** (per SDD-flatline SKP-003 severity 720): every accepted socket is configured with `SO_RCVTIMEO = SO_RCVTIMEO_S (30s)`. If no bytes arrive within the window, `recv()` raises `socket.timeout`; ConnHandler closes the socket and returns. Without this, a silent client crash (e.g., kill -9 on the TS test process · network partition) would lock the addon's single connection slot until Blender restart.
+
+Why sequential-reconnect (not single-persistent):
+- pytest integration runs spawn fresh processes per test (xdist / repeated invocation) — each gets its own socket
+- The TS substrate may add a `data.live.ts` reconnect-on-disconnect path later; the addon must tolerate it
+- Single-persistent would make manual debugging hostile (close terminal → addon stuck waiting forever)
+
+Why NOT concurrent connections in v0:
+- The main-thread queue is a single consumer; concurrent producers would need fair-scheduling logic we haven't designed
+- The cmdId cache is a single-process LRU; cross-connection dedup would need negotiated session IDs
+- One agent = one client is the actual v0 use case (PRD §3 users)
+
+**State machine**:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Listening: AcceptLoop.run()
+    Listening --> Connected: accept() returns
+    Connected --> Listening: client closes / EOF / error
+    Connected --> ShuttingDown: stop_event set
+    Listening --> ShuttingDown: stop_event set
+    ShuttingDown --> [*]
 ```
 
-`apply_edit_patch` is a small helper in `.claude/scripts/edit-patch-apply.sh` — deterministic search-replace honoring the `replace_all` flag exactly as the Claude Code Edit tool does.
+**Implementation detail**: `AcceptLoop` uses `select.select([listen_sock], [], [], 0.5)` so it wakes every 500ms to check `stop_event.is_set()`. Same for `ConnHandler` recv loop. This bounds shutdown latency to ≤500ms (PRD doesn't pin this, but operator-experience requires it).
 
-**Staging (per Flatline SKP-002 · 780 · resolves import-break):**
+**Acceptance** (becomes test cases):
+- `test_socket_server.py::test_reconnect_after_clean_close` — client connects, sends cmd, closes; new client connects, sends same op with different cmdId, succeeds
+- `test_socket_server.py::test_concurrent_clients_reject` — first client holds connection; second connect attempt within 100ms gets RST (or pending in OS queue but never accepted while first is live)
+- `test_socket_server.py::test_stop_event_during_recv` — stop_event set mid-recv; ConnHandler exits within 500ms
 
-The previous draft used file-copy, which breaks relative imports. Re-spec uses **git worktree-based staging**:
-```bash
-WORKTREE_DIR=".run/regression-staging/$$"  # per-process worktree
-git worktree add -q "$WORKTREE_DIR" HEAD
-# Apply proposed content to worktree's copy of the file
-echo "$PROPOSED_CONTENT" > "$WORKTREE_DIR/$file_path"
-# Run vitest from worktree root — imports resolve correctly
-(cd "$WORKTREE_DIR" && pnpm regression:check --primitive "$primitive_name")
-RC=$?
-# Always clean up
-git worktree remove -f "$WORKTREE_DIR"
+### 3.3 Q-SDD-3 · cmdId LRU eviction policy
+
+**Question**: 256 entries seems right but what's the eviction shape (insertion order vs LFU)?
+
+**Decision**: **`collections.OrderedDict`-backed insertion-order LRU with `move_to_end` on hit.**
+
+Specifically:
+- On `put(cmd_id, resp)`: if cache full, `popitem(last=False)` evicts oldest insertion; then `cache[cmd_id] = resp`
+- On `try_hit(cmd_id)`: if present, `move_to_end(cmd_id)` (mark as recently-used); return cached resp
+- `max_entries = 256` per PRD FR-3
+
+Why this and not LFU:
+- The workload is "retry on lost ACK" — same cmdId arrives twice within seconds, not a frequency-popularity distribution. LRU on insertion-and-hit-recency fits.
+- `OrderedDict.move_to_end` + `popitem(last=False)` is O(1) and stdlib (zero deps).
+- Memory at 256 entries: each entry is a small dataclass + a string key. Rough upper bound 4KB per entry × 256 = 1MB, comfortably under PRD §5.5 memory budget (100KB / 1000 cmds means total cache stays bounded long before the 1MB cap matters).
+
+Why not larger:
+- The retry window is on the order of seconds. 256 entries at 50 cmds/sec = ~5 seconds of buffer. That's deeper than any TCP retransmit window.
+- Larger cache invites memory leaks if a buggy client never reuses cmdIds.
+
+Edge cases handled:
+- **Reused cmdId with different payload** (client bug): cache hit wins. PRD FR-3 says "cached response is returned · the op is NOT re-executed" — the contract is "cmdId identifies the op, period." If a client wants a different op, it picks a different cmdId. We do NOT hash the params to detect mismatch in v0 (that'd be debug-mode lint, not runtime safety).
+- **Cmd received during shutdown**: cmd_cache is dropped with the addon; reconnect with same cmdId after restart re-executes. Acceptable: across-restart de-dup would require persistence we don't want in v0.
+
+**Acceptance**:
+- `test_cmd_cache.py::test_lru_eviction_oldest_first` — fill 256, add one more, assert first inserted is evicted
+- `test_cmd_cache.py::test_hit_promotes_to_recent` — insert A, fill 255 more, hit A, add one more, assert A still present
+- `test_cmd_cache.py::test_dedup_returns_cached_response` — put cmd1 → resp1, try_hit cmd1 returns resp1
+
+### 3.4 Q-SDD-4 · Traceback sanitizer approach
+
+**Question**: Regex-based path replacement vs structured AST walk?
+
+**Decision**: **Regex-based, with a small fixed set of substitutions applied to the stringified traceback. NO AST walk.**
+
+Why:
+- The traceback we sanitize is `traceback.format_exception(...)` output — a string. There's no AST to walk. AST walking would only apply if we were rewriting the source-code BEFORE execution, which we are not.
+- The threat model (PRD §5.6) is "no path / env leak to third-party logs" — that's a string-replacement problem.
+
+Substitutions (in order):
+
+```python
+# lib/safety/traceback_sanitizer.py
+
+# Replacements applied to the full traceback string. Order matters:
+# longest-prefix first so subpath matches don't shadow parent matches.
+def _build_replacements() -> list[tuple[re.Pattern, str]]:
+    # 1. Operator's home directory → "$HOME"
+    home = os.path.expanduser("~")
+    # 2. Current working dir → "$CWD"
+    cwd = os.getcwd()
+    # 3. Username (resolved from $USER, fall back to pwd.getpwuid)
+    user = os.environ.get("USER") or pwd.getpwuid(os.getuid()).pw_name
+    # 4. Blender install path (if discoverable from bpy.app.binary_path)
+    blender_root = os.path.dirname(bpy.app.binary_path) if HAS_BPY else None
+
+    subs = []
+    # Longest prefix first
+    for path, repl in sorted(
+        [(home, "$HOME"), (cwd, "$CWD"),
+         *(([(blender_root, "$BLENDER")] if blender_root else []))],
+        key=lambda t: -len(t[0])
+    ):
+        subs.append((re.compile(re.escape(path)), repl))
+    # Username last, only as word-boundary match to avoid mangling
+    subs.append((re.compile(rf"\b{re.escape(user)}\b"), "$USER"))
+    return subs
+
+def sanitize(tb_str: str) -> str:
+    for pat, repl in _REPLACEMENTS:
+        tb_str = pat.sub(repl, tb_str)
+    return tb_str
 ```
 
-Worktree gives a faithful repository state with the proposed change applied — relative imports, tsconfig paths, Next.js transforms all resolve correctly. Cost: ~200-500ms worktree add/remove overhead, comfortably inside the 8s budget for a single-primitive snapshot.
+Acceptable known-limits (documented, not bugs):
+- Won't catch arbitrary PII in exception messages (e.g., `KeyError: 'my-secret-key'`) — that's the handler's responsibility, not the sanitizer's.
+- Won't catch paths from non-default Blender installs the operator hasn't loaded yet. Acceptable for v0; revisit if we ship to multiple users.
 
-**Timeout policy (per Flatline SKP-001 · 760 · fail-open is a bypass):**
+Why not a structured walker (e.g., `traceback.TracebackException` introspection):
+- We'd still produce a string at the end and still need regex on `__file__`-derived path frames.
+- Adds complexity for marginal gain. The string is already structured enough that prefix-substitution catches all the real leaks.
 
-Fail-open is the bypass-by-attrition problem. Re-spec uses **CI-vs-local policy**:
-```bash
-if [[ -n "$CI" || -n "$GITHUB_ACTIONS" ]]; then
-  TIMEOUT_POLICY="fail-closed"  # CI BLOCKS if timeout exceeded
-else
-  TIMEOUT_POLICY="fail-open"    # Local interactive ALLOWS with WARN + audit
-fi
+Lazy build: replacements are computed once at addon-register time and cached at module load. Re-computed only if `bpy.app.binary_path` changes (it doesn't during a session).
+
+**Acceptance**:
+- `test_traceback_sanitizer.py::test_home_path_replaced` — TB with `/Users/zksoju/foo` becomes `$HOME/foo`
+- `test_traceback_sanitizer.py::test_username_word_boundary` — string `zksoju_var = 1` is NOT mangled to `$USER_var = 1` (no word boundary match on suffix)
+- `test_traceback_sanitizer.py::test_longest_prefix_wins` — `/Users/zksoju/Documents/GitHub/compass` replaced as `$CWD`, not `$HOME/Documents/GitHub/compass`
+
+### 3.5 Q-SDD-5 · pytest with `bpy` mocked
+
+**Question**: Install `fake-bpy-module` or hand-roll the stub?
+
+**Decision**: **Install `fake-bpy-module-latest` for type-checking + IDE autocomplete, but use `unittest.mock.MagicMock`-based fixtures for actual test behavior.**
+
+Hybrid rationale:
+- `fake-bpy-module-*` ships type stubs (>200MB but install-once) that give us static typing of `bpy.types.Object`, `bpy.data.objects`, `bpy.context.scene`. Drastically improves IDE feedback + catches obvious typos in handler bodies. **Used for typing, NOT for runtime.**
+- For test-runtime behavior, `fake-bpy-module` is **just stubs** — calling `bpy.data.objects.new("Cube", mesh)` raises because the stubs don't implement behavior. So tests would need to mock anyway.
+- Therefore: ship a small `tests/conftest.py` fixture that builds a `MagicMock`-based `bpy` with the minimal behavior our handlers need (a `bpy.data.objects` dict-like, a `bpy.data.objects.new()` that returns a mock that supports `.location`, etc.).
+
+Concrete fixture shape:
+
+```python
+# tests/conftest.py
+
+@pytest.fixture
+def fake_bpy(monkeypatch):
+    """Minimal bpy.data + bpy.ops + bpy.context for handler unit tests.
+
+    State is in a plain dict so tests can assert on it directly. Each
+    test gets a fresh empty store. We do NOT try to model bpy semantics
+    fully — only what the 5 CRUD handlers + escape hatch touch.
+    """
+    store = {"objects": {}, "meshes": {}, "materials": {}}
+
+    bpy = SimpleNamespace()
+    bpy.data = SimpleNamespace(
+        objects=_BpyCollection(store["objects"], _make_object),
+        meshes=_BpyCollection(store["meshes"], _make_mesh),
+        materials=_BpyCollection(store["materials"], _make_material),
+    )
+    bpy.ops = MagicMock()  # for escape hatch tests only
+    bpy.context = SimpleNamespace(scene=SimpleNamespace(collection=...))
+    bpy.app = SimpleNamespace(timers=MagicMock(),
+                              binary_path="/fake/blender")
+
+    monkeypatch.setitem(sys.modules, "bpy", bpy)
+    return bpy, store
+
+
+class _BpyCollection:
+    """dict-with-bpy-semantics: indexed by name, has .new() / .remove()."""
+    def __init__(self, store, factory):
+        self._store = store
+        self._factory = factory
+    def __getitem__(self, name): return self._store[name]
+    def __contains__(self, name): return name in self._store
+    def get(self, name, default=None): return self._store.get(name, default)
+    def new(self, name, *args, **kwargs):
+        if name in self._store:
+            raise ValueError(f"{name} already exists")
+        obj = self._factory(name, *args, **kwargs)
+        self._store[name] = obj
+        return obj
+    def remove(self, obj, do_unlink=True):
+        del self._store[obj.name]
 ```
 
-Local fail-open is acceptable for iterative work; CI fail-closed makes the gate real for merges. Both record the timeout to `.run/audit.jsonl`.
+Two test classes (separated by marker):
+- `tests/test_data_ops.py` (no marker) — uses `fake_bpy` fixture · runs in CI · fast · validates handler logic
+- `tests/test_integration.py` (marker `integration`, opt-in via `pytest -m integration`) — runs against real Blender with addon loaded · manual operator-driven · NOT in CI
 
-**Override pathway:**
+Why we don't hand-roll instead:
+- `fake-bpy-module-latest` is install-once and IDE-only — the cost is `pip install` + a `.gitignore` entry; the benefit is real autocomplete on `bpy.types.Object.location`. Cheap insurance.
+- Hand-rolling the typing stubs would be tedious and error-prone.
 
-When BLOCK fires, the hook stderr includes:
+Why we don't use `fake-bpy-module`'s runtime instead:
+- It's stubs, not implementations. Our `MagicMock`-based fixture is small (~80 LOC), explicit about what semantics we model, and gives test authors a clear surface to extend per-test.
+
+**Acceptance** (becomes pyproject.toml config):
+- `requirements-dev.txt` includes `fake-bpy-module-latest` (pinned to the version matching Blender 4.5 LTS)
+- `pyproject.toml` `[tool.pytest.ini_options]` declares `markers = ["integration: requires running Blender", "slow: stress tests"]`
+- CI runs `pytest -m 'not integration and not slow'`
+- Operator runs `pytest -m integration` manually during R-2 mitigation
+
+### 3.6 Q-SDD-6 (r1) · Per-connection response correlation
+
+**Question**: How is a response routed back to the correct client when multiple sequential clients have been served?
+
+**Decision**: **Per-connection response queue · the shared outbox of r0 is removed.**
+
+Mechanism:
+- `ConnHandler` constructor allocates `self.out_queue = queue.Queue(maxsize=MAX_QUEUE_SIZE)` privately.
+- `ConnHandler` parses each WireCommand into an **envelope** tuple: `(cmd: WireCommand, conn_id: int, out_queue: Queue)`. The tuple is put on the shared `inbox`.
+- `TimerDrainer` reads envelopes from inbox. The drainer routes the response to `envelope.out_queue.put_nowait(resp)` — explicitly by reference, not by global lookup.
+- On `ConnHandler.run()` exit: drain remaining items from `self.out_queue` (best-effort send via the still-open socket if possible, else discard). The queue + handler are GC'd together.
+
+**Why this resolves the finding**: r0's shared global outbox could deliver a response to a different `ConnHandler` than the one that submitted the cmd if the original client disconnected mid-flight. Per-conn correlation makes the correspondence structural — the response can only land on its origin's queue, even if that queue is being drained-for-discard. The reconnecting client gets a fresh queue.
+
+**Rationale**: SDD-flatline IMP-004 (875) + PRD-flatline SKP-002 (855). This is the most load-bearing concurrency seam · explicit in r1 instead of implicit.
+
+**Acceptance**:
+- `test_socket_server.py::test_response_correlation_after_reconnect` — client A connects, submits cmd_X, disconnects before response is generated. Client B reconnects with NEW cmd_id cmd_Y. Assert that cmd_X's response is NOT delivered to B (it's discarded with A's queue); cmd_Y's response is correctly delivered to B.
+- `test_socket_server.py::test_envelope_routing_invariant` — drainer is invoked with two envelopes for different conn_ids; assert responses land on the right out_queue refs.
+
+### 3.7 Q-SDD-7 (r1) · Addon lifecycle invariants
+
+**Question**: What must `unregister()` do, in what order, with what timeout, so that disable/enable cycles don't leak threads, timers, or sockets?
+
+**Decision**: **Six-step sequence with per-step `THREAD_JOIN_TIMEOUT_S = 2.0s` bound (PRD FR-15).**
+
+```python
+# tools/blender-addon/addon.py (excerpt)
+
+def unregister():
+    """Idempotent · operator may toggle the addon repeatedly during dev."""
+    # 1. Signal shutdown (everything observes this)
+    _STATE.stop_event.set()
+
+    # 2. Unregister timer (idempotent — bpy raises ValueError if not registered)
+    try:
+        bpy.app.timers.unregister(_STATE.drainer)
+    except (ValueError, AttributeError):
+        pass
+
+    # 3. Shutdown AcceptLoop: closes listen socket + signals BG thread to exit
+    if _STATE.accept_loop is not None:
+        _STATE.accept_loop.shutdown()
+
+    # 4. Join BG thread with bounded wait
+    if _STATE.bg_thread is not None and _STATE.bg_thread.is_alive():
+        _STATE.bg_thread.join(timeout=THREAD_JOIN_TIMEOUT_S)
+        if _STATE.bg_thread.is_alive():
+            # daemon=True so process-exit will reap it; log + continue
+            logger.warning("BG thread did not join within 2s; daemon-cleanup expected")
+
+    # 5. Delete bearer-token file (FR-12b)
+    auth_path = _STATE.auth_path
+    if auth_path is not None and auth_path.exists():
+        auth_path.unlink(missing_ok=True)
+
+    # 6. Drop in-memory caches + ConnHandlerIndex
+    _STATE.cmd_cache.clear()
+    _STATE.conn_handler_index.clear()
+    _STATE = None  # full reset
 ```
-[regression-substrate] BLOCKED: CodexCardFace width drift +12.3px (2.6%)
-  Baseline: tests/snapshots/lab/CodexCardFace@1x.json (boundingBox)
-  Diff:     tests/snapshots/lab/diffs/CodexCardFace@1x.diff.png (advisory)
-  Edit reconstruction: OK (8 lines changed)
-  Worktree staging: OK (412ms)
-  Snapshot capture: 3.2s
-  To approve: pnpm regression:approve CodexCardFace
-  To override (operator only): LAB_REGRESSION_OVERRIDE=1 (audited)
+
+**Idempotency**: each step uses try/except + state-checks; calling unregister twice in a row is a no-op on the second call.
+
+**Acceptance**:
+- `test_lifecycle.py::test_register_unregister_cycle_releases_port` — register · check port 9876 LISTEN · unregister · check port not in LISTEN state · register again succeeds
+- `test_lifecycle.py::test_unregister_with_active_connection` — connect a client, mid-recv unregister; client gets RST within ≤2s; addon state clean
+- `test_lifecycle.py::test_double_unregister_is_safe` — call unregister twice; second call is no-op
+
+**Rationale**: SDD-flatline IMP-009 (800). Without explicit lifecycle invariants, port 9876 stays bound across addon-reload, forcing a Blender restart — significant friction for the primary dev workflow.
+
+### 3.8 Q-SDD-8 (r1) · Escape-hatch security policy
+
+**Question**: What is the v0 trust model for `run_python_code`? Authentication? Authorization? Threat model?
+
+**Decision**: **Default OFF · bearer-token gate · restricted builtins · audit log · explicit threat-model scoping. Implemented in `lib/ops/escape.py` per §2.2.**
+
+Trust model:
+- **Subject**: the agent or operator running on the same machine as Blender
+- **Object**: the Blender process's Python interpreter
+- **Authority**: per-session bearer token written to `~/.blender-mcp/<session-id>.auth` (mode 0600), only readable by the operator's UID
+- **Default posture**: disabled (`BLENDER_MCP_ENABLE_ESCAPE` not set) — addon registers a stub that returns `EscapeHatchError("disabled")` for the escape op. CRUD ops continue to work without escape.
+
+In-scope threats (mitigated by r1):
+- Local malware reading data through localhost socket → blocked by bearer-token gate (malware would need to read `~/.blender-mcp/*.auth` mode-0600 file, which already implies it has the operator's read access)
+- Compromised TS dependency exec'ing arbitrary code → restricted_builtins blocks `os` / `subprocess` / `sys` import; AST pre-scan blocks unbounded loops
+- DNS rebinding via browser hitting localhost → bearer token in cmd frame is unguessable without filesystem read
+
+Out-of-scope threats (operator-accepted):
+- An attacker with operator-level filesystem access (can read the auth file)
+- An attacker with code-execution on the operator's machine (can already exec Python directly)
+- Privilege escalation from Blender's process scope (operator runs Blender)
+
+**Rationale**: SDD-flatline SKP-001 (CRIT 900) + SKP-002 (HIGH 780) + IMP-010 (807.5) + PRD-flatline SKP-001 (CRIT 950). 'Localhost-only' was the explicit defect surface; r1 closes it.
+
+**Acceptance**:
+- `test_escape.py::test_disabled_by_default_returns_error` — env unset · escape op returns `EscapeHatchError("disabled")`
+- `test_escape.py::test_missing_auth_token_returns_authfailed` — escape enabled · cmd without auth_token → `AuthFailed`
+- `test_escape.py::test_wrong_auth_token_returns_authfailed` — escape enabled · cmd with wrong token → `AuthFailed`
+- `test_escape.py::test_correct_token_executes_code` — happy path · `code="2+2"` returns success with `return_value=4`
+- `test_escape.py::test_restricted_builtins_blocks_import_os` — `code="import os; os.listdir('/')"` → `EscapeHatchError("import not allowed: os")`
+- `test_escape.py::test_audit_log_entry_per_invocation` — both allowed and denied invocations append to audit log
+
+### 3.9 Q-SDD-9 (r1) · Escape-hatch timeout enforcement
+
+**Question**: Given that CPython + Blender's main thread cannot reliably preempt running Python, what does `timeout_ms` actually mean?
+
+**Decision**: **Cooperative-only timeout · AST pre-scan rejects unbounded loops · README documents the limitation honestly. `signal.alarm()` is NOT used.**
+
+Mechanism (per `lib/safety/timeout.py` in §2.2):
+- Before exec: `reject_unbounded_loops(code)` walks AST · rejects `while True`, `while 1`, `for x in itertools.count(...)` with `EscapeHatchError("unbounded-loop detected")`
+- Best-effort recursion check: function whose only branch is a recursive call without a depth-cap argument is flagged · false negatives acceptable
+- During exec: `time.monotonic()` checkpoint at start · after exec completes, compare elapsed against `timeout_ms` · if exceeded, return `Timeout` (advisory · code has already run)
+- Future-v1 hard interrupt: subprocess isolation (separate process · bpy reachable via IPC) is the only honest path; deferred per PRD §6.2.
+
+Why NOT `signal.alarm()`:
+- POSIX-only (Windows breaks)
+- Signal delivery inside Blender's event loop is unreliable
+- Even on POSIX, the timer callback IS on the main thread → signal would interrupt itself
+- Would create a false safety guarantee (PRD-flatline SKP-003 + SDD-flatline SKP-002)
+
+**Rationale**: SDD-flatline SKP-002 (CRIT 850) + IMP-006 (835) + PRD-flatline SKP-003 (CRIT 830). Honesty about CPython + GIL constraint matters more than a fake safety control.
+
+**Acceptance**:
+- `test_escape.py::test_while_true_rejected_pre_exec` — `code="while True: pass"` returns `EscapeHatchError("...unbounded-loop...")` without executing
+- `test_escape.py::test_itertools_count_rejected` — `code="for x in itertools.count(): pass"` rejected
+- `test_escape.py::test_bounded_loop_passes_prescan_and_executes` — `code="for x in range(100): pass"` runs successfully
+- `test_escape.py::test_timeout_advisory_on_slow_code` — `code="for x in range(10_000_000): pass"` may exceed timeout · `Timeout` returned · code already finished (advisory, not interruptive)
+
+### 3.10 Q-SDD-10 (r1) · Lazy `bpy` import discipline
+
+**Question**: Why does `fake_bpy` fixture not work for handler modules under one common ordering?
+
+**Decision**: **Every `import bpy` (and `from bpy import …`) MUST live inside a function body, never at module top level. Enforced by AP-8 (new anti-pattern test).**
+
+Rationale: when a handler module is imported at test-collection time, its module-level `import bpy` caches the (absent or stub) `bpy` reference in the module namespace. `monkeypatch.setitem(sys.modules, "bpy", fake_bpy)` rebinds `sys.modules["bpy"]` but does NOT rebind names already bound in already-imported modules. So tests would either error on collection (real bpy absent) or test against unfaked behavior depending on order.
+
+Convention:
+
+```python
+# lib/ops/data_handlers.py
+
+# DO NOT do this:
+# import bpy
+
+@register("blender.data.listObjects")
+def list_objects(params):
+    import bpy  # ← lazy: rebinds per-call · fake_bpy fixture wins
+    return success(params.cmd_id, [project_object(o) for o in bpy.data.objects])
 ```
 
-### §4.2 — Hook 2: PostToolUse:Bash (`.claude/hooks/post-tool-use/lab-render-regression-bash.sh`)
+`mathutils` and `math` follow the same rule when used by handlers (defensive · `math` is rarely faked but the discipline is uniform).
 
-Per Flatline SKP-004 (820), the PreToolUse hook only intercepts Claude Code's native Write/Edit tools. Bash-mediated file writes (`sed -i`, `cat > file`, `echo >> file`) bypass it entirely. The PostToolUse:Bash hook closes this:
+**Enforcement**: `test_antipatterns.py::test_ap8_no_top_level_bpy_imports` (FR-13 in PRD r1 §4.9) AST-walks every `.py` under `tools/blender-addon/lib/ops/`. Fails build on top-level `bpy` import.
 
-**Contract:**
-```bash
-# Triggered by Claude Code PostToolUse:Bash (fires AFTER bash command completes)
-# stdin JSON: { tool: "Bash", command, exit_code, stdout, stderr }
-# Exits 0 (always, this is a post-mutation alert, not a block)
+**Rationale**: SDD-flatline SKP-005 (HIGH 710). Non-deterministic CI failures are expensive to diagnose; the convention is cheap.
+
+**Acceptance**:
+- `test_antipatterns.py::test_ap8_no_top_level_bpy_imports` passes against the addon source
+- `test_data_ops.py` (the actual handler tests) run in any order · all pass
+
+### 3.11 Q-SDD-11 (r1) · Cross-language field-mapping table
+
+**Question**: Where is the authoritative Python ↔ TypeScript field-name mapping? How is drift detected?
+
+**Decision**: **§4.3 ships a normative mapping table · the table is the contract · CI parity gate enforces.**
+
+Mechanism:
+- Python wire dataclasses use `snake_case` (Pythonic; pre-JSON only)
+- JSON serialization layer converts `snake_case` ↔ `camelCase` via the §4.3 mapping table
+- Both sides include a top-level `protocol_version: "1.0"` field; mismatched → `ProtocolMismatch`
+- CI `pnpm test --filter blender-wire-parity` generates fixtures from TS encoder · feeds them to Python `FrameReader` · asserts byte-identical round-trip on re-encode
+- Pre-commit hook (informational, non-blocking in v0) warns if `lib/blender/wire.ts` is newer than `tools/blender-addon/tests/fixtures/ts-roundtrip-cases.json`
+
+See §4.3 for the actual mapping rows.
+
+**Rationale**: SDD-flatline IMP-001 (905). "Cross-language serialization naming mismatches are a silent contract-break class — Python tests pass, TS runtime fails. The snake_case/camelCase boundary is exactly the kind of gap that shows up as a 3am production defect."
+
+**Acceptance**:
+- `test_wire.py::test_protocol_version_in_every_frame` — encoded WireCommand carries `protocol_version: "1.0"`; decoder rejects v != "1.0" with `ProtocolMismatch`
+- `test_wire.py::test_field_mapping_matches_table` — for every cmd in the parity fixtures, decoded Python fields match §4.3 mapping
+- CI `wire-parity.yml` workflow runs on every push to `lib/blender/wire.ts` OR `tools/blender-addon/lib/wire.py`
+
+## 4. Data + Wire Schemas
+
+### 4.1 WireCommand on the Python side (r1 · protocol_version + auth_token)
+
+Mirrors `lib/blender/wire.ts` (with the r1 protocol-version addition tracked in S1):
+
+```python
+@dataclass(frozen=True)
+class WireCommand:
+    cmd_id: str               # UUID v4 from client
+    op: str                   # "blender.data.listObjects" | ...
+    params: Any               # op-specific dict
+    ts: float                 # client wall-clock ms (TS sends number)
+    protocol_version: str     # r1 · MUST equal PROTOCOL_VERSION ("1.0")
+    auth_token: str | None    # r1 · REQUIRED for blender.escape.* ops · OPTIONAL otherwise
 ```
 
-**Behavior:**
-```bash
-# Did this bash command touch a protected path?
-CHANGED_PROTECTED=$(git diff --name-only HEAD 2>/dev/null | grep -E "$(IFS='|'; echo "${PROTECTED_PATHS[*]}")")
-if [[ -z "$CHANGED_PROTECTED" ]]; then
-  exit 0  # nothing to check
-fi
+JSON decode does NOT validate `params` — that's the handler's job (the handler reads its expected params shape, validates, and emits `BadParams` on mismatch). Decode DOES validate `protocol_version` at the wire layer (drainer rejects with `ProtocolMismatch` before dispatch).
 
-# Run regression check against current working tree (post-bash state)
-for primitive in $(resolve_primitives_for_paths "$CHANGED_PROTECTED"); do
-  pnpm regression:check --primitive "$primitive" > "$AUDIT_LOG" 2>&1
-  RC=$?
-  if [[ $RC -ne 0 ]]; then
-    # Cannot block (already mutated); emit BLOCKER-level WARN to surface
-    echo "[regression-substrate] WARN: bash-mediated change to $primitive triggered regression check fail." >&2
-    echo "  Run: git diff -- $CHANGED_PROTECTED" >&2
-    echo "  To revert: git restore -- $CHANGED_PROTECTED" >&2
-    echo "  To approve: pnpm regression:approve $primitive" >&2
-    # Audit: severe, operator-flag
-    audit_emit "lab-render-regression-bash" "warn" "$primitive" "..."
-  fi
-done
+### 4.2 WireResponse on the Python side (r1 · expanded error taxonomy)
+
+```python
+def success(cmd_id: str, result: Any) -> WireResponse:
+    return WireResponse(
+        _tag="Success",
+        cmd_id=cmd_id,
+        result=result,
+        ts=time.time() * 1000,
+        protocol_version=PROTOCOL_VERSION,
+    )
+
+def error(cmd_id: str, kind: str, message: str,
+          traceback: str | None = None) -> WireResponse:
+    return WireResponse(
+        _tag="Error",
+        cmd_id=cmd_id,
+        kind=kind,
+        message=message,
+        traceback=traceback,
+        ts=time.time() * 1000,
+        protocol_version=PROTOCOL_VERSION,
+    )
 ```
 
-This matches the existing `mutation-logger.sh` defense-in-depth pattern documented in CLAUDE.loa.md §Safety Hooks.
+JSON serialization drops `None` fields so the wire format matches the TS Schema's optional/required distinction. (Tested in `test_wire.py` cross-language round-trip.)
 
-### §4.3 — Audit
+**r1 error-kind expansions** (also documented in §2.2 `WireResponse.kind` literal):
+- `FrameError` — stream-level corruption · `cmd_id="<unparseable>"` sentinel · sent before connection close
+- `AuthFailed` — escape op without valid bearer token
+- `Backpressure` — inbox full · client retries with backoff
+- `ProtocolMismatch` — cmd `protocol_version` != PROTOCOL_VERSION
+- `ServerBusy` — second concurrent connection attempted while one is active
 
-Every block/allow/warn event logged to `.run/audit.jsonl`:
-```json
+### 4.3 Cross-Language Field Mapping Table (r1 · NORMATIVE)
+
+Per Q-SDD-11. The Python wire dataclasses use `snake_case`; the JSON wire format uses `camelCase` (matching the TS Schema). The mapping is the contract.
+
+**Top-level WireCommand**:
+
+| Python (`lib/wire.py`) | JSON / TS (`lib/blender/wire.ts`) | Type | Required |
+|---|---|---|---|
+| `cmd_id` | `cmdId` | string (UUID v4) | yes |
+| `op` | `op` | string | yes |
+| `params` | `params` | any | yes |
+| `ts` | `ts` | number (wall-clock ms) | yes |
+| `protocol_version` | `protocolVersion` | string ("1.0") | yes |
+| `auth_token` | `authToken` | string or null | required for escape ops; omitted otherwise |
+
+**Top-level WireResponse**:
+
+| Python | JSON / TS | Type | Required |
+|---|---|---|---|
+| `_tag` | `_tag` | "Success" or "Error" | yes |
+| `cmd_id` | `cmdId` | string | yes (sentinel `"<unparseable>"` for FrameError) |
+| `ts` | `ts` | number | yes |
+| `protocol_version` | `protocolVersion` | string ("1.0") | yes |
+| `result` | `result` | any | success only |
+| `message` | `message` | string | error only |
+| `kind` | `kind` | enum (see §5.1) | error only |
+| `traceback` | `traceback` | string (sanitized) | error only, optional |
+
+**BlenderObject projection** (mirrors `lib/blender/data.port.ts:46-64`):
+
+| Python (from bpy.types.Object) | Wire field (JSON) | TS type |
+|---|---|---|
+| `obj.name` | `name` | `string` |
+| `obj.type` | `type` | `BlenderObjectType` (12-variant enum) |
+| `tuple(obj.location)` | `location` | `readonly [number, number, number]` |
+| `tuple(obj.rotation_euler)` | `rotation` | `readonly [number, number, number]` |
+| `tuple(obj.scale)` | `scale` | `readonly [number, number, number]` |
+| `obj.data.name if obj.type=='MESH' else None` | `meshName` | `string \| null` |
+| `[s.material.name for s in obj.material_slots if s.material]` | `materialNames` | `readonly string[]` |
+| `not obj.hide_viewport` | `visible` | `boolean` |
+| `obj.parent.name if obj.parent else None` | `parentName` | `string \| null` |
+
+Single projection function `lib/ops/data_handlers.py::project_object(obj) -> dict` used by all handlers that return BlenderObject(s). Conversion uses a small bidirectional helper module `lib/wire/case.py` (snake↔camel) so the §4.1/§4.2 dataclass field names need not be touched.
+
+**Drift detection** (FR-14 / Q-SDD-11):
+- CI step generates `tests/fixtures/ts-roundtrip-cases.json` from `lib/blender/wire.ts encodeCommand()` for all 5 CRUD ops + escape op
+- Python `FrameReader.drain()` reads the fixtures; asserts field-for-field equality against `expected_decoded.json`
+- Python `FrameWriter.encode()` re-encodes the WireResponses; byte-identical to `expected_encoded.json` from TS
+- Mismatch → CI fails the build with an annotated diff
+
+## 5. Error Handling Strategy
+
+### 5.1 Error Taxonomy (r1 · expanded)
+
+Eleven `kind` values (PRD FR-2 + r1 additions), mapped to producers:
+
+| Kind | Producer | Triggers |
+|---|---|---|
+| `BadParams` | handler param-validation OR wire layer | malformed JSON in body · missing required field · type mismatch |
+| `PollFailed` | (v1, operator seam) | `bpy.ops.X.poll() == False` |
+| `BlenderError` | handler body | any `Exception` from `bpy.*` call |
+| `Timeout` | escape hatch / future long-running ops | cooperative budget exceeded (advisory in v0) |
+| `UnknownOp` | router | op name not in OP_HANDLERS |
+| `EscapeHatchError` | escape hatch | code string raised · AST pre-scan rejected · disabled by env |
+| **`FrameError` (r1)** | **wire layer (FrameReader)** | **header > MAX_FRAME_BYTES · stream corruption · incomplete-frame deadline · cmd_id=`"<unparseable>"`** |
+| **`AuthFailed` (r1)** | **auth gate (escape ops)** | **missing or wrong `auth_token` for blender.escape.* command** |
+| **`Backpressure` (r1)** | **BG-thread (inbox full)** | **inbox `queue.Full` on `put_nowait` · short-circuit response · client retries with backoff** |
+| **`ProtocolMismatch` (r1)** | **drainer / decoder** | **command `protocol_version` != PROTOCOL_VERSION** |
+| **`ServerBusy` (r1)** | **AcceptLoop** | **second concurrent connection attempted while one is active** |
+
+### 5.2 Three Layers of try/except (r1 · plus connection-level FrameError)
+
+1. **Wire layer** (`FrameReader.drain()`): JSON decode errors on a properly-sized body → emit `BadParams` keyed to the cmd_id when parseable, else `FrameError(cmd_id="<unparseable>")`. **r1**: header decode > MAX_FRAME_BYTES → emit `FrameError` AND set `_corrupt=True` so ConnHandler closes the socket (stream is untrustworthy · subsequent recv() offsets are misaligned per SDD-flatline SKP-004 finding).
+
+2. **Router layer** (`TimerDrainer.__call__`): r1 adds three pre-dispatch gates BEFORE the unknown-op check:
+   - `cmd.protocol_version != PROTOCOL_VERSION` → emit `ProtocolMismatch`
+   - cache hit on cmd_id → emit cached response
+   - escape op + missing/wrong auth_token → emit `AuthFailed`
+
+   Unknown op → emit `UnknownOp`. Router itself never raises — handler exceptions are caught by handlers themselves, but as defense-in-depth the router wraps the handler call in a final `try/except Exception` that emits a synthesized `BlenderError` with `traceback = sanitize(traceback.format_exc())`. This is the FR-6 "addon NEVER crashes" line.
+
+3. **Handler layer**: each handler wraps its `bpy.*` calls in a narrow try/except, translating the exception to the right `kind` (e.g., `KeyError` from `bpy.data.objects[name]` → `BlenderError` with `BlenderDataError._tag="ObjectNotFound"` payload). The handler returns `WireResponse`, never raises.
+
+4. **Back-pressure layer (r1)**: when `inbox.put_nowait()` raises `queue.Full` (BG thread), short-circuit a `Backpressure` response onto the originating `out_queue` and continue. When `out_queue.put_nowait()` raises `queue.Full` (main thread), drop the response + set `conn_handler.force_close` — never block the main thread.
+
+### 5.3 Error response shape
+
+When the TS side decodes an Error response, the agent sees:
+
+```typescript
 {
-  "ts": "2026-05-18T...",
-  "kind": "lab-render-regression" | "lab-render-regression-bash",
-  "outcome": "blocked" | "allowed" | "override" | "warn",
-  "primitive": "CodexCardFace",
-  "file_path": "...",
-  "tool": "Write" | "Edit" | "Bash",
-  "diff_summary": "..."
+  _tag: "Error",
+  cmdId: "...",
+  message: "Object 'NotExistant' not found",
+  kind: "BlenderError",
+  traceback: "Traceback (most recent call last):\n  File \"$HOME/...\"",
+  ts: 1747544012345
 }
 ```
 
----
+The agent UI / `data.live.ts` layer is responsible for translating this back into an Effect-typed `BlenderDataError` (`{_tag: "ObjectNotFound", name: "NotExistant"}`) — that mapping lives on the TS side, not in this SDD.
 
-## §5 · Vitest snapshot strategy
+## 6. Testing Strategy
 
-### §5.1 — Test layout
+### 6.1 Test Pyramid
 
-```
-tests/regression/
-  ├─ setup.ts                          Vitest globals + jsdom DOM
-  ├─ render-helpers.ts                 mountPrimitive(props, scale, theme) -> { dom, boundingBox }
-  ├─ canary.test.ts                    The substrate's self-proof (FR-S1.4)
-  ├─ cards/
-  │   ├─ CodexCardFace.snapshot.test.ts
-  │   ├─ CardFace.snapshot.test.ts
-  │   └─ CardComposition.snapshot.test.ts
-  └─ effects/
-      ├─ DustMotes.snapshot.test.ts   (S5)
-      ├─ Embers.snapshot.test.ts       (S5)
-      └─ ...
+| Tier | Tool | Triggers | Bpy | Blender |
+|---|---|---|---|---|
+| Unit (fast) | pytest | CI · pre-commit | mocked via fixture | NO |
+| Integration | pytest -m integration | manual · operator | real | YES (addon loaded) |
+| Stress | pytest -m slow | manual · pre-release | real | YES (addon loaded) |
+| Static | AST scan in test_antipatterns.py | CI | n/a | NO |
 
-tests/snapshots/lab/
-  ├─ CodexCardFace@1x.png
-  ├─ CodexCardFace@1x.json             { boundingBox, metadata, sha256 }
-  ├─ CodexCardFace@2x.png
-  ├─ ...
-  └─ diffs/                            Generated on mismatch (gitignored)
-```
+### 6.2 Cross-Language Parity Test
 
-### §5.2 — Render helper (Playwright-backed · per Flatline cluster-A)
+PRD G-2 requires `lib/blender/__tests__/data.test.ts` to pass against a live addon. We achieve this via:
+- A `tools/blender-addon/tests/fixtures/ts-roundtrip-cases.json` file generated by a small script that runs the TS-side mock and dumps `(input cmd, expected response)` pairs
+- `test_wire.py` reads this fixture and asserts the Python wire encoding/decoding matches byte-for-byte
+- Then the manual integration test runs the full TS test suite against the addon — operator records `10/10 passing` in the cycle dir
 
-```ts
-import { chromium, type Browser, type Page } from "playwright";
+### 6.3 Anti-Pattern Regression Suite (FR-13 detail · r1 · 8 patterns)
 
-let _browser: Browser | undefined;
-async function getBrowser(): Promise<Browser> {
-  // Reused across tests in the same vitest worker
-  return (_browser ??= await chromium.launch({ headless: true }));
-}
+Each of the 8 anti-patterns gets a dedicated test in `test_antipatterns.py`:
 
-export async function mountPrimitive<P>(
-  Component: React.ComponentType<P>,
-  props: P,
-  opts: { scale: 0.5 | 1 | 2; theme: "light" | "dark" }
-): Promise<{ page: Page; boundingBox: BoundingBox; pngBuffer: Buffer; sha256: string }> {
-  const browser = await getBrowser();
-  const page = await browser.newPage({
-    viewport: { width: 1280, height: 800 },
-    deviceScaleFactor: 1,    // DPR-locked (per Flatline SKP-003 · 710)
-  });
+```python
+def test_ap1_length_prefix_handles_1mb_payload():
+    """AP-1: no length-prefix → 'Incomplete JSON response'."""
+    # Send a cmd whose params dict round-trips to ~1MB JSON.
+    # Round-trip succeeds. Failing this means framing regressed.
 
-  // Inject globals.css + theme + render the component via a small harness page
-  await page.goto(`file://${HARNESS_HTML}`);
-  await page.evaluate((args) => window.__mount__(args), {
-    componentRef: Component.name,
-    props: JSON.stringify(props),
-    scale: opts.scale,
-    theme: opts.theme,
-  });
-  await page.waitForSelector("[data-mounted]", { state: "attached", timeout: 5000 });
+def test_ap2_no_bpy_outside_main_thread():
+    """AP-2: bpy on BG thread."""
+    # AST-walk lib/socket_server.py. Fail if any Attribute(value=Name("bpy")).
+    import ast
+    tree = ast.parse(read("lib/socket_server.py"))
+    bpy_uses = [node for node in ast.walk(tree)
+                if isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "bpy"]
+    assert bpy_uses == [], f"bpy refs in BG thread: {bpy_uses}"
 
-  // Geometry — Playwright's boundingBox() returns DPR-normalized px, NOT the
-  // problematic getBoundingClientRect with subpixel float drift.
-  const handle = await page.locator("[data-mounted]").first();
-  const boundingBox = await handle.boundingBox();
-  if (!boundingBox) throw new Error("primitive failed to mount");
+def test_ap3_no_state_on_bpy_types():
+    """AP-3: bpy.types.X = ... assignments."""
+    # AST-walk addon.py + lib/. Fail on Assign(targets=Attribute(...bpy.types...)).
 
-  // Image (advisory — primary assertion is boundingBox per §3.1 hierarchy)
-  const pngBuffer = await handle.screenshot({ type: "png" });
-  const sha256 = createHash("sha256").update(pngBuffer).digest("hex");
+def test_ap4_malformed_json_returns_badparams():
+    """AP-4: malformed JSON at wire boundary."""
+    # Synthesize a frame with valid header but body = "not json{".
+    # Assert WireResponse(kind=BadParams) on outbox.
 
-  return { page, boundingBox, pngBuffer, sha256 };
-}
-```
+def test_ap5_no_anyio_import():
+    """AP-5: stdio/TaskGroup brittleness."""
+    # grep all .py files for `import anyio` / `from anyio` → fail if found.
 
-**Why Playwright resolves cluster-A:**
-- cqw / container queries: real Chromium computes them correctly
-- Three.js: real WebGL via Chromium (vfx-lab effects with 3D scenes work)
-- Canvas: native canvas APIs
-- Fonts: same font-loading pipeline as production (operator's brand fonts via globals.css load identically)
-- DPR: locked to 1.0 in viewport — no Retina/standard-DPR drift (resolves SKP-003 · 710)
+def test_ap6_no_proactor_eventloop():
+    """AP-6: ProactorEventLoop or asyncio in general."""
+    # grep all .py files for `asyncio` or `ProactorEventLoop` → fail.
 
-**Baseline pinning (per Flatline SKP-002 · 880 · platform-sensitive PNGs):**
+def test_ap7_unbounded_loops_rejected_pre_exec():
+    """AP-7 (r1): escape hatch AST pre-scan rejects unbounded loops."""
+    # ESCAPE_ENABLED=1 · valid auth_token · code="while True: pass"
+    # Assert WireResponseError(kind="EscapeHatchError", message=~"unbounded-loop")
+    # Same for "while 1: pass", "for x in itertools.count(): pass"
+    # Bounded loop ("for x in range(10): pass") executes successfully.
 
-PNG snapshots vary across OS (macOS dev vs Linux CI). Resolution: **Docker for baseline capture**.
-
-```
-tests/snapshots/
-  Dockerfile                   # node:20-bookworm + playwright + repo fonts
-  baseline-capture.sh          # entrypoint: clean install, run capture, dump to host
-  lab/
-    *.png
-    *.json
+def test_ap8_no_top_level_bpy_imports():
+    """AP-8 (r1): handler modules must lazy-import bpy inside function bodies."""
+    # AST-walk every .py under lib/ops/.
+    # Fail on any Import / ImportFrom at module-level whose name resolves to "bpy".
+    import ast
+    forbidden_modules = {"bpy", "bpy.types", "bpy.ops", "bpy.data", "bpy.context"}
+    for py_file in (REPO / "tools/blender-addon/lib/ops").rglob("*.py"):
+        tree = ast.parse(py_file.read_text())
+        for node in tree.body:  # module-level only · NOT ast.walk
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert alias.name not in forbidden_modules, \
+                        f"{py_file}: top-level import {alias.name} blocks fake_bpy fixture"
+            elif isinstance(node, ast.ImportFrom):
+                assert node.module not in forbidden_modules, \
+                    f"{py_file}: top-level from {node.module} import ... blocks fake_bpy"
 ```
 
-Capture and approval flow:
-```bash
-# Local dev wants to UPDATE a baseline → must use Docker
-pnpm regression:approve CodexCardFace    # internally runs the Docker capture
-# Hot path (just running tests) does NOT need Docker — the same Chromium build
-# inside Docker also runs locally; PNG sha256 drift between local and CI is the
-# pixel-diff advisory only, not the geometry block.
+### 6.4 Stress Test (G-5)
+
+`tests/test_stress.py` (marker `slow`):
+
+```python
+@pytest.mark.slow
+def test_stress_1000_cmds_localhost(blender_with_addon_running):
+    """G-5: 1000 random ops, random payloads ≤1MB, assert clean."""
+    cases = generate_random_cases(n=1000, max_payload_bytes=1_000_000)
+    latencies = []
+    failures = []
+    for case in cases:
+        t0 = time.time()
+        resp = send_and_recv(case)  # TS-side client invoked via subprocess
+        latencies.append(time.time() - t0)
+        if resp._tag == "Error" and resp.kind != case.expected_kind:
+            failures.append((case, resp))
+    assert failures == [], f"{len(failures)} unexpected errors"
+    assert pct(latencies, 50) <= 0.05  # p50 ≤ 50ms
+    assert pct(latencies, 99) <= 0.20  # p99 ≤ 200ms
 ```
 
-Geometry assertions remain valid cross-platform (Chromium's layout is deterministic across hosts for the same DPR/viewport). Pixel-diff is the cross-platform-noisy layer; we already demoted it to ADVISORY in §3.1, so platform drift doesn't BLOCK builds.
+### 6.5 Coverage Target
 
-### §5.2.a — Determinism playbook (per ADR-14)
+PRD §5.4 requires ≥85%. Configured in `pyproject.toml`:
 
-Visual regression baselines must be deterministic across runs OR the hook surfaces noise that erodes confidence. Render helpers MUST apply the following standard suite:
+```toml
+[tool.coverage.run]
+source = ["tools/blender-addon/lib"]
+omit = ["tools/blender-addon/lib/**/__init__.py"]
 
-| Concern | Applied via | Note |
-|---|---|---|
-| Animation freeze | Playwright `emulateMedia({ reducedMotion: 'reduce' })` + per-effect `playState.paused` for CSS animations | Three.js effects: render at known frame (frame 0 by default; per-effect override) |
-| Time mock | `vi.useFakeTimers()` (Vitest layer) + Playwright `addInitScript` setting `Date.now`-poison if any test cares | Required for animation-driven primitives |
-| Locale lock | `await page.setExtraHTTPHeaders({'Accept-Language': 'en-US'})` + `locale: 'en-US'` in browser context | Resolves font-substitution + number-format drift |
-| Timezone lock | `TZ=UTC` env var on the Vitest process | Resolves date display drift |
-| Network isolation | `await page.route('**', route => { if (route.request().resourceType() !== 'document' && !route.request().url().startsWith('file://')) route.abort(); else route.continue(); })` | Blocks external network; allows local file: scheme |
-| Font readiness | `await page.evaluate(() => document.fonts.ready)` before snapshot | Required for OKLCH-aware font stacks |
-| WebGL determinism | `--use-gl=swiftshader` + `--enable-deterministic-mode` Chromium flags | Required for Three.js scene primitives |
-| Image loading | Disable lazy loading via `await page.setExtraHTTPHeaders({ 'X-Force-Eager-Load': '1' })` + harness HTML uses `loading="eager"` | Resolves "snapshot captured before image rendered" |
-| Scene-frame seek | Per-effect adapter `freezeAtFrame(frameNum: number)` for animated effects | S5 retrofit task: each animated/Three.js effect implements this |
-
-These apply to ALL primitive baselines from S1a onward. S5.T4-T8 explicitly extend per-effect for Three.js scene-frame freezing.
-
-### §5.3 — Cross-platform robustness summary
-
-| Concern | Where it shows up | Resolution |
-|---|---|---|
-| cqw rendered as 0 (jsdom) | Geometry baseline wrong | Playwright (real Chromium) |
-| Retina vs standard DPR | Geometry varies by ~2× | Viewport `deviceScaleFactor: 1` locked |
-| Font hinting (macOS/Linux) | PNG sha256 differs | PNG diff is ADVISORY; Docker for baseline updates |
-| Subpixel antialiasing | Per-pixel drift | Pixelmatch tolerance + geometry-first hierarchy |
-| Three.js / canvas in jsdom | "not implemented" errors | Playwright renders real WebGL/canvas |
-
-### §5.3 — Canary contract (FR-S1.4)
-
-```ts
-// tests/regression/canary.test.ts
-import { expect, test } from "vitest";
-import { CodexCardFace } from "../../app/battle-v2/_components/cards/CodexCardFace";
-import { mountPrimitive, runRegressionCheck } from "./render-helpers";
-
-test("canary: intentional CodexCardFace mutation triggers BLOCK", async () => {
-  // Render with mutated props (e.g., explicit width override that breaks ratio)
-  const result = await runRegressionCheck(CodexCardFace, {
-    slug: "earth-jani",
-    debugOverrideWidthPct: 105,  // intentional drift
-  }, { scale: 1, theme: "dark" });
-
-  expect(result._tag).toBe("GeometryDrift");
-  expect(result.deltaPct).toBeGreaterThan(2);
-});
-
-test("baseline: stock CodexCardFace passes", async () => {
-  const result = await runRegressionCheck(CodexCardFace, {
-    slug: "earth-jani",
-  }, { scale: 1, theme: "dark" });
-
-  expect(result._tag).toBe("Match");
-});
+[tool.coverage.report]
+fail_under = 85
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 ```
 
----
+## 7. Development Phases (sprint-plan input)
 
-## §6 · Data flow
+Phase ordering oriented at "TS-side `data.live.ts` can talk to a Python addon" being the final milestone — every phase produces something testable in isolation. r1 reshuffles to absorb 8 flatline findings.
 
-### §6.1 — Effect render path
-
-```
-User opens vfx-lab
-   │
-   ▼
-WorkspacesTabs reads useWorkspace().active → "compose"
-   │
-   ▼
-ComposeWorkspace mounts:
-   • ComposabilityPanel  (left, ~280px)
-   • Viewport (center)
-   • Inspector (right, ~320px, may be collapsed)
-   • PointerBreadcrumb (top sticky)
-   • KnobPane (bottom)
-   │
-   ▼
-Effect's Preview component mounts in Viewport
-   • Preview registers `inspectorAdapter` + `composabilityAdapter`
-     via AdapterRegistry on mount
-   │
-   ▼
-User clicks an entity in the viewport
-   │
-   ▼
-viewport-click handler dispatches Selection.select(...)
-   │
-   ▼
-Selection state updates (Effect Ref)
-   │
-   ▼
-Inspector + Breadcrumb + ComposabilityPanel re-read selection,
-re-resolve pointer chains via adapter, render their pieces.
-```
-
-### §6.2 — Hook fire sequence
-
-```
-Claude Code about to Write/Edit a file
-   │
-   ▼
-PreToolUse hook fires with { tool, file_path, content }
-   │
-   ▼
-.claude/hooks/pre-tool-use/lab-render-regression.sh
-   │
-   ▼
-Path match? ─NO─→ exit 0 (allow)
-   │ YES
-   ▼
-Stage proposed content to temp + run `pnpm regression:check <primitive>`
-   │
-   ▼
-DiffResult: Match? ─YES─→ exit 0 (allow, log to audit)
-                │ NO
-                ▼
-GeometryDrift or PixelDrift > tolerance?
-   │ YES
-   ▼
-Print BLOCK message to stderr; exit 1
-(Operator may set LAB_REGRESSION_OVERRIDE=1 to bypass once)
-```
-
----
-
-## §7 · File map (all cycle deliverables)
-
-```
-NEW substrate (lib/):
-  lib/regression/
-    regression.port.ts
-    regression.live.ts
-    regression.mock.ts
-    schema.ts
-    baseline-store.ts
-    matrix-permutations.ts
-    inspector-adapter.ts
-    composability-adapter.ts
-    adapter-registry.ts
-    adapter-registry.port.ts
-    adapter-registry.live.ts
-    __tests__/
-
-  lib/ui/icons/
-    Icon.tsx
-    registry.ts
-    provider.tsx
-    names.ts
-    providers/phosphor.ts
-    providers/stub.ts
-    providers/lucide.ts
-    __tests__/
-
-  lib/lab/pointer-chain/
-    pointer-chain.port.ts
-    pointer-chain.live.ts
-    types.ts
-    __tests__/
-
-  lib/lab/state/
-    inspector.port.ts
-    inspector.live.ts
-    workspace.port.ts
-    workspace.live.ts
-    composability-shape.port.ts
-    composability-shape.live.ts
-
-NEW surface (app/battle-v2/_components/lab/):
-  PointerBreadcrumb.tsx
-  PointerSegment.tsx
-  active-entity-context.tsx
-  Inspector.tsx
-  inspector-context.tsx
-  inspector/PointerChainTab.tsx
-  inspector/DataTab.tsx
-  inspector/RenderTab.tsx
-  inspector/EditTab.tsx
-  composability/ComposabilityPanel.tsx
-  composability/shape-context.tsx
-  composability/shapes/ShapeA-FigmaLiteral.tsx
-  composability/shapes/ShapeB-FigmaPointerChain.tsx
-  composability/shapes/ShapeC-GodotTree.tsx
-  workspaces/WorkspacesTabs.tsx
-  workspaces/workspace-context.tsx
-  workspaces/ComposeWorkspace.tsx
-  workspaces/PreviewWorkspace.tsx
-  workspaces/ExportWorkspace.tsx
-  IconSwapToggle.tsx
-
-MODIFIED:
-  app/battle-v2/vfx-lab/page.tsx  (mounts new lab shell)
-  app/battle-v2/_components/vfx/VfxRegistry.ts  (wires adapters per effect)
-  app/battle-v2/_components/vfx/effects/*.tsx  (S5: each gets adapter exports)
-  lib/runtime/runtime.ts  (S1: provides RegressionCheckLive, IconRegistryLive, AdapterRegistryLive)
-  app/battle-v2/_components/CardFace.tsx  (S5: imports via IconRegistry)
-  .eslintrc.js  (S5: no-restricted-imports rule)
-
-NEW infrastructure:
-  .claude/hooks/pre-tool-use/lab-render-regression.sh
-  .claude/hooks/settings.hooks.json  (registers new hook)
-  package.json scripts: regression:check, regression:approve, regression:canary
-  tests/regression/setup.ts
-  tests/regression/render-helpers.ts
-  tests/regression/canary.test.ts
-  tests/regression/cards/*.snapshot.test.ts
-  tests/regression/effects/*.snapshot.test.ts  (S5)
-  tests/snapshots/lab/*.{png,json}  (baselines)
-
-DOCS:
-  grimoires/loa/distillations/session-22-lab-evolution-demo.md  (S5: final)
-```
-
----
-
-## §8 · Migration plan
-
-### §8.1 — IconRegistry adoption order
-
-| Surface | Sprint | How |
-|---|---|---|
-| New lab chrome (S2-S4 components) | S2-S4 | Born using `<Icon>` from day 1 |
-| vfx-lab existing top bar | S5 | Replace inline lucide imports with `<Icon>` |
-| KnobPane labels | S5 | Audit + add icon prefixes where labels are verbose |
-| Battle-v2 HUD | S5 | Replace lucide imports; preserve current visual |
-| CardFace / CardShowcase / HandRack | S5 | Replace lucide imports |
-| ZoneOverlay / MapHUD | S5 | Replace lucide imports |
-| ESLint rule activation | S5 | `no-restricted-imports` flips on AFTER replacements ship |
-
-### §8.2 — Effect retrofit order (S5)
-
-| Effect | Priority | Notes |
-|---|---|---|
-| CardComposition | ALREADY done in S2 (first adapter) | Drives adapter pattern design |
-| CardLab | S5 high | Closely related to CardComposition |
-| HexScene | S5 high | Existing strong test coverage |
-| MiniScene | S5 med | |
-| BigRealmScene | S5 med | |
-| RealmScene | S5 med | |
-| ZoneScene | S5 med | |
-| TreeFall | S5 low | Animation primitive, less inspector value |
-| WaterSplash | S5 low | Animation primitive, less inspector value |
-
-**Cut-line:** If S5 budget exceeded, defer TreeFall + WaterSplash to a follow-up cycle with explicit retrofit-debt entry in `grimoires/loa/NOTES.md`.
-
-### §8.3 — Branch / git workflow
-
-1. **Before S1**: Operator commits in-flight working-tree changes on `feat/ecs-leaves-2026-05-17` (CardFace.tsx, VfxConfig.ts, VfxRegistry.ts, palette.ts, MAP.md, CardComposition.tsx + new cards/ folder).
-2. **Sprint S1**: Branch `feat/lab-evolution-s1-substrate` off the clean state. Draft PR. Operator review. Merge to `feat/ecs-leaves-2026-05-17`.
-3. **Sprint S2-S5**: Each branches off `feat/ecs-leaves-2026-05-17` HEAD after prior sprint merges. Same draft-PR flow.
-4. **Cycle close**: Final PR from `feat/ecs-leaves-2026-05-17` → `main` after operator demo + distillation.
-
----
-
-## §9 · Security / privacy considerations
-
-- Hook reads stdin JSON only (existing pattern); no network calls
-- Baseline images contain only lab-rendered content (mock data, no PII)
-- IconRegistry has no runtime IPC; pure component mapping
-- All new state lives in-memory; no persistence outside session
-
----
-
-## §10 · Performance budgets
-
-| Op | Budget | Enforcement |
-|---|---|---|
-| Hook latency P95 | < 8s for affected-primitive subset | Hook fail-open with WARN if exceeded |
-| Vitest full snapshot run (CI) | < 60s for all primitives | Vitest concurrency + scale-matrix parallelization |
-| Inspector mount | < 16ms | React profiler in dev; no heavy compute in render |
-| Workspace switch | < 100ms | State restore via Ref; no re-mount of viewport |
-| IconRegistry lookup | O(1) | Static map; no runtime fallback walks |
-| Pointer breadcrumb compute | < 4ms per segment | Memoized chain resolution |
-
----
-
-## §11 · Risks (technical · post-Flatline-review)
-
-| Tech risk | Mitigation |
-|---|---|
-| Playwright cold-start adds latency | Reuse browser per vitest worker (`getBrowser()` singleton); CI parallelism unaffected; pre-warm before first snapshot per test file |
-| Docker baseline-capture is slower than local | Only required on baseline updates (`pnpm regression:approve`), not on hot-path checks. Hot path runs same Chromium build locally. |
-| Pixelmatch antialiasing flakiness | Geometry-first assertion (boundingBox) is PRIMARY; pixel diff is ADVISORY (§3.1 hierarchy) |
-| Adapter pattern leaks effect internals | First adapter (CardComposition) ships with explicit "what's allowed" doc in `lib/lab/adapter-registry/types.ts` JSDoc; surface-side adapter location keeps effect internals where they belong |
-| Workspace state restore causes stale knob bugs | Per-workspace reset action; documented as "if knobs feel off, switch and back to reset" |
-| Hook blocks legit work mid-iteration | `LAB_REGRESSION_OVERRIDE=1` env escape hatch + clear approval-flow message + audit trail |
-| Composability shape-picker leaves dead code | S5 cleanup removes unselected shapes; tracked as S5 punchlist item |
-| Three.js scene primitives don't fit 2D inspector model | InspectableNode `kind: "scene"` is rendered as opaque "scene root" with no further drill-in (acceptable V0; future ADR for scene-graph inspector) |
-| Effect 3.10 vs 3.x patterns drift | Use `import { Schema } from "effect"` style consistently; SDD pins one idiom |
-| Edit-patch reconstruction races a write that already happened | `apply_edit_patch` is deterministic; if `old_string` not found in current content, BLOCK with reason — same failure mode Claude Code itself produces |
-| Worktree staging adds ~500ms per hook fire | Inside 8s budget; alternative (in-place file copy) broke imports per SKP-002 |
-| Bash-mediated mutation slips through PreToolUse | PostToolUse:Bash hook (§4.2) provides defense-in-depth; alerts even though cannot block |
-
----
-
-## §12 · Closed ADRs (resolved during Flatline SDD review · 2026-05-18)
-
-These questions were OPEN in the first SDD draft and are now LOCKED via Flatline review + operator ratification.
-
-| # | Question | Decision | Source |
+| Phase | Output | Validates | Risk surfaced |
 |---|---|---|---|
-| ADR-1 | Snapshot backend (jsdom vs Playwright) | **Playwright** — only path that handles cqw, fonts, canvas, Three.js. jsdom reserved for non-layout unit tests. | Flatline cluster-A + operator (2026-05-18) |
-| ADR-2 | Adapter location (lib vs surface) | **Surface-side**: `app/battle-v2/_components/vfx/effects/<effect>/adapter.ts`. Contract enforced by TS interface in `lib/lab/`, not file location. | Flatline SKP-006 + operator (2026-05-18) |
-| ADR-3 | InspectableNode type contract | **Explicit struct** with `{id, label, kind, pointerChain, inspectable, metadata}` (see §3.4). Aligned with EntityTreeNode for shared rendering. | Flatline SKP-005 + operator (2026-05-18) |
-| ADR-4 | Hook Edit-tool handling | **Reconstruct via `apply_edit_patch` helper** in `.claude/scripts/edit-patch-apply.sh`. Failure to apply patch → BLOCK with reason. | Flatline SKP-003 + operator |
-| ADR-5 | Hook staging strategy | **Git worktree** (`.run/regression-staging/$$`). Preserves imports + tsconfig + Next.js transforms. | Flatline SKP-002 + operator |
-| ADR-6 | Bash bypass coverage | **PostToolUse:Bash hook** (§4.2). Cannot block (post-mutation), but emits WARN + audit trail. | Flatline SKP-004 + operator |
-| ADR-7 | Timeout policy | **CI fail-closed, local fail-open + audit**. Detection of CI via `$CI` / `$GITHUB_ACTIONS`. | Flatline SKP-001 + operator |
-| ADR-8 | Platform-sensitive baselines | **Docker for baseline capture only** (`pnpm regression:approve`). Hot-path uses local Chromium. PNG diff is ADVISORY in §3.1 hierarchy. | Flatline SKP-002 (PNG cluster) + operator |
-| ADR-9 | RegressionCheckLive in production AppLayer | **Env-gated**: `if (NODE_ENV === 'development' \|\| LOA_REGRESSION === '1')` use `RegressionCheckLive`; otherwise `RegressionCheckNoop`. Production bundle does NOT include Playwright. | Flatline sprint SKP-004 (750) + operator |
-| ADR-10 | Hook posture (PreToolUse vs pre-commit) | **Pre-commit hook (`.husky/pre-commit`) is the authoritative fuse**. PostToolUse:Write\|Edit\|Bash is WARN-only (non-blocking, fast feedback). Pre-commit fires for ALL agents (Codex/Loa/manual). | Flatline sprint SKP-001 (920) + SKP-001 (880) + operator |
-| ADR-11 | Hook self-locking loop prevention | Rollback runbook at `grimoires/loa/runbooks/regression-hook-rollback.md` + `LOA_REGRESSION_HOOK_BYPASS=1` env var + `settings.hooks.json` is NOT in protected-path set. Bypass audited. | Flatline sprint SKP-002 (820) + operator |
-| ADR-12 | Adapter registration model | **Static** (module-load time). Adapters export from each effect's `index.ts`; `VfxRegistry.ts` imports and registers at startup. Lab can query inactive effects' capabilities. No mount-time race conditions. | Flatline sprint SKP-002 (780) + operator |
-| ADR-13 | Schema lock timing | S1b ships `lib/lab/pointer-chain/schema.ts` with `@version draft-S1` marker + `TODO: lock after S3.T9`. S3.T10 removes draft marker after 3 shape renderers validate. Schema versioned 1.0 from S3 onward. | Flatline sprint SKP-005 (720) + operator |
-| ADR-14 | Visual regression determinism playbook | Playwright render helpers MUST apply: `vi.useFakeTimers()` for time mocks · `emulateMedia({reducedMotion: 'reduce'})` · `locale: 'en-US'` · `TZ=UTC` · `route('**', abort)` for external network · `await document.fonts.ready` · WebGL deterministic flags. Three.js / animated effects (S5 retrofit) extend with per-effect freeze-at-known-frame. | Flatline sprint SKP-004 (710) + operator |
+| **S0** Calibration spike (r1 expanded) | Single-file `tools/blender-addon/spike.py` (~120 LOC). Half-day. Listens on TCP · accepts one length-prefixed frame · echoes it · **r1 additions**: (1) validates that a multi-file addon-package (`lib/__init__.py`-style) loads in Blender 4.5 LTS [resolves IMP-011 DISPUTED] · (2) measures `bpy.app.timers.register(fn, persistent=True)` overhead at 0.016s interval [validates FR-5 r1 60FPS] · (3) confirms `bpy.context.temp_override` reachable from timer callback [validates SDD-flatline SKP-002 HIGH 750] | Length-prefix framing works in real Blender main-thread context. Threading model viable. Addon packaging path. 60FPS timer feasibility. | Discover threading API gotchas BEFORE S1 commits to design (per `feedback_eval-before-lock-and-breadth-depth-tension`). |
+| **S1** Wire + cmd_cache + TS data.live.ts (r1 expanded) | `lib/wire.py` + `lib/cmd_cache.py` + `lib/config.py` + `lib/wire/case.py` (snake↔camel) + tests. **r1: also `lib/blender/data.live.ts` (TS-side · was R-4)** + parity fixtures + CI wire-parity workflow. Cross-language fixtures recorded against TS encoder. | FR-1, FR-2, FR-3, **FR-14 (schema-drift)**, **FR-17 (MAX_FRAME_BYTES)**. AP-1 + AP-4 pass. r1 also adds: FrameError handling, ProtocolMismatch path, snake/camel mapping table verified. | LRU eviction shape (§3.3) validated. Schema-drift CI gate confirmed working before S3. |
+| **S2** Socket + main-thread plumbing (r1 expanded) | `lib/socket_server.py` + `lib/main_thread.py` + `addon.py` with register/unregister (full FR-15 sequence) + `ConnHandlerIndex`. AcceptLoop accepts a connection but no ops registered yet (all return UnknownOp). **r1**: per-connection `out_queue` + force_close · SO_RCVTIMEO · explicit accept-and-close-with-ServerBusy. | FR-4, FR-5, **FR-15 (lifecycle)**, **FR-16 (back-pressure)**, **FR-17 (incomplete-frame deadline)**. AP-2 + AP-5 + AP-6 pass. Manual: install addon, connect with TS, see UnknownOp. | Connection lifecycle (§3.2 r1) validated against real `data.live.ts`. Lifecycle reload-port-release test (§3.7 r1) confirmed. |
+| **S3** Data-seam handlers (r1 mostly unchanged) | `lib/ops/data_handlers.py` 5 handlers + tests using `fake_bpy` fixture. **r1**: all handlers lazy-import bpy (AP-8 enforces). | FR-7..FR-11. Mock parity tests run in CI. AP-8 passes. | Projection field-for-field validated against the §4.3 normative mapping table. |
+| **S4** Escape hatch + safety (r1 substantially expanded) | `lib/ops/escape.py` (bearer-token gate + restricted-builtins + AST pre-scan · FR-12 a-g) + `lib/safety/traceback_sanitizer.py` + `lib/safety/timeout.py` (cooperative-only · FR-12e + Q-SDD-9). **r1**: audit-log writer · `~/.blender-mcp/` setup · BLENDER_MCP_ENABLE_ESCAPE env flag. | FR-6, FR-12 a-g. AP-3 + **AP-7 (r1)** passes. **All 6 Q-SDD-8 acceptance tests pass.** Sanitizer regex surface (§3.4) audited. | Cooperative-timeout limitation surfaced honestly in README. Bearer-token UX validated with operator. |
+| **S5** Integration + stress (r1 same shape · more fixtures) | Manual operator integration run + `test_stress.py` + smoke-test.sh. **r1**: stress test verifies queue back-pressure NEVER leaks memory under 1000-cmd × 1MB load (FR-16 acceptance). | G-1, G-2, G-3, G-5. R-2 mitigation (smoke-test.sh) lands. **G-1 G-2 closure**: the 10/10 `lib/blender/__tests__/data.test.ts` contract runs against the live addon via `BlenderDataLive` Layer · all pass. | Stress reveals genuine threading issues (R-3). Operator pair-point. Real-Blender integration-fixture shape validated. |
 
-### §12.1 — Still-open (lower-stakes, deferred to runtime decisions)
+**Effort estimate (r1)**: ~4-6 dev days for S1-S4 in series (S1 gains TS `data.live.ts` · S2 gains lifecycle + back-pressure · S4 gains security gates), half-day each for S0 + S5. Per the operator's `feedback_ground-in-the-pitch` and `over-structuring-causes-design-system-collapse` principles: phases compose, no separate folders/groups; everything lands under `tools/blender-addon/` (Python) and `lib/blender/data.live.ts` (TS-side · the only TS change r1 introduces beyond what's already landed).
 
-| Q | Status | Plan |
-|---|---|---|
-| Composability tree denormalization (render-time vs build-time) | OPEN | Ship render-time in S3; capability-driven rendering is a future cycle topic |
-| Selection.nodeId opaque-per-primitive vs substrate-wide ID space | OPEN | S2 ships opaque-per-primitive; revisit if a cross-primitive selection use case appears |
-| Workspace ID stability (string vs enum vs symbol) | OPEN | Ship string literals in S4; if plugin model materializes, ADR-9 follows |
-| PR baseline drift visualization (inline PNGs vs file refs) | OPEN | S1 ships file refs; S5 evaluates if inline rendering needed for review-flow |
+## 8. Known Risks & Mitigation
 
----
+Inherits PRD §7.1 risks. SDD-specific additions:
 
-## §13 · Acceptance gates (per sprint)
+| ID | Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|
+| R-SDD-1 | `fake-bpy-module-latest` stub drift vs Blender 4.5 LTS | Low | Low | Pin exact version in requirements-dev.txt; bump deliberately. |
+| R-SDD-2 | Cross-language wire fixture goes stale (TS updates encoder, Python decoder doesn't see it) | Medium | Medium | S1 ships a `regen-fixtures.sh` script invoked from CI on changes to `lib/blender/wire.ts`. Pre-commit hook fails if `tools/blender-addon/tests/fixtures/ts-roundtrip-cases.json` is older than `lib/blender/wire.ts`. |
+| R-SDD-3 | Timer drain misses cmds under bpy CPU pressure (e.g., big mesh op blocks main thread) | Medium | Medium | Document in README: large mesh ops will visibly stall command processing. v0 accepts this; v1 may add per-op time budgets. |
+| R-SDD-4 | `OrderedDict.move_to_end` re-entrancy if a handler is recursive | Very Low | Low | Handlers don't call back into the cache. If they ever do (v1+), revisit. |
+| R-SDD-5 | Sanitizer misses a new path category (e.g., a workspace symlink) | Medium | Low | Sanitizer is regex; extending = one entry in `_build_replacements`. Audit at v1. |
 
-| Sprint | Must-pass to close |
-|---|---|
-| S1 | Canary test fails before fix and passes after · hook blocks an intentional drift · IconRegistry swap demo works (Phosphor↔Stub) · 5 sentinel icons usable |
-| S2 | PointerBreadcrumb renders for CardComposition · Inspector right-rail opens on click · first adapter registered |
-| S3 | All 3 composability shapes render · header switcher works · operator can name canonical shape |
-| S4 | 3 workspaces present · keyboard shortcuts work · state preserved across switches |
-| S5 | All 9 effects have adapters + baselines · no direct icon imports outside `lib/ui/icons/` (ESLint passes) · cycle demo recorded · distillation written |
+## 9. Open Questions (r1 · all 11 original Q-SDD-* resolved · new questions deferred to v1)
 
----
+r1 resolves: Q-SDD-1..5 (original) AND Q-SDD-6 per-conn correlation, Q-SDD-7 lifecycle invariants, Q-SDD-8 escape security, Q-SDD-9 timeout-honesty, Q-SDD-10 lazy-import, Q-SDD-11 schema-drift. See §3 for resolutions.
 
-## §14 · Composition with constructs (OperatorOS v3.3)
+The renumbered v1+ deferrals:
 
-- **the-arcade** (BARTH primary): SHIP discipline, sprint plan, cycle DoD enforcement
-- **artisan** (ALEXANDER lens): craft compliance — pointer chain UX taste, icon weight/size choices, OKLCH palette adherence
-- **k-hole** (STAMETS lens): 3 digs returned, findings folded into §3 (boundingBox primary), §3.7 (Figma layers shape), §3.5 (Inspector adapter doctrine)
-- **vfx-playbook** (lens): P2 pointer-chain at title-bar → §3.3, P3 reference pane → §3.6 Shape B, P6 tier-stamp gate → DEFERRED to graduation cycle
+- Q-SDD-12 *(was Q-SDD-6 in r0)*: `data.live.ts` socket buffering — does it reuse the TS-side encoder verbatim or specialize for socket-stream semantics? r1 §2.3 pins the design; refinement is S1 implementation.
+- Q-SDD-13 *(was Q-SDD-7 in r0)*: MCP-protocol export (PRD §6.2 deferred) — does the wire frame need to evolve to carry an MCP envelope, or wrap the existing frame? Decide in a later cycle.
+- Q-SDD-14 *(new in r1)*: subprocess-isolation hard-interrupt for escape-hatch v1 — what's the IPC channel back to the main Blender process? Probably a second TCP socket + the same length-prefix protocol. v1 SDD when needed.
+- Q-SDD-15 *(new in r1)*: do we evolve `protocol_version` to a semver tuple, or stay on a single string? Stay on a string in v0 · revisit if v0 → v1 needs in-flight migration.
 
-Per construct-domain-boundaries doctrine: `construct_affinity` on this SDD = `[cross-domain]` (spans the-arcade, artisan, k-hole, vfx-playbook).
+## 10. References
 
----
-
-## §16 · Flatline sprint review integration (2026-05-18 · second review)
-
-A second Flatline 3-model run on the sprint plan surfaced 10 BLOCKERs (4 CRITICAL + 6 HIGH). All operator-ratified resolutions integrated into ADR-9 through ADR-14 and into the sprint structure:
-
-| Cluster | Issue | Resolution | SDD section |
-|---|---|---|---|
-| Hook latency (920) | PreToolUse + Playwright = 10-20s/edit cripples agent autonomy | Pre-commit hook is authoritative; PostToolUse is WARN-only | §4 + ADR-10 |
-| Hook coverage (880) | Claude hooks don't fire for Codex/Loa | Pre-commit (git hook) covers ALL agents | ADR-10 |
-| Self-lock (820) | False-positive blocks editing settings.hooks.json | Rollback runbook + bypass env var + settings excluded from protected paths | ADR-11 |
-| S0 missing (800) | No calibration spike for Playwright + Docker | S0 added per cycle-1 doctrine | sprint.md §S0 |
-| Mount-time adapters (780) | Race + can't query inactive effects | Static module-load registration | ADR-12 |
-| Per-sprint preflight (760) | Branch base-SHA verification missing | Per-sprint preflight protocol | sprint.md §M |
-| Prod pollution (750) | RegressionCheckLive in production AppLayer | RegressionCheckNoop layer for production | ADR-9 |
-| S1 too broad (735) | 30 tasks in one sprint | Split S1a (regression) + S1b (UI substrate) | sprint.md §S1a + §S1b |
-| Schema too early (720) | S1 lock blocks S3 evolution | `@version draft-S1` in S1b; locks in S3 | ADR-13 |
-| Determinism (710) | Time/animation/locale/WebGL underspecified | Determinism playbook | §5.2.a + ADR-14 |
-
----
-
-## §15 · Flatline SDD review integration (2026-05-18)
-
-3-model Flatline (codex-headless + claude-headless + gemini-3.1-pro-preview) ran on the first SDD draft. Result: **13 BLOCKERS surfaced (12 real, 1 false-alarm verified by Bash)**. Full output at `grimoires/loa/a2a/flatline/lab-evolution-sdd-2026-05-18.json`.
-
-Operator ratified all three cluster resolutions (2026-05-18):
-
-| Cluster | Issue | Resolution | SDD section |
-|---|---|---|---|
-| A | jsdom can't render cqw/canvas/Three.js/fonts (4 findings · top 950) | Lock Playwright as snapshot backend | §2 + §5.2 + ADR-1 |
-| B | Hook spec missed Edit-patches / Bash / platform / imports / timeout (5 findings · top 880) | Re-spec hook with Edit reconstruction · PostToolUse:Bash · Docker baselines · worktree staging · CI fail-closed | §4 + ADR-4–ADR-8 |
-| C | InspectableNode phantom · adapter location open (2 findings · top 760) | Define InspectableNode struct · lock adapter location surface-side | §3.4 + ADR-2 + ADR-3 |
-
-Net effect: SDD is significantly more rigorous than first draft. The 5 minutes of Flatline + 30 minutes of integration saved the cluster-A / cluster-B rework that would have surfaced in S1 implementation (estimated cost: 1-2 days of debugging + baseline re-capture).
-
----
-
-*SDD authored 2026-05-18 during /simstim Phase 3. Flatline SDD review (Phase 4) caught 12 real BLOCKERs; all resolved via 8 closed-ADRs (§12). Ready for Bridgebuilder 3.5 design review next. Branch `feat/ecs-leaves-2026-05-17`.*
+- **Companion**: `grimoires/loa/cycles/blender-adapter-2026-05-18/prd.md`
+- **TS substrate (the pinning contract)**:
+  - `lib/blender/wire.ts:27-69` — WireCommand + WireResponse schemas
+  - `lib/blender/wire.ts:71-143` — encodeCommand + WireResponseDecoder (mirrored on Py side)
+  - `lib/blender/data.port.ts:46-64` — BlenderObject projection (1:1 mirror in `project_object`)
+  - `lib/blender/data.port.ts:122-143` — BlenderData Context.Tag (op signatures)
+  - `lib/blender/data.mock.ts` — parity target for live
+  - `lib/blender/__tests__/data.test.ts` — 10/10 contract under test
+- **Design rationale**:
+  - `grimoires/loa/context/blender-adapter-design-brief-2026-05-18.md`
+  - `grimoires/k-hole/research-output/dig-session-2026-05-18.md`
+- **Memory**:
+  - `reference_length-prefixed-framing-tcp-bug-class`
+  - `feedback_design-adapter-not-integrate-broken-tool`
+  - `feedback_eval-before-lock-and-breadth-depth-tension` (informs S0 spike)
+  - `over-structuring-causes-design-system-collapse` (informs module-layout discipline)
+- **External**:
+  - `docs.blender.org/api/current/bpy.app.timers.html` — timer API contract
+  - Python `queue.Queue` docs — thread-safety guarantees
+  - `fake-bpy-module-latest` (PyPI) — typing stubs

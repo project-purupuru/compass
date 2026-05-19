@@ -1,576 +1,528 @@
 ---
-cycle: lab-evolution-2026-05-18
-session: 22 (entry)
-type: PRD
-status: candidate
-date: 2026-05-18
-mode: ARCH (OSTROM) + craft lens (ALEXANDER) + DIG (returned)
-operator_pacing: kaironic + simstim (operator-paced, pair-points at sprint boundaries)
-branch_root: feat/ecs-leaves-2026-05-17 (commit in-flight before S1 branches off)
-simstim_id: simstim-20260518-f581af5a
-brief: grimoires/loa/context/lab-evolution-brief-2026-05-18.md
-operator_quotes:
-  - "We should 100% leave off the UI better than we started it here with clarity."
-  - "I need to understand the reasoning for changes and sources of truth in terms of pointers."
-  - "Strengthening the engine/substrate enables cohesion and agentic agency."
-  - "When things break, then there's a check in place for that, like there's a test or there is a Claude Code hook."
-  - "Having a visual panel to see how things are composed together."
-  - "Since this is a chunky one let's /simstim it."
-load_bearing_constraints:
-  - paper-puppet doctrine LOCKED (no 3D character geometry — applies to all art surfaces touched)
-  - regression substrate ships BEFORE any edit to operator-validated render paths (§5.1 pointer-trace doctrine)
-  - additive-only on existing primitives until substrate fuse is live
-  - subscription CLI only (no API keys) — cheval routes adversarial reviews; Flatline degraded acceptable
-  - one PR per sprint, merged on operator approval (kaironic pair-points)
-  - figma mental anchor (NOT Blender/Godot/Unity) for inspector/composability/version surfaces
-references:
-  - grimoires/loa/context/lab-evolution-brief-2026-05-18.md (the source brief)
-  - grimoires/loa/distillations/session-21-graduation-and-story-trust-2026-05-18.md
-  - grimoires/k-hole/research-output/dig-dcc-primitives-2026-05-18.md
-  - grimoires/k-hole/research-output/dig-pointer-visibility-2026-05-18.md
-  - grimoires/k-hole/research-output/dig-authoring-pipeline-2026-05-18.md
-predecessors:
-  - feedback_kitchen-as-backend-composition-pattern.md (session 22 doctrine)
-  - feedback_pointers-as-agentic-engine-infrastructure.md
-  - feedback_figma-mental-anchor-for-composability.md
-  - feedback_regression-checks-are-substrate-not-ceremony.md
+title: PRD · Blender Adapter · Python Addon (v0)
+cycle: blender-adapter-2026-05-18
+status: candidate r2 · FR-12 escape hatch dropped from v0 · sprint.md r3 authored
+revision: r2
+revised: 2026-05-19
+revision_source: a2a/flatline/prd-review.json (r1) · a2a/flatline/sprint-review-r2.json SKP-001-cluster (r2 · FR-12 drop)
+tier: bronze
+operator_signed: unsigned
+authored_by: opus-4-7-1m via /plan-and-analyze (minimal mode) · r1 direct-edit integration
+created: 2026-05-18
+prior_artifacts:
+  - lib/blender/wire.ts (TS substrate · landed 2026-05-18)
+  - lib/blender/data.port.ts (TS substrate · landed 2026-05-18)
+  - lib/blender/data.mock.ts (TS substrate · landed 2026-05-18)
+  - lib/blender/SKILL.md (TS substrate · landed 2026-05-18)
+  - lib/blender/__tests__/data.test.ts (10/10 tests passing)
+  - grimoires/loa/context/blender-adapter-design-brief-2026-05-18.md (canonical design doc)
+  - grimoires/k-hole/research-output/dig-session-2026-05-18.md (foundational research)
+related_memory:
+  - design-adapter-not-integrate-broken-tool
+  - length-prefixed-framing-tcp-bug-class
+  - compass-learns-honeycomb-graduates
+  - over-structuring-causes-design-system-collapse
+  - honeycomb-substrate
 ---
 
-# PRD · Lab Evolution Cycle — 2026-05-18
+# PRD · Blender Adapter · Python Addon (v0)
 
-> The vfx-lab is the kitchen. The kitchen earned the right to a substrate. This cycle ships that substrate: regression fuse · icon registry · pointer-chain spine · composability surface · workspaces · cohesion port. Six threads, one cycle, substrate-first.
+> Cycle: `blender-adapter-2026-05-18`. This PRD scopes ONLY the Python-addon side of the compass↔Blender adapter. The TypeScript substrate already landed today (`lib/blender/`); this PRD specifies the Python implementation that makes the substrate actually drive Blender.
 
----
+## TL;DR
 
-## §1 · Why this cycle now
+- Build `tools/blender-addon/` in compass repo · single-file Blender addon (`addon.py`)
+- Mirrors `lib/blender/wire.ts` framing protocol (length-prefixed 4-byte BE uint32 + UTF-8 JSON body) ON THE PYTHON SIDE
+- Mirrors `lib/blender/data.port.ts` 5 CRUD ops · 1:1 parity with the TS mock
+- ~~Adds `run_python_code` escape hatch for the long tail~~ **r2: FR-12 escape hatch DEFERRED to v1** (see Revision Notes r2)
+- Test-driven · pytest discipline · mock parity with `data.mock.ts` is the test contract
+- Avoids the 6 anti-patterns from the design brief (length-prefix · main-thread queue · idempotent cmdId · try/except · module-private state · platform-independent asyncio)
 
-Session 22 (2026-05-18) shipped a card-composition kitchen primitive but burned **four sequential render regressions** on the same component (`CodexCardFace`). Each fix introduced the next bug. None were caught by typecheck or HTTP smoke — only by the operator's visual review post-deploy. The brief at `grimoires/loa/context/lab-evolution-brief-2026-05-18.md` distilled the frictions; this PRD turns them into a cycle.
+## Revision Notes (r1 · 2026-05-18)
 
-Two doctrine commitments from session 22 make this cycle structural, not cosmetic:
+Integrates 8 findings from `a2a/flatline/prd-review.json` + `a2a/flatline/sdd-review.json` (12+11 blockers · 6+10 high-consensus · 2+3 disputed · 83%/76% agreement · full confidence · 3-model: codex + claude + gemini).
 
-1. **Pointers are agentic-engine infrastructure** (operator verbatim) — visible pointer chains at the surface are co-equal with Honeycomb substrate, not UI polish.
-2. **Regression checks are substrate, not ceremony** (operator verbatim) — render-path mutations need an automated check, not just visual review.
-
-Both are reframes of "agentic gaming engine." This cycle is the first instance of those reframes shipping as code.
-
----
-
-## §2 · Goals
-
-### G1 · The fuse exists before the next refactor
-Land a regression-check substrate (Claude Code hook + Vitest snapshot, both as substrate via `lib/regression/`) that catches geometry regressions on `app/battle-v2/_components/cards/*` AND `app/battle-v2/_components/vfx/effects/*` BEFORE the operator sees the bug. The four-regression cascade from session 22 must not be reproducible after S1.
-
-### G2 · Every entity exposes its pointer chain at the surface
-PointerChip V0 (session 22) graduates to a persistent breadcrumb (Thread A) + a click-to-inspect side panel (Thread B). By cycle end, every card, layer, and effect in vfx-lab and battle surfaces its pointer chain at the surface — not in devtools. Confirmed by Prokopov's "Pointer Chips" + "Inspector Breadcrumbs" doctrine (dig 2).
-
-### G3 · Composability is visible
-A composability panel (Thread C) makes scene composition legible. The lab ships **three sketched shapes** of the panel (Figma-literal · Figma + pointer-chain · Godot-shaped tree) and lets the operator pick from rendered samples — per `feedback_explore-dont-lock.md`. Figma is the mental anchor; sketches respect it.
-
-### G4 · The multi-mode mental model gets a visual frame
-Workspaces tab switcher (Thread D) surfaces the Compose / Preview / Export postures the operator already holds mentally. Tabs are top-anchored, Figma-shaped, layout-state lifted to per-workspace zustand slice.
-
-### G5 · Icon swappability is substrate, not ceremony
-`IconRegistry` primitive (operator-named: *"should not take this much effort to change things"*) — semantic icon aliases (`<Icon name="pantry" />`) decoupled from any specific icon library. Phosphor is the first provider. Swap the provider, every icon in lab + game-UI updates. Visible swap demo in vfx-lab proves it.
-
-### G6 · All 9 vfx-lab effects participate in the new substrate
-
-**Pre-sprint inventory task (per Flatline IMP-004):** before S1 starts, S1 first task is `S1.T0 — Effect inventory`:
-- Run `grep -E "VfxEffectDefinition<" app/battle-v2/_components/vfx/VfxRegistry.ts` to enumerate registered effects
-- Lock the canonical count + slugs in `grimoires/loa/cycles/lab-evolution-2026-05-18/effect-inventory.md`
-- Verified inventory (2026-05-18): **9 effects** — card-composition, card-lab, hex-scene, mini-scene, big-realm-scene, realm-scene, tree-fall, water-splash, zone-scene
-
-By S5, every effect in the locked inventory has been retrofitted to:
-- expose a pointer chain at the surface
-- be selectable in the Inspector
-- import icons via `IconRegistry`
-- have at least one regression snapshot baseline
-
-This is the cycle's "definition of done" gate.
-
-### G7 · No-regression on operator-validated work
-
-Threads `/`, `/demo`, and battle-v2 visual surfaces validated before session 22 must not regress.
-
-**Reference commit + drift threshold (per Flatline IMP-005 · resolves "unenforceable DoD" concern):**
-
-- **Reference commit:** `7a179bce` (production hotfix on `feat/ecs-leaves-2026-05-17`, last validated by operator pre-session 22). This is the baseline commit.
-- **Capture method:** S1 captures snapshots of `/`, `/demo`, and battle-v2 visual surfaces by running the regression substrate against the working tree AT reference-commit state (operator stash + checkout for capture; restore working tree after).
-- **Acceptable drift:** `boundingBox` ±0.5px / pixel diff < 0.5% per the FR-S1.3 hierarchy. ANY drift above tolerance fails the gate.
-- **Routes covered:** `/`, `/demo`, `/battle-v2`, `/battle-v2/vfx-lab` (the four operator-validated surfaces). Each captured at viewport widths 1280×800 (desktop) and 390×844 (mobile preview) in dark theme.
-- **Re-validation cadence:** post-each-sprint, the cycle PR diff includes a "validated-surface regression report" generated from the baselines above. Operator inspects.
-
-Any edit to a validated render path must pass the S1 regression substrate.
-
----
-
-## §3 · Non-goals
-
-- **Scene composition primitive** (Godot-shaped scene nesting) — deferred to a follow-up cycle. The-arcade's "I made one" precedent isn't met; ship the spine + composability surface first.
-- **Variant system** (Unity prefab variants) — codex side hasn't shipped variants yet; wait for second codex card before designing.
-- **Node graph for composition** — gated behind the-arcade's 3-wins rule; revisit after this cycle.
-- **Consumer-context mini-viewports** (vfx-playbook P5) — sequence after pointer spine ships.
-- **Viewport-state persistence per-primitive** (vfx-playbook P4) — boring-but-compounding; pick up if S5 has slack.
-- **Codex pack changes** — this cycle does not modify `purupuru-codex` pack. Spec gaps raised on PR #1 are tracked separately.
-- **Hackathon/`/`/`/demo` route changes** — protected per `project_hackathon-submitted-pivot.md`.
-- **Three.js / 3D character geometry** — paper-puppet doctrine LOCKED; this cycle is 2D card/UI substrate.
-- **Real backend wiring** — score, auth, on-chain remain mocked per project CLAUDE.md.
-
----
-
-## §4 · Users
-
-| Role | Need served |
-|---|---|
-| **Operator** (zksoju) | Daily-flow tooling: see pointer chains, pick from rendered samples, swap icons easily, never burn a session on a render regression again |
-| **Gumi** (asset author, via codex pack) | Implicit: better lab = better feedback loop on card authoring; spec gaps surface faster |
-| **Future-self (Operator)** | When a 2nd codex card lands or a new VFX effect ships, substrate adopts it without code changes (capability-driven rendering vs asset-driven, per dig 3) |
-| **Downstream projects** (honeycomb · sprawl · freeside) | `lib/regression/` and `lib/ui/icons/` are substrate-shaped to graduate into reusable primitives once proven |
-
----
-
-## §5 · Functional requirements
-
-### FR-S1 · Regression substrate (Sprint 1, ships first)
-
-**FR-S1.1 — `lib/regression/` primitive (Effect-style port)**
-- Type definitions for `RegressionCheckPort`, `Snapshot`, `Baseline`, `DiffResult`
-- Effect Schema for snapshot envelope (image bytes ref · boundingBox JSON · metadata)
-- Per dig 2 finding: **boundingBox JSON snapshots over fuzzy pixel-diffing** for geometry asserts (Mark Dalgleish / Playwright pattern)
-- Port has two live implementations: `VitestSnapshotLive`, `HookCheckLive`
-
-**FR-S1.2 — Claude Code PreToolUse hook**
-- Hook registered at `.claude/hooks/pre-tool-use/lab-render-regression.sh`
-- Triggers on `Write` / `Edit` of paths matching:
-  - `app/battle-v2/_components/cards/**`
-  - `app/battle-v2/_components/vfx/effects/**`
-  - `app/battle-v2/_components/CardFace.tsx`
-  - `lib/cards/codex/**`
-
-**Execution model (per Flatline IMP-001 · resolves causal-inversion concern):**
-
-PreToolUse fires BEFORE the file is written, so the hook cannot read post-write rendered geometry directly. The hook resolves this via a **stage-and-render** flow:
-
-1. Hook reads the proposed `content` from stdin JSON (Claude Code passes the full proposed file content on Write/Edit).
-2. Hook writes proposed content to a temp shadow path (`.run/regression-staging/<primitive>.staged.tsx`).
-3. Hook invokes a focused vitest run that mounts the staged primitive (via a render-helper that prefers the staged path) and captures snapshot.
-4. Hook compares against the on-disk baseline.
-5. If geometry/pixel diff exceeds tolerance → exit 1 (BLOCK with summary). If within tolerance → exit 0 (allow). If render fails to stage (compile error, missing dep) → exit 0 with WARN to audit log (fail-open; the actual write will surface the compile error to Claude Code anyway).
-6. Staging temp files cleaned up on hook exit.
-
-Post-hook flow: Claude Code applies the write normally; the file is then on-disk for any subsequent Vitest CI run (which uses the same baselines).
-
-- Latency budget: < 8s for the affected primitive's snapshot subset (not the full lab); fail-open with warning if > 8s.
-- Override: `LAB_REGRESSION_OVERRIDE=1` env var bypasses the block once (audited).
-
-**FR-S1.3 — Vitest snapshot tests**
-- At least one snapshot test per primitive in `app/battle-v2/_components/cards/*` and `app/battle-v2/_components/vfx/effects/*`
-- Baselines stored under `tests/snapshots/lab/`
-- Each baseline carries: render image + boundingBox JSON + metadata (props, scale, theme)
-- "Matrix view" permutation per Linear/Kowalski pattern (dig 2): cards/effects rendered at fixed scales (0.5×, 1×, 2×) — catches container-query regressions like F5 #4
-
-**Assertion hierarchy (per Flatline IMP-002 · resolves dual-invariant ambiguity):**
-
-`boundingBox` JSON is the **PRIMARY** assertion gate. `pixel diff` is **ADVISORY**.
-
-| Tier | What | When it fires | Outcome |
+| Finding | Sources | r0 problem | r1 resolution |
 |---|---|---|---|
-| **Primary** | `boundingBox` JSON match within ±0.5px per dimension | Always — every snapshot check | BLOCK on miss |
-| **Secondary** | SHA-256 of normalized PNG (image identity) | When boundingBox matches | Logs only — does NOT block |
-| **Tertiary** | Pixel diff (pixelmatch) — count of differing pixels above antialiasing threshold | When SHA-256 differs | Surface in PR review as advisory; does NOT block CI |
+| **ESCAPE-RCE** | PRD SKP-001 (950) · SKP-004 (820) · SDD SKP-001 (900) | `run_python_code` is zero-auth · "localhost-only" is NOT a security boundary (DNS rebind · local malware · compromised dependency) | **FR-12 rewritten**: DEFAULT-OFF · per-session bearer token written to `~/.blender-mcp/<session>.auth` (mode 0600) at addon-start · client supplies token in every frame · `__builtins__` restricted to a small allowlist · every invocation audit-logged with sanitized code preview. Off-switch via `BLENDER_MCP_ENABLE_ESCAPE=0` (default) |
+| **TIMEOUT-MAIN-THREAD** | PRD SKP-003 (830) · SDD SKP-002 (850) · IMP-006 (835) | CPython+GIL: threading cannot preempt main-thread Python · `signal.alarm()` POSIX-only · timer callback can't hard-interrupt itself | **FR-12 honest mechanism**: timeout is enforced via (a) AST pre-scan rejecting unbounded loop constructs (`while True`, `for x in itertools.count()`, `while 1`, naked recursion without depth cap) · (b) cooperative-only runtime semantics documented · (c) new **AP-7** in the regression suite |
+| **QUEUE-BACKPRESSURE** | SDD SKP-001 (870) · IMP-005 (845) · SKP-001 main-thread-freeze (850) | both queues default `maxsize=0` (unbounded) · G-5 stress + main-thread stall → OOM growth · bounded queue with blocking `put()` on main thread → UI freeze | **FR-16 (new)**: `inbox` and `outbox` constructed with `maxsize=512` (tunable via config) · BG-thread uses `inbox.put_nowait()` + on `queue.Full` emits `WireResponseError(kind="Backpressure")` · main-thread `outbox.put_nowait()` + on `queue.Full` drops response + signals BG-thread to close stalled connection |
+| **SCHEMA-DRIFT** | PRD IMP-008 (777.5) · SDD IMP-001 (905) | Python snake_case ↔ TS camelCase · "3am production defect class" · no explicit cross-language field-map | **FR-14 (new)**: explicit Python ↔ TS field-mapping table is **SDD §4 normative** · round-trip parity fixture (TS encodes → Python decodes → re-encodes → byte-identical) checked in CI · top-level `protocol_version` constant in every frame · CI drift gate fails the build on mismatch |
+| **LIFECYCLE-CORRELATION** | PRD IMP-005 (810) · SKP-003 (735) · SDD IMP-004 (875) · IMP-009 (800) | BG threads + `bpy.app.timers` survive `unregister()` → port 9876 stays bound across addon-reload · global outbox without per-connection correlation → client receives responses to commands it never issued | **FR-15 (new)**: `unregister()` MUST: (a) set `stop_event` · (b) join BG thread with ≤2s timeout (force-mark daemon if exceeded) · (c) `bpy.app.timers.unregister(drainer)` · (d) close listening socket · (e) per-connection response queue replaces shared outbox · (f) on new connection: stale outbox entries purged |
+| **MAX-FRAME-BYTES** | PRD SKP-006 (740) · SDD SKP-003 (820) · SKP-002 (750) | 4-byte BE uint32 length → adversarial header can request 4GB allocation · OOM-DoS · slow-recv on incomplete frame hangs thread | **FR-17 (new)**: `MAX_FRAME_BYTES = 10 * 1024 * 1024` (10MB · tunable) · header exceeding → connection closed immediately (stream is untrustworthy · do NOT just drop frame) · idle/incomplete-frame deadline 30s · new error `kind="FrameError"` |
+| **TIMER-LATENCY** | PRD SKP-001 (870) | `bpy.app.timers` poll at 0.1s queues commands behind ≤100ms latency floor · p50 ≤ 50ms SLA architecturally impossible | **FR-5 revised**: timer interval = **0.016s** (60-FPS-equivalent · safe for Blender main thread · brings queuing overhead < 16ms) · §5.5 SLA stands · note added: p99 degrades under main-thread CPU pressure (large mesh ops) |
+| **DATA.LIVE.TS-SCOPE** | PRD IMP-001 (902.5) | G-1 + G-2 gate on TS `data.live.ts` existing · framed as Risk R-4 not dependency · acceptance unverifiable | **§6.1 + §7.2 revised**: `lib/blender/data.live.ts` scoped into **S1 deliverable** (the TS socket client + reconnect logic mirroring this PRD's Python wire) · R-4 removed from risk table · §3.2 secondary-users updated |
 
-Rationale: dig 2 finding (Olah/Nguyen Chromatic) — pixel diff is noise-prone (antialiasing). Geometry is mathematical invariant; treat as truth source. Pixel changes that preserve geometry are "visual updates," not regressions — flag for review but don't block.
+## Revision Notes (r2 · 2026-05-19 · FR-12 escape hatch dropped)
 
-**FR-S1.4 — Canary test (proof the substrate works)**
-- A dedicated test that introduces an intentional mutation to `CodexCardFace` (e.g., +5% width) and verifies the substrate flags it. Lives at `tests/regression/canary.test.ts`. Documented as the proof artifact for cycle DoD.
+During `/sprint-plan` for this cycle, the sprint plan was Flatline-reviewed twice (`a2a/flatline/sprint-review.json` + `sprint-review-r2.json`). The **SKP-001 finding cluster** (3 CRITICALs · severity 970/920/850) established that the FR-12 `run_python_code` escape hatch — as specified in r1 §4.4 — **cannot be made safe within v0 scope**:
 
-**FR-S1.5 — Operator-facing failure surface**
-- When a hook blocks an edit, the message includes: file path · primitive name · baseline path · diff summary (which dimension changed by how much) · "to update baseline, run: pnpm regression:approve <primitive>"
+- **MRO traversal sandbox escape**: restricting `__builtins__` + AST pre-scanning does NOT prevent `().__class__.__mro__[-1].__subclasses__()` chains, a published CPython sandbox-escape class that recovers unrestricted builtins via attribute access alone. The AST scan permits exactly this syntax.
+- **Cooperative-timeout cannot contain CPU-bound code**: the r1 "honest mechanism" (AST pre-scan + cooperative budget) is a speedbump, not a containment boundary.
+- **The framing is the danger**: a feature documented as security-gated, but which provides arbitrary in-process code execution, is the most dangerous outcome — operators enable it believing the restricted namespace isolates, when it does not.
 
-**FR-S1.6 — Baseline approval governance (per Flatline IMP-010 · operator-ratified)**
+**Operator decision 2026-05-19**: drop FR-12 from v0 entirely. A credible escape hatch needs OS-level isolation (subprocess + seccomp/AppArmor on Linux · restricted job object on Windows) — that is a v1 design effort, not a v0 sprint task.
 
-`pnpm regression:approve` is the one operation that blesses a baseline change as intentional. Governance required to make the safety mechanism real, not formal:
+| r1 element | r2 disposition |
+|---|---|
+| **FR-12 a–g** (§4.4 Escape Hatch) | **DEFERRED to v1.** §4.4 retained below under a DEFERRED banner — the spec is preserved as v1 design input, NOT a v0 requirement. |
+| **G-3** (§2.1 · escape hatch returns structured success/error · never crashes) | **DEFERRED to v1.** The underlying safety property (handler errors are structured · never crash the addon) is preserved by FR-6 try/except discipline + traceback sanitization (still in v0). |
+| **AP-7** (§4.9 · unbounded-loop escape code crashes timer drain) | **REMOVED.** Scoped entirely to FR-12. v0 regression suite is 7 anti-patterns (AP-1..AP-6, AP-8). |
+| **ESCAPE-RCE / TIMEOUT-MAIN-THREAD** (r1 notes rows) | Superseded — those r1 mitigations were FR-12-internal. The honest mitigation is non-existence in v0. |
+| `~/.blender-mcp/` directory · bearer-token auth files · `BLENDER_MCP_ENABLE_ESCAPE` · `BLENDER_MCP_ESCAPE_IMPORTS` env vars | **REMOVED from v0.** No `~/.blender-mcp/` directory is created. |
+| §6.1 In Scope "escape hatch with security gates" | Moved to §6.2 Out of Scope (v1+). |
 
-- **Who:** any contributor running the script locally. Override (`LAB_REGRESSION_OVERRIDE=1`) is operator-tier; audited.
-- **Evidence in PR:** when a PR includes baseline updates under `tests/snapshots/lab/`, the PR description MUST contain:
-  - List of affected primitives
-  - Per-primitive: before/after PNG attachments (or rendered URLs) inline
-  - One-line rationale per change ("intentional: added Phosphor icon"; NOT "baseline refresh")
-- **Suspicious-churn heuristic:** CI surfaces a warning if a single PR updates `>3` baselines OR `>50%` of existing baselines — flagged for extra reviewer attention; does NOT block merge.
-- **Audit trail:** every approve invocation logs to `.run/audit.jsonl` with operator + primitive + reason.
+Sprint plan r3 (`sprint.md`) is the companion artifact: S4 collapses LARGE→SMALL (safety hardening only — traceback sanitizer + FR-6 audit). SDD r2 carries the matching §-level deferrals.
 
-Implementation lives in `package.json` script + `.claude/scripts/regression-approve.sh` (S1 deliverable).
+### Findings NOT integrated (operator-decide / scope-deferred)
 
-**FR-S1.7 — S1 baseline scope (per Flatline IMP-012 · operator-ratified: minimum viable)**
+- **IMP-011** (single-file-addon vs module-tree · DISPUTED 790/0/890 · PRD): TL;DR-vs-§5.3 contradiction is real but resolution is S0 spike output — Blender's addon loader supports module-trees when the addon registers a package; S0 validates this before S1 commits to layout. PRD §5.3 unchanged; SDD r1 adds the explicit packaging-validation gate to S0. **r2 note**: sprint.md r3 resolved the related `lib/wire.py`/`lib/wire/` collision (IMP-003) — `lib/wire/` is a package.
+- **IMP-012** (handshake op · DISPUTED 715/0/840 · PRD): explicit handshake op deferred to v1. v0 ships `protocol_version` in every frame (FR-14) which provides comparable protocol-mismatch coverage at lower complexity.
+- **IMP-002 SDD** (cmd_id required in malformed-JSON response · HIGH 900): adopted at SDD r1 §5.2 — for un-parseable frames, response is connection-level `kind="FrameError"` with `cmd_id="<unparseable>"` sentinel. Closed without separate PRD FR.
+- **IMP-007 SDD** (CRUD schemas to sprint plan · 770): kept as sprint-plan deliverable since SDD r1 §4 now pins the field-mapping table normatively · sprint-plan inherits.
+- **IMP-013 SDD** (Blender integration fixture spec · DISPUTED 0/740/750): tabled to S5 sprint-task — fixture-shape decisions need real-Blender feedback that S0 surfaces.
 
-S1 ships baselines for **3 representative primitives** + validated-surface coverage:
+## 1. Problem & Vision
 
-| Baseline | Primitive | Why this one |
+### 1.1 The Problem
+
+The TypeScript substrate (`lib/blender/`) defines a typed adapter surface to Blender but has nothing to talk to. Without the Python-addon side, the substrate is "great types for nothing" — the 10/10 tests pass against the mock, but agents cannot drive a real Blender from compass.
+
+**Cited evidence**:
+- `lib/blender/SKILL.md` §"What's NOT in v0" L77-86: *"data.live.ts · actual socket client (next chunk · biggest single piece of work)"* — TS-side gap that this Python addon enables
+- `grimoires/loa/context/blender-adapter-design-brief-2026-05-18.md` §"Compass design" L165-180: *"compass implements runtime against these schemas"* — the runtime is what's missing
+
+### 1.2 Vision
+
+A minimal Python addon that bridges agent-driven typed commands (via the TypeScript adapter) to real `bpy` operations inside a running Blender 4.x. The addon ships with the same anti-bug discipline that the TypeScript substrate already enforces — length-prefixed framing on day 1, idempotent commands, schema-validated boundary.
+
+**Source**: `feedback_design-adapter-not-integrate-broken-tool` memory + operator directive 2026-05-18: *"build out our own in house from scratch with best practices in mind as it can be an adapter for our agentic infra."*
+
+### 1.3 Why Now
+
+The Sora Tower asset spike (in progress) hit the ahujasid/blender-mcp "Incomplete JSON response" wall mid-session. The operator named the architectural reframe: don't integrate broken tools, design our own. The TypeScript substrate landed in ~2 hours; the Python side completes the loop in the next chunk.
+
+**Source**: Phase 1 interview · session log 2026-05-18 · also `grimoires/k-hole/research-output/dig-session-2026-05-18.md` lines 1-24 *"3D agentic architectures only succeed through severe limitation"*
+
+---
+
+## 2. Goals & Success Metrics
+
+### 2.1 Goals
+
+| ID | Goal | Validation |
 |---|---|---|
-| 1 | `CodexCardFace` (already validated render) | The session-22 regression target — proves the fuse on the actual bug surface |
-| 2 | `CardComposition` (kitchen primitive) | Most-recent operator-validated; the kitchen entry-point |
-| 3 | `HexScene` (highest test coverage) | Existing test infrastructure to lean on; representative of effect-shape primitives |
+| G-1 | Length-prefixed wire protocol works end-to-end (TS → addon → bpy → addon → TS) | Integration test: TS adapter sends `listObjects` cmd · addon returns real `bpy.data.objects` payload · TS schema-decodes successfully |
+| G-2 | All 5 data-seam CRUD ops have full parity with `data.mock.ts` | Test contract: every test in `lib/blender/__tests__/data.test.ts` passes against `BlenderDataLive` Layer when Blender is running (NO test changes) |
+| ~~G-3~~ | ~~Escape hatch `run_python_code` returns structured success or error · NEVER crashes the session~~ **r2: DEFERRED to v1** (FR-12 dropped). Handler-level safety (structured errors · never crash) preserved by FR-6 try/except + traceback sanitizer. | — (deferred) |
+| G-4 | All 6 anti-patterns from the design brief are demonstrably absent | One regression test per anti-pattern (the "negative test suite") |
+| G-5 | Addon survives 1000-cmd stress test without socket drift or memory growth | Stress test: random ops with random payloads ≤ 1MB · 1000 cmds · zero "Incomplete JSON" errors · zero deadlocks |
 
-Validated-surface baselines: `/`, `/demo`, `/battle-v2`, `/battle-v2/vfx-lab` (per FR-G7).
+**Source**: Phase 2 interview Q1 (operator selected "Handshake + all 5 CRUD ops + escape hatch")
 
-Canary: on `CodexCardFace` (per FR-S1.4).
+### 2.2 Success Metrics
 
-S2-S5 add the remaining 6 effect baselines incrementally as each effect is touched (S2 adds CardComposition's full adapter coverage, S5 retrofit pass adds the rest). S5 close-gate requires all 9 effect baselines present.
+| Metric | Target |
+|---|---|
+| TS mock tests passing against TS live layer (with addon running) | 10/10 (parity contract) |
+| Python addon test coverage | ≥ 85% (pytest --cov) |
+| Wire-frame round-trip latency p50 | ≤ 50ms (LAN · same machine) |
+| Wire-frame round-trip latency p99 | ≤ 200ms |
+| Stress-test success rate at 1000 cmds | 100% |
+| Anti-pattern regression suite | 6/6 tests passing |
 
-### FR-S2 · IconRegistry substrate (Sprint 1, parallel)
+---
 
-**FR-S2.1 — `lib/ui/icons/` primitive**
-- `<Icon name="pantry" size={16} weight="regular" />` API (no library coupling at consumer)
-- Internal registry maps semantic names → provider components
-- First provider: `@phosphor-icons/react` (operator-confirmed)
-- Stub provider available (renders text fallback) for the swap demo
-- Type-safe icon names (TS literal union from registry keys)
+## 3. Users & Stakeholders
 
-**FR-S2.2 — Semantic icon vocabulary (V0)**
-- Cycle ships ~30 semantic names covering lab + game UI surfaces:
-  - Pantry/codex: `pantry`, `codex-card`, `ingredient`
-  - Kitchen/lab: `kitchen`, `effect`, `compose`, `preview`, `export`
-  - Pointers: `pointer-source`, `pointer-render`, `pointer-consumer`, `breadcrumb-separator`
-  - Inspector: `inspect`, `select`, `data`, `raw`, `edit`
-  - Workspaces: `workspace-compose`, `workspace-preview`, `workspace-export`
-  - Game (battle): `play`, `draw`, `discard`, `wuxing-wood`, `wuxing-fire`, `wuxing-earth`, `wuxing-metal`, `wuxing-water`
-  - Status: `success`, `warning`, `error`, `info`
-  - (Final list locked in SDD; this is the target shape, not exhaustive)
+### 3.1 Primary Users
 
-**FR-S2.3 — IconRegistry swap demo in vfx-lab**
-- Visible toggle in vfx-lab (top-right of chrome) that swaps between `Phosphor` and `Stub` providers live, without page reload
-- Persists per session
-- Operator-aligned proof: *"should not take this much effort to change things"*
+**Agent · primary user of the typed surface**
 
-**FR-S2.4 — Migration path**
-- S1 ships registry + ~5 sentinel icons (used by S2-S4 new components)
-- S5 retrofits existing `lucide-react` usages across lab + game UI to use the registry. Where a semantic name doesn't exist yet, add it.
-- Hard rule: by cycle end, **no direct `lucide-react` or `@phosphor-icons/react` imports outside `lib/ui/icons/`**.
+The TypeScript adapter's typed surface is consumed by Claude (running in Claude Code sessions) when an agent needs to drive Blender. The agent reads `lib/blender/SKILL.md` for the surface description, calls into `BlenderData` Context.Tag operations, and receives typed responses.
 
-### FR-S2.5 · Shared pointer-chain schema (Sprint 1 deliverable · per Flatline IMP-007)
+**Cited evidence**: operator directive 2026-05-18: *"with agent navigation as the focus I'm sure you will have no problems building out performant tools for yourself"*
 
-Before S3 starts, the pointer-chain schema must be locked. All three downstream sprints (S2 breadcrumb, S3 composability, S4 workspaces) read from the same schema; divergent interpretations across sprints would produce inconsistent pointer representations at the seams.
+### 3.2 Secondary Users
 
-**Schema location:** `lib/lab/pointer-chain/schema.ts` (Effect Schema)
+**Operator (zksoju) · manual integration tester**
 
-```ts
-// Schema shape (locked in S1, consumed by S2/S3/S4):
-const PointerSegment = S.Union(
-  S.TaggedStruct("Pantry", { slug: S.String, path: S.String }),
-  S.TaggedStruct("Primitive", { name: S.String, path: S.String }),
-  S.TaggedStruct("Consumer", { consumers: S.Array(S.String) }),
-  S.TaggedStruct("Scene", { name: S.String, path: S.String }),
-);
-const PointerChain = S.Array(PointerSegment);
+The operator drives manual end-to-end validation: open Blender, enable the addon, run the TS-side integration tests, watch behavior in the viewport. Eventually the operator drives Sora Tower refinement directly via the adapter.
+
+**Effect runtime · mock-tier user**
+
+Existing `lib/blender/__tests__/data.test.ts` tests treat the mock as the user. Those tests are the source-of-truth contract for what the live addon must replicate.
+
+---
+
+## 4. Functional Requirements
+
+### 4.1 Wire Protocol Implementation (Python side)
+
+**FR-1 · Length-prefixed framing**
+Addon receives bytes from socket. Parses 4-byte BE uint32 header. Loops `recv()` appending chunks until full body length is read. Then `json.loads()` the body. Returns response framed the same way.
+
+**Cited evidence**: `lib/blender/wire.ts:60-78` (encoder reference) + `memory/reference_length-prefixed-framing-tcp-bug-class` (root cause + canonical fix)
+
+**FR-2 · Schema-conformant payloads**
+Addon emits `WireResponseSuccess` or `WireResponseError` per the TS Schema. Every field is present and correctly typed. Error responses carry one of 6 enum `kind` values (`BadParams` · `PollFailed` · `BlenderError` · `Timeout` · `UnknownOp` · `EscapeHatchError`).
+
+**Cited evidence**: `lib/blender/wire.ts:35-55` (WireResponseError schema)
+
+**FR-3 · Idempotent cmdId dedup**
+Addon maintains in-memory `dict[cmd_id → response]` with bounded size (LRU 256 entries). If a cmdId arrives twice, the cached response is returned · the op is NOT re-executed.
+
+**Cited evidence**: design brief §Substrate principle (length-prefix subsection) + operator argument: *"idempotent cmdId dedup"*
+
+### 4.2 Threading & Runtime
+
+**FR-4 · Socket runs on daemon background thread**
+Socket accept loop + recv loop run on a `threading.Thread(daemon=True)`. NO blocking I/O on Blender's main thread.
+
+**Cited evidence**: design brief §Substrate principle 2 · operator argument: *"main-thread queue via bpy.app.timers"*
+
+**FR-5 · Main-thread queue via bpy.app.timers**
+Incoming commands are pushed to a `queue.Queue` (capacity bounded · see FR-16). A `bpy.app.timers.register(drain, persistent=True)` callback polls the queue every **0.016s (60-FPS-equivalent)** on Blender's main thread and executes commands. The drain function returns within `MAX_DRAIN_PER_TICK` items (default 20) to avoid timer-callback overrun.
+
+**Cited evidence**: design brief §Substrate principle 2 + `dig-session-2026-05-18.md` L9: *"the addon uses `bpy.app.timers.register` to run a polling function … executing the commands safely"*. r1 revision: dig's 0.1s reference is a starting point not a floor · 0.016s brings queuing overhead under the §5.5 p50 ≤ 50ms SLA (per PRD-flatline finding SKP-001 severity 870).
+
+**FR-6 · try/except around every bpy invocation**
+Every `bpy.ops.*` call and every `bpy.data.*` mutation is wrapped in `try/except Exception`. Exceptions are captured, traceback is sanitized (strip `os.getcwd()`, `os.environ['HOME']`, user identifiers), and returned as `WireResponseError` with `kind="BlenderError"`. Addon NEVER crashes the addon process.
+
+**Cited evidence**: design brief §Substrate principle 2 · operator argument: *"try/except wrapping all bpy.ops"*
+
+### 4.3 Data-Seam Op Handlers (5 ops · full parity with mock)
+
+**FR-7 · `blender.data.listObjects`**
+Returns `BlenderObject[]` projection of `bpy.data.objects`. Projection follows `lib/blender/data.port.ts:53-67` `BlenderObject` interface — name · type · location · rotation · scale · meshName · materialNames · visible · parentName. Lossy by design (no full bpy props).
+
+**Cited evidence**: `lib/blender/data.port.ts:120-122` `listObjects` signature
+
+**FR-8 · `blender.data.getObject`**
+Params: `{ name: string }`. Returns `BlenderObject` or `WireResponseError(kind="BlenderError")` with `BlenderDataError._tag="ObjectNotFound"` payload.
+
+**Cited evidence**: `lib/blender/data.port.ts:124` `getObject` signature
+
+**FR-9 · `blender.data.createObject`**
+Params: `BlenderObjectSpec`. Creates the object via `bpy.data.objects.new(name, mesh)` + appropriate type-specific creation. Applies location/rotation/scale defaults. Returns the created `BlenderObject`. Failures: `ObjectAlreadyExists` if name taken.
+
+**Cited evidence**: `lib/blender/data.port.ts:126-128` `createObject` signature
+
+**FR-10 · `blender.data.updateObject`**
+Params: `{ name: string, patch: BlenderObjectPatch }`. Applies partial patch to existing object. Returns updated `BlenderObject`. Failures: `ObjectNotFound`, `InvalidPatch` if patch has unknown fields.
+
+**Cited evidence**: `lib/blender/data.port.ts:130-133` `updateObject` signature
+
+**FR-11 · `blender.data.deleteObject`**
+Params: `{ name: string }`. Deletes via `bpy.data.objects.remove(obj, do_unlink=True)`. Idempotent at op level (same cmdId dedupes). Returns `null` on success. Failures: `ObjectNotFound`.
+
+**Cited evidence**: `lib/blender/data.port.ts:135` `deleteObject` signature
+
+### 4.4 Escape Hatch (the long-tail surface) — ⚠️ DEFERRED TO v1 (r2)
+
+> **r2 · 2026-05-19 · DEFERRED**: FR-12 is **NOT a v0 requirement**. The sprint-Flatline SKP-001 cluster established that the r1 security stack (restricted `__builtins__` + AST pre-scan + cooperative timeout) is a speedbump, not a sandbox — MRO traversal (`().__class__.__mro__[-1].__subclasses__()`) defeats it. A credible escape hatch needs OS-level isolation (subprocess + seccomp/AppArmor) which is a v1 design effort. **The FR-12 a–g spec below is RETAINED verbatim as v1 design input — it is not a v0 requirement and no v0 task implements it.** See Revision Notes (r2).
+
+**FR-12 · `blender.escape.run_python_code` (r1 revised · security-gated) — v1 DESIGN INPUT, not v0**
+
+`run_python_code` is the highest-risk surface in the addon. r0 framed it as "single-user dev environment safe"; flatline-review (PRD SKP-001 severity 950 · SKP-004 severity 820 · SDD SKP-001 severity 900) escalated this to **zero-auth RCE on localhost**, which is NOT a defensible v0 posture. r1 attempted to fix the surface with the security stack below; r2 sprint-Flatline established that stack is insufficient and deferred the whole feature to v1:
+
+**FR-12a · Disabled by default**
+The escape hatch is **off** unless the operator sets `BLENDER_MCP_ENABLE_ESCAPE=1` before launching Blender. With the flag unset, the registry registers a stub that returns `WireResponseError(kind="EscapeHatchError", message="run_python_code disabled — set BLENDER_MCP_ENABLE_ESCAPE=1")` immediately.
+
+**FR-12b · Bearer-token gate**
+When enabled, at addon-start the addon generates 32 random bytes via `secrets.token_hex(32)`, writes the hex string to `~/.blender-mcp/<session-id>.auth` (mode 0600 · parent dir mode 0700 · session-id is the addon-startup wall-clock + pid), and emits the path to Blender's text console. Every `blender.escape.run_python_code` command frame MUST include `auth_token: <hex>` in `params`; frames without the token (or with a stale token from a prior session) get `WireResponseError(kind="AuthFailed")` and are NOT executed. Token files are deleted on `unregister()`.
+
+**FR-12c · Restricted builtins**
+Code executes in a namespace with `__builtins__` explicitly replaced by an allowlist: `{"len", "range", "enumerate", "zip", "map", "filter", "list", "dict", "tuple", "set", "str", "int", "float", "bool", "print", "round", "min", "max", "sum", "abs", "all", "any", "sorted", "reversed", "isinstance", "type"}`. `__import__` is NOT in the allowlist (blocks `os` / `subprocess` / `sys` exfiltration). The namespace pre-binds `bpy`, `mathutils`, `math`. The operator can add modules via `BLENDER_MCP_ESCAPE_IMPORTS=mathutils,math` env (deny-by-default; explicit additions only).
+
+**FR-12d · AST pre-scan**
+Before `exec()`, the code string is parsed via `ast.parse()` and walked. Patterns rejected with `kind="EscapeHatchError"` (NOT executed):
+
+- `ast.While` with `test=ast.Constant(value=True)` or `test=ast.Constant(value=1)` (unbounded `while True` / `while 1`)
+- `ast.For` whose iter resolves to `itertools.count(...)` (unbounded counter)
+- `ast.FunctionDef` calling itself with no decrement-toward-base-case detectable (best-effort heuristic · false negatives acceptable since cooperative semantics catch the rest)
+- Any `ast.Import` / `ast.ImportFrom` referring to a module not in the allowlist
+- Any `ast.Attribute` access on `__builtins__`, `__import__`, `globals`, `locals`, `vars`, `eval`, `exec`, `compile`
+
+**FR-12e · Cooperative timeout · params still accepted**
+Params: `{ code: string, timeout_ms?: number (default 5000), auth_token: string }`. Timeout is **cooperative-only** in v0: the AST pre-scan rejects unbounded loops; for code that passes the pre-scan, `timeout_ms` is enforced as a budget the addon tracks but cannot hard-interrupt (CPython + GIL constraint). README documents this honestly. v1 may add subprocess isolation; v0 does not.
+
+**FR-12f · Audit log**
+Every invocation (whether allowed or denied) appends one line to `~/.blender-mcp/<session-id>.audit.log` with: timestamp · cmdId · auth-token-prefix-8 · code-preview (first 200 chars, traceback-sanitized) · result (`ok` / `denied:<reason>` / `error:<kind>`). Audit log mode 0600.
+
+**FR-12g · Response shape**
+On success: `{ stdout, stderr, return_value, executed_ok: true }`. On AST-rejected: `WireResponseError(kind="EscapeHatchError", message="unbounded-loop detected: <reason>")`. On exception during exec: `WireResponseError(kind="EscapeHatchError", traceback=sanitized)`. On auth failure: `WireResponseError(kind="AuthFailed")`. On budget exceeded: `WireResponseError(kind="Timeout", message="cooperative budget exceeded")`.
+
+**Cited evidence**: design brief §Substrate principle 3 *"Escape hatch handles the long tail"* + operator argument: *"escape hatch (run_python_code op)"* + flatline-review SKP-001/SKP-004 (PRD) · SKP-001 (SDD) · SKP-002 (Windows-signal infeasibility) · SKP-003 (timeout-main-thread).
+
+### 4.5 Cross-Language Schema Discipline (r1 · new)
+
+**FR-14 · Schema-conformance NFR**
+The Python wire payloads MUST remain schema-conformant with the TypeScript `WireCommand` / `WireResponse` Effect Schemas. SDD §4 ships a normative Python ↔ TS field-mapping table. Drift detection is enforced via:
+
+- a round-trip parity fixture (`tools/blender-addon/tests/fixtures/ts-roundtrip-cases.json`) committed to git
+- a CI step (`pnpm test --filter blender-wire-parity`) that generates the fixture from TS, hands it to Python, and asserts byte-identical re-encoding
+- a top-level `protocol_version: "1.0"` field in every frame; mismatched versions → `WireResponseError(kind="ProtocolMismatch")`
+- a pre-commit hook (informational, non-blocking in v0) that warns if `lib/blender/wire.ts` is newer than the fixture
+
+**Cited evidence**: PRD-flatline IMP-008 (777.5) · SDD-flatline IMP-001 (905) · "snake_case Python ↔ camelCase TS · 3am production defect class".
+
+### 4.6 Lifecycle & Connection Correlation (r1 · new)
+
+**FR-15 · Addon lifecycle invariants**
+`unregister()` MUST execute, in order, with 2-second hard timeout per step:
+
+1. Set `stop_event` (signals BG thread + drainer to exit)
+2. `bpy.app.timers.unregister(drainer)` if registered (idempotent: try/except `ValueError`)
+3. Wait for BG thread join with `thread.join(timeout=2.0)` — if exceeded, log warning + rely on daemon-thread auto-cleanup at process exit
+4. Close listening socket explicitly (release port 9876)
+5. ~~Delete `~/.blender-mcp/<session-id>.auth` (FR-12b)~~ **r2: REMOVED — auth file was FR-12 infra; no `~/.blender-mcp/` directory exists in v0**
+6. Drop in-memory cmdId LRU cache + per-connection response queues
+
+**Connection-correlation**: a global outbox produces wrong-cmd responses when a client reconnects. r1 replaces the single outbox with **per-connection response queues**:
+
+- Each `ConnHandler` owns a private `out_queue: queue.Queue(maxsize=512)`
+- Inbound cmd envelope at enqueue-time includes `(cmd, conn_id, out_queue_ref)`
+- Main-thread `TimerDrainer` puts response onto `cmd.out_queue_ref` not a shared outbox
+- On client disconnect: `ConnHandler` drains its queue and discards (purge-on-disconnect)
+- On reconnect: new `conn_id` · new queue · no stale responses
+
+**Cited evidence**: PRD-flatline IMP-005 (810) + SKP-003 (735) · SDD-flatline IMP-004 (875) + IMP-009 (800) + SKP-002 (PRD 855 · explicit response-correlation gap).
+
+### 4.7 Queue Capacity & Back-Pressure (r1 · new)
+
+**FR-16 · Bounded queues + back-pressure protocol**
+
+- Inbox queue (BG-thread → main-thread): `queue.Queue(maxsize=512)`
+- Outbox queue (per-connection · main-thread → BG-thread): `queue.Queue(maxsize=512)`
+- BG-thread puts: `inbox.put_nowait(cmd)`; on `queue.Full` → emit `WireResponseError(kind="Backpressure", message="server inbox full · retry after backoff")` directly (skip main-thread roundtrip), continue serving
+- Main-thread puts: `out_queue.put_nowait(resp)`; on `queue.Full` → drop response + signal BG-thread to close that connection (operator-experience: stalled client gets disconnected, not Blender frozen)
+
+**Memory budget**: 512 entries × max ~10MB per cmd-or-resp (FR-17 cap) = ≤5GB worst case per queue. Realistic case at <50KB avg payload ≈ 25MB per queue. Tunable via `BLENDER_MCP_QUEUE_SIZE` env.
+
+**Cited evidence**: SDD-flatline SKP-001 (CRIT 870 unbounded-queue OOM) · IMP-005 (845) · SKP-001 main-thread-freeze (CRIT 850).
+
+### 4.8 Frame Size Limits (r1 · new)
+
+**FR-17 · MAX_FRAME_BYTES + stream-corruption recovery**
+
+- Constant `MAX_FRAME_BYTES = 10 * 1024 * 1024` (10MB · tunable via `BLENDER_MCP_MAX_FRAME_BYTES`)
+- On header decode: if `body_length > MAX_FRAME_BYTES`, immediately close the connection (stream is untrustworthy after corrupted length field · do NOT just drop frame · downstream offsets are misaligned)
+- Incomplete-frame deadline: 30s from header receipt; exceeded → close connection
+- New error `WireResponseError(kind="FrameError", cmd_id="<unparseable>")` for connection-level errors where the command identity is unknown (sent as a final frame before close)
+
+**Cited evidence**: PRD-flatline SKP-006 (740) · SDD-flatline SKP-003 (CRIT 820) · SKP-002 (HIGH 750) · concrete attack: 4-byte length 0xFFFFFFFF → 4GB OOM-DoS.
+
+### 4.9 Anti-Pattern Negative Test Suite
+
+**FR-13 · Regression tests for anti-patterns** *(r1 added AP-7 + AP-8 · **r2 removes AP-7** with FR-12 → v0 suite is 7 anti-patterns: AP-1..AP-6, AP-8)*
+
+| # | Anti-pattern | Negative test |
+|---|---|---|
+| AP-1 | No length-prefix framing → "Incomplete JSON response" | Send 1MB payload + assert successful round-trip (would fail without framing) |
+| AP-2 | bpy off main thread | Test inspects addon code for `bpy.` calls outside the timer callback (static check via AST scan) |
+| AP-3 | State on `bpy.types` | Test inspects addon for `bpy.types.X = ...` assignments (static check) |
+| AP-4 | No schema validation at wire | Send malformed JSON → addon returns `WireResponseError(kind="BadParams")`, never crashes |
+| AP-5 | Stdio TaskGroup brittleness | N/A · addon uses TCP not stdio · marker test ensures no `anyio` import |
+| AP-6 | Platform-specific asyncio internals | Static check: no `ProactorEventLoop` references; addon uses stdlib `socket` + `threading`, not asyncio |
+| ~~AP-7 (r1)~~ | ~~Unbounded-loop escape code crashes the timer drain~~ | **r2: REMOVED — scoped entirely to the FR-12 escape hatch, deferred to v1** |
+| **AP-8 (r1)** | **Top-level `import bpy` in handler modules breaks `fake_bpy` fixture** | **AST-walk all files under `lib/ops/`; fail on any `ast.Import` / `ast.ImportFrom` at module-level whose name resolves to `bpy`. Handlers MUST lazy-import `bpy` inside function bodies (per SDD-flatline SKP-005).** |
+
+**Cited evidence**: design brief §Anti-patterns L138-145 (the source list) · r1 additions per PRD-flatline SKP-003 (timeout) + SDD-flatline SKP-005 (lazy-import).
+
+---
+
+## 5. Technical & Non-Functional Requirements
+
+### 5.1 Platform
+
+- **Blender**: 4.x (currently 4.5 LTS / 4.6) · Assumption 2 ratified
+- **Python**: 3.11 (Blender 4.x bundled version)
+- **OS**: macOS 14+ (operator's machine) · should work on Linux + Windows with minor port (don't break for them, but don't validate either)
+
+### 5.2 Wire Protocol
+
+- TCP socket · localhost · default port 9876 (override via `BLENDER_MCP_PORT` env)
+- Length-prefixed framing: `[4-byte BE uint32 body-length][UTF-8 JSON body]`
+- Schema-validated payloads conforming to TS `WireCommand` / `WireResponse` Effect Schemas
+
+### 5.3 Module Layout
+
+> **r2 note**: indicative only — the **normative, current** file tree is `sprint.md` r3 Appendix D. r2/r3 changes: `lib/wire/` is a package (not flat `wire.py`); `escape.py` + `timeout.py` + `test_escape.py` removed (FR-12 deferred); `wire/schemas.py` + `wire/wire.schema.json` added (schema source-of-truth).
+
+```
+tools/blender-addon/
+├── README.md              # install + connect instructions
+├── addon.py               # main file · bl_info + registration + addon UI
+├── lib/                   # importable Python modules (NOT addon-loaded)
+│   ├── __init__.py
+│   ├── wire/              # r3: PACKAGE — framing.py + case.py + schemas.py + wire.schema.json
+│   ├── socket_server.py   # daemon socket thread + accept/recv loop
+│   ├── main_thread.py     # bpy.app.timers drain + main-thread execution
+│   ├── cmd_cache.py       # cmdId LRU
+│   ├── config.py          # constants + env overrides
+│   ├── ops/
+│   │   ├── __init__.py
+│   │   ├── data_handlers.py  # 5 CRUD op handlers
+│   │   │                     # r2: escape.py REMOVED (FR-12 deferred to v1)
+│   │   └── registry.py       # op-name → handler map
+│   └── safety/
+│       ├── __init__.py
+│       └── traceback_sanitizer.py
+│                          # r2: timeout.py REMOVED (cooperative-timeout was FR-12-only)
+├── tests/                 # see sprint.md r3 Appendix D for the full test list
+├── pyproject.toml         # pytest config · ruff config
+└── requirements-dev.txt   # pytest, ruff, fake-bpy-module-latest (r2: no jsonschema)
 ```
 
-**Required surface coverage:**
-- Breadcrumb: full chain rendered left-to-right with `›` separators
-- Composability panel: per-entity chain rendered as inline subtitle under entity label
-- Inspector: full chain rendered vertically in Pointer-chain tab with source-path detail per segment
-- Workspaces: chain context used to scope per-workspace state
+**Cited evidence**: Phase 5+6 interview Q3 (operator selected "tools/blender-addon/")
 
-**S1 ships:** schema file + at least one populated example (CardComposition's chain) + reader functions used by S2/S3/S4.
+### 5.4 Test Discipline
 
-### FR-S3 · Pointer breadcrumb (Sprint 2 · Thread A)
+- Test-first (per operator Q2 response *"Test driven is important"*)
+- pytest as test runner · Assumption 1 ratified
+- Unit tests for wire + ops handlers run WITHOUT Blender (mocked `bpy` module)
+- Integration tests run WITH Blender (manual fixture + `bpy` available)
+- Coverage target: ≥ 85% via `pytest --cov=tools/blender-addon/lib`
 
-**FR-S3.1 — Breadcrumb component**
-- `<PointerBreadcrumb chain={[...]} />` at the top of vfx-lab viewport (sticky)
-- Renders as: `pantry/earth-jani › effect:card-composition › consumers: [card-lab · battle · showcase]`
-- Each segment is clickable: navigates to that entity in the current workspace
-- Uses `IconRegistry` for segment-kind glyphs
-- Persists across primitive switches (active entity tracked in zustand)
+### 5.5 Performance
 
-**FR-S3.2 — Active-entity context**
-- Zustand slice `useActiveEntity` storing `{slug, primitive, consumers}` for the currently focused entity
-- All consumers (CardFace, CodexCardFace, CardComposition) emit `activeEntity` changes when rendered in lab context
+- Single-machine localhost · latency budget p50 ≤ 50ms · p99 ≤ 200ms
+- Throughput target ≥ 50 cmds/sec (sufficient for interactive agent driving)
+- Memory growth: ≤ 100 KB / 1000 cmds (i.e., cmdId LRU prevents unbounded growth)
+- **r1 honesty note**: p99 ≤ 200ms is met when main thread is idle. Under main-thread CPU pressure (large mesh ops · 100k+ vertex mutations · complex modifier stack evaluation), p99 may exceed budget — `bpy.app.timers` callbacks yield only between Blender's UI-tick cycles. README documents this; not a regression.
 
-**FR-S3.3 — Per session 22 §5.1 doctrine compliance**
-- Editing any path on the breadcrumb that touches a validated render path triggers the regression check from FR-S1.2
+### 5.6 Security (r2 · revised)
 
-### FR-S4 · Inspector side panel (Sprint 2 · Thread B)
-
-**FR-S4.1 — Right-rail inspector** (Q4 ratified: side panel, NOT hover-modal)
-- Slides in from right on selection
-- Tabs (Figma-shaped):
-  - **Pointer chain**: full pointer hierarchy with source paths
-  - **Data**: raw layers.json (or whatever spec the entity has)
-  - **Render**: read-only summary of computed render properties (className, dimensions, theme)
-  - **Edit**: minimal affordances (rename, override, copy-pointer)
-- Width: ~320px, collapsible, persisted
-
-**FR-S4.2 — Selection model**
-- Click any card/layer/effect in vfx-lab → opens Inspector
-- Replaces always-on `PointerChip` overlay with click-to-inspect surface (PointerChip becomes opt-in `data-inspectable` indicator)
-- Selection state in `useSelection` zustand slice
-
-**FR-S4.3 — Inspector for all 9 effects** (cycle DoD precondition)
-- Each effect must register an `inspectorAdapter` describing its inspectable nodes + their pointer chains
-- Adapter signature lives in `lib/lab/adapter-registry/inspector-adapter.ts` (per Flatline IMP-003 — adapter contracts belong in `lib/lab/`, not `lib/regression/`; regression substrate concerns geometry, adapters concern composability/inspection)
-
-### FR-S5 · Composability panel (Sprint 3 · Thread C)
-
-**FR-S5.1 — Three sketched shapes**
-- Shape A: **Figma-literal** layers panel (flat-or-nested, eye/lock icons, click to select)
-- Shape B: **Figma + pointer-chain** layers panel (entity rows show full pointer chain inline)
-- Shape C: **Godot-shaped tree** (nested tree with columns: scene-ref, override-state, source-path)
-
-**FR-S5.2 — Live shape-switcher in vfx-lab**
-- Toggle in panel header switches between A/B/C
-- Renders against the same active entity tree
-- Operator picks the canonical shape; the other two ship as available-but-unused (cleanup in next cycle once decided)
-
-**FR-S5.3 — Placement** (Q5 ratified: left rail)
-- Left-anchored panel, ~280px wide, collapsible
-- Mirrors Figma's layers-panel position
-- Persists collapse state per workspace
-
-**FR-S5.4 — Entity discovery**
-- Each primitive registers a `composabilityAdapter` (shape-mirror of inspectorAdapter) returning the entity tree for its current state
-- Adapter signature lives in `lib/lab/adapter-registry/composability-adapter.ts` (per Flatline IMP-003 — same location move as FR-S4.3)
-
-### FR-S6 · Workspaces tab switcher (Sprint 4 · Thread D)
-
-**FR-S6.1 — Three workspaces** (Q6 ratified: top tabs)
-- `Compose` — current vfx-lab default; inspector right, composability left, breadcrumb top
-- `Preview` — primitive at viewport center, no chrome, theme switcher visible
-- `Export` — meta panel for asset generation / handoff to codex
-
-**FR-S6.2 — Layout state per-workspace**
-- `useWorkspace` zustand slice keyed by workspace ID
-- Each workspace persists: active entity · panel collapse state · knob values · camera/scrub state
-- Switching workspaces preserves state of the workspace you left
-
-**FR-S6.3 — Tab UI**
-- Top-of-viewport horizontal tabs with `IconRegistry` glyphs (compose / preview / export)
-- Active tab visually distinct (active-tab style follows OKLCH palette token)
-- Keyboard: `Cmd/Ctrl + 1/2/3` switches workspaces
-
-### FR-S7 · Phosphor port + legacy retrofit (Sprint 5 · Thread F + cycle DoD)
-
-**FR-S7.1 — Full IconRegistry adoption across lab + game UI**
-- All lab chrome (vfx-lab, KnobPane, effect picker) routes icons through `IconRegistry`
-- Game UI (battle-v2 HUD, HandRack, CardFace overlays, CardShowcase, ZoneOverlay) routes icons through `IconRegistry`
-- `lucide-react` allowed only inside `lib/ui/icons/` provider modules
-
-**FR-S7.2 — Legacy 9 effects retrofit**
-- All 9 effects in `app/battle-v2/_components/vfx/effects/*`:
-  - register an `inspectorAdapter`
-  - register a `composabilityAdapter`
-  - render a `data-inspectable` attribute on root
-  - have at least one regression snapshot baseline (FR-S1.3)
-- Retrofit is additive; the existing render path is preserved (operator-validated → no risk).
-
-**FR-S7.3 — Final polish pass**
-- Knob labels audit for icon affordances
-- Status footer consistency check
-- Empty/loading/error states across new chrome
-- Final visual sweep against `composite.webp` baselines for known cards
-
-**FR-S7.4 — Cycle demo**
-- Operator demoes the lab end-to-end: workspaces · breadcrumb · inspector · composability shape-picker · icon swap demo · canary regression triggers a block
-- Demo recording committed to `grimoires/loa/distillations/session-22-lab-evolution-demo.md`
+- **Network exposure**: localhost-only · listening socket binds to `127.0.0.1` exclusively. `BLENDER_MCP_BIND_HOST` override **removed from v0 scope** (PRD-flatline SKP-005 severity 790 · "YOLO mode is not adequate security documentation").
+- **No arbitrary code execution surface in v0 (r2)**: FR-12 `run_python_code` is deferred to v1. v0 exposes only the 5 data-seam CRUD ops — there is no `exec()`, no bearer-token auth file, no `~/.blender-mcp/` directory. This is the honest closure of the SKP-001 sandbox-escape cluster: the safest sandbox is the one that doesn't exist yet. v1 will add the escape hatch with OS-level isolation (subprocess + seccomp/AppArmor), not in-process restricted namespaces.
+- **Traceback sanitization**: every error response strips `$HOME` · `$CWD` · `$USER` · `$BLENDER` paths from traceback strings (SDD §3.4) — applies to all CRUD-op `kind="BlenderError"` responses.
+- **CRUD ops (FR-7..FR-11)**: NOT gated by bearer token in v0 — they mutate `bpy.data` only · no filesystem/network/exec surface · risk class is "operator accidentally deletes Suzanne via local script", which is already the operator's call.
+- **Threat model out of scope**: malicious websites bypassing localhost via DNS rebinding · compromised dependencies on operator's machine · privilege escalation from Blender's process scope.
 
 ---
 
-## §6 · Non-functional requirements
+## 6. Scope & Prioritization
 
-### NFR-Perf
+### 6.1 In Scope (v0 · r1 expanded)
 
-- Hook latency budget: < 8s P95 for affected-primitive snapshot subset; fail-open with warning above
-- Inspector / breadcrumb / composability render: < 16ms (60fps) on M4
-- IconRegistry lookup: O(1) constant-time; no runtime tree walks
-- Workspace switch: < 100ms (state restore, not re-mount)
+- Length-prefixed framing (FR-1 to FR-3)
+- Main-thread queue + threading (FR-4 to FR-6)
+- 5 data-seam CRUD ops (FR-7 to FR-11)
+- ~~Escape hatch with security gates (FR-12 a-g)~~ **r2: moved to §6.2 Out of Scope — DEFERRED to v1**
+- Handler-level safety hardening: FR-6 try/except discipline + traceback sanitizer (r2 · S4 collapsed scope)
+- 7 anti-pattern regression tests (FR-13 · AP-1..AP-6, AP-8 · **r2: AP-7 removed with FR-12**)
+- **Schema-conformance + drift gate (FR-14 · r1 new)**
+- **Lifecycle + per-connection correlation (FR-15 · r1 new)**
+- **Bounded queues + back-pressure (FR-16 · r1 new)**
+- **MAX_FRAME_BYTES + stream-corruption recovery (FR-17 · r1 new)**
+- **TS-side `lib/blender/data.live.ts` (r1 · promoted from Risk R-4 to S1 deliverable)** — socket client mirroring this PRD's wire protocol · bounded reconnect (max-5-retry + exponential backoff · r2) · 10/10 TS test suite passes against live addon
+- Stress test (G-5)
+- README with install + connect instructions
 
-### NFR-Stability
+### 6.2 Out of Scope (v1+)
 
-- Zero-regressions on operator-validated surfaces (`/`, `/demo`, battle-v2 working tree as of HEAD)
-- All snapshot baselines version-controlled; updates require explicit `pnpm regression:approve <primitive>`
-- The canary test (FR-S1.4) must fail before fix and pass after — proves substrate works
+- **`run_python_code` escape hatch (FR-12 · r2 · deferred from v0)** — needs OS-level isolation (subprocess + seccomp/AppArmor), not the in-process restricted-namespace approach r1 attempted. §4.4 retains the spec as v1 design input.
+- Operator seam (`bpy.ops` dispatch)
+- Context seam (workspace · area · mode)
+- Node-graph seam (shader · geometry · compositor)
+- Asset seam (asset library + UUID catalog)
+- Modal operators (explicitly NOT supported in v0 per design brief)
+- MCP-protocol export (so other agents can use this as MCP) · deferred until adapter is real
+- Multi-user / multi-instance Blender
+- Authentication / authorization
+- Cross-platform CI (Linux/Windows tested manually only)
 
-### NFR-Substrate-discipline
+### 6.3 What v0 Does NOT Decide
 
-- All cycle-introduced primitives ship as `lib/<thing>/` (Effect port/live/mock pattern)
-- No primitive lives in `app/battle-v2/*` if it's reusable across zones
-- Adapter pattern (inspectorAdapter, composabilityAdapter) is the contract surface between primitives and substrate
-- Per `feedback_compass-learns-honeycomb-graduates.md`: substrate proven here is graduation-eligible to honeycomb/freeside after cycle end
-
-### NFR-Pointer-visibility (operator-named structural)
-
-- No render entity ships without a visible pointer chain at the surface
-- "Surface" = top-of-viewport, side-panel, or composability panel — NOT devtools, NOT inline HTML comments
-- The pointer chain is itself authored data, not duplicated inline (single source of truth for each pointer segment)
-
-### NFR-Figma-anchor (operator-stated)
-
-- All new UX patterns lead with Figma analogue
-- When a Figma equivalent doesn't exist, document the deviation in SDD with rationale
-- Inspector right-rail · Composability left-rail · Workspaces top-tabs are Figma-aligned positions
-
-### NFR-Construct-domain-boundaries
-
-- Cycle composes constructs explicitly per `OperatorOS v3.3`:
-  - **the-arcade** (primary, BARTH) — SHIP discipline
-  - **artisan** (lens, ALEXANDER) — craft / taste compliance
-  - **k-hole** (lens, STAMETS) — dig grounding (3 digs returned)
-  - **vfx-playbook** (lens) — pointer-chain at title-bar (P2), reference pane (P3), tier-stamps as gate (P6)
-- Cross-construct findings (vfx-playbook + the-arcade convergence) carry forward in PRD section §1
+- Whether the addon eventually graduates to a separate repo (per `compass-learns-honeycomb-graduates` memory, that's a later cycle)
+- Whether the wire protocol becomes MCP-compatible
+- The shape of operator/context/node-graph/asset seams (their own cycles)
 
 ---
 
-## §7 · Acceptance criteria (cycle DoD)
+## 7. Risks & Dependencies
 
-Cycle ships when all of the following pass:
-
-1. **Substrate fuse live** — Canary test (FR-S1.4) blocks an intentional CodexCardFace mutation. Hook + Vitest both fire on the canary.
-2. **Pointer chain at the surface** — Open vfx-lab on any of the 9 effects → see the breadcrumb · open Inspector → see the chain · open Composability panel → see the tree.
-3. **Composability shape picked** — Operator has selected one of A/B/C shapes and confirmed it as canonical.
-4. **Workspaces multi-mode** — Switch between Compose/Preview/Export · each preserves layout state · keyboard shortcuts work.
-5. **Icon swap demo works** — Toggle Phosphor↔Stub in vfx-lab; all icons across lab + game UI flip live.
-6. **All 9 effects retrofitted** — Each has `inspectorAdapter`, `composabilityAdapter`, snapshot baseline, and Phosphor icons via registry.
-7. **No `/` or `/demo` regressions** — Pre/post visual sweep clean.
-8. **One PR per sprint merged** — S1·S2·S3·S4·S5 each have their own draft PR landed on `feat/ecs-leaves-2026-05-17` with operator approval.
-9. **Distillation written** — `grimoires/loa/distillations/session-22-lab-evolution-demo.md` captures the cycle's substrate commitments and what survived.
-
----
-
-## §8 · Risks
+### 7.1 Risks
 
 | ID | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | Hook latency exceeds budget on full snapshot run | Med | Med | Per-primitive snapshot subset (not full lab); fail-open with warning; budget enforced |
-| R2 | Canary test pattern doesn't generalize beyond CodexCardFace | Med | Med | Each primitive gets its own canary in S5 retrofit; pattern documented for reuse |
-| R3 | IconRegistry abstraction over-engineered vs ROI | Low | Low | Stub provider proves the swap; if registry feels heavy in practice, post-cycle distill captures the over-engineering |
-| R4 | Composability shape-picker leaves vfx-lab cluttered | Med | Low | Header toggle; only one shape rendered at a time; the other two are dead code until cycle 23 cleanup |
-| R5 | Workspace state restoration causes stale-knob bugs | Low | Med | Per-workspace zustand slice with explicit reset action; documented reset affordance |
-| R6 | Legacy 9-effect retrofit takes longer than S5 budget | High | Med | Substrate ships with 1 effect retrofitted (proof) by end of S2; remaining 8 in S5 with explicit cut-line. **Cycle DoD is ALL 9 retrofitted (G6 invariant). If S5 budget is exceeded, the cycle does not close — operator pair-points to either extend S5 or formally amend the PRD to a smaller inventory (revising G6 + the inventory lock). Per Flatline IMP-006: no silent deferral.** |
-| R7 | Adapter pattern misaligned with how effects actually compose | Med | Med | First adapter (CardComposition) drives the design; pattern hardens before retrofit pass |
-| R8 | Branch state messy (uncommitted in-flight work) collides with sprints | Med | Med | Operator commits in-flight work before S1 branches (per branch-strategy decision); each sprint branches off a clean state |
-| R9 | Flatline degraded mode misses architectural issues | Med | High | Bridgebuilder 3.5 runs on SDD (operator opted in); architectural fresh-eyes covers degraded Flatline |
-| R10 | Vitest snapshot baselines drift quietly | Med | Med | `pnpm regression:approve` is explicit ceremony; PR diff shows baseline changes; reviewer flags suspicious updates |
+| R-1 | bpy threading API differences across Blender minor versions | Medium | Medium | Test against 4.5 LTS as primary; document 4.6 + 5.0 as "untested but should work" |
+| R-2 | Operator-driven manual integration tests are tedious; manual-fixture rot | Medium | High | Document the fixture clearly in README; add a one-shot smoke test script (`./tools/blender-addon/smoke-test.sh`) |
+| R-3 | Stress test reveals genuine architectural issue (deadlock under load) | Low | High | If hit, halt v0 + redesign threading model; do NOT ship a known-broken stress profile |
+| ~~R-4~~ | ~~TypeScript-side `data.live.ts` not built yet~~ | ~~High~~ | ~~Low~~ | **r1: PROMOTED to S1 in-scope deliverable per PRD-flatline IMP-001 (902.5). Goals G-1+G-2 are unverifiable without it; no longer a risk to mitigate, it's a thing to build.** |
+| R-5 | Operator decides to fork sandraschi after all if minimal-build hits unexpected complexity | Low | Medium | Operator pair-point at S2 close · explicit "continue or pivot" check |
+
+### 7.2 Dependencies
+
+- **Blender 4.x installed** on operator's machine (already true)
+- **TypeScript substrate** at `lib/blender/` (landed today)
+- **Python 3.11** (bundled with Blender 4.x)
+- **pytest + ruff** in dev dependencies (new pyproject.toml in tools/blender-addon/)
+- **TCP socket port 9876** available on localhost (default; override via env)
+
+### 7.3 Negative Dependencies (things we intentionally do NOT depend on)
+
+- NO MCP framework (FastMCP, mcp-python-sdk, etc.) · stays raw socket for control
+- NO asyncio (per AP-6 · use stdlib threading instead)
+- NO ahujasid/blender-mcp code (build from scratch, don't fork)
 
 ---
 
-## §9 · Dependencies
+## 8. Open Questions
 
-### Internal
-- `lib/effect-substrate/*` — existing Effect port/live patterns (consume; do not modify)
-- `app/battle-v2/_components/cards/CodexCardFace.tsx` — session 22 deliverable, validated baseline
-- `app/battle-v2/_components/vfx/effects/CardComposition.tsx` — session 22 deliverable, validated baseline
-- `lib/cards/codex/*` — session 22 substrate; consumed unchanged
-- `public/codex/cards/earth-jani/*` — vendored content; provides composite.webp baseline
-- `app/globals.css` — OKLCH palette tokens; consumed unchanged
+These are deferred to /architect (SDD) phase, NOT blocking PRD generation.
 
-### External (npm)
-- `@phosphor-icons/react` — new (first provider for IconRegistry)
-- `vitest` + `@vitest/snapshot` — already in repo (confirm in SDD)
-- `pixelmatch` or `looks-same` — new (for boundingBox + image diff in regression substrate; choose in SDD per perf budget)
-- `zustand` — already in repo
-
-### Tooling
-- Claude Code PreToolUse hook infrastructure (existing per `.claude/hooks/`)
-- pnpm 10.x (existing)
-- TypeScript 5 (existing)
-
-### Process
-- One PR per sprint via `gh pr create --draft`; merged on operator approval
-- Bridgebuilder 3.5 design review on SDD (operator opted in)
-- Sprint review + audit gates per `/run sprint-plan` standard
+- Q-SDD-1: Exact threading shape · how does the timer drain interact with `bpy.context_override` for ops requiring specific context?
+- Q-SDD-2: Connection lifecycle · accept multiple sequential TS clients (e.g., test process disconnects, integration test reconnects)? Or single persistent connection only?
+- Q-SDD-3: cmdId LRU eviction policy · 256 entries seems right but what's the eviction shape (insertion order vs LFU)?
+- Q-SDD-4: Traceback sanitizer · regex-based path replacement vs structured AST walk?
+- Q-SDD-5: pytest with bpy mocked · do we install `fake-bpy-module` or hand-roll the stub?
 
 ---
 
-## §10 · Sprint shape (preview; sprint plan authoritative)
+## 9. References
 
-**Post-Flatline-sprint-review shape (7 sprints):**
+### Source-of-Truth Citations
 
-| Sprint | Threads | Goal | Risk |
-|---|---|---|---|
-| **S0** | Calibration spike (Playwright + Docker, self-deletes per cycle-1 doctrine) | Pipeline validated · delta-check passes · spike script removed | R11 |
-| **S1a** | Regression substrate (pre-commit hook + PostToolUse:WARN + baselines + governance) | Fuse live (authoritative pre-commit gate · WARN-only PostToolUse) · 3 representative baselines + validated-surface baselines · canary passes · rollback runbook | R1, R12 |
-| **S1b** | UI substrate (IconRegistry · pointer-chain schema **@draft-S1** · adapter registry types · runtime wiring) | Icon swap demo works · schema in draft · static adapter-registration model | R3 |
-| **S2** | Thread A breadcrumb · Thread B inspector | First inspector adapter on CardComposition (static-registered); pointer chain visible | R7 |
-| **S3** | Thread C composability panel (3 shapes) · **schema locks here** | Shape-picker live; operator selects canonical shape; schema goes to @v1.0 | R4, R14 |
-| **S4** | Thread D workspaces tab switcher | Multi-mode validated; layout state persists | R5 |
-| **S5** | Thread F phosphor port + legacy 9-effect retrofit + **determinism playbook** + demo | Cycle DoD met (all 9 retrofitted, NO silent deferral per IMP-006); demo recorded | R6, R8 |
+- TypeScript substrate (just landed):
+  - `lib/blender/wire.ts` (length-prefix framing + Schema types)
+  - `lib/blender/data.port.ts` (5 CRUD op signatures)
+  - `lib/blender/data.mock.ts` (parity contract)
+  - `lib/blender/__tests__/data.test.ts` (10/10 tests · contract)
+  - `lib/blender/SKILL.md` (state-ownership matrix + named deferrals)
 
-See `grimoires/loa/sprint.md` for the full task list, dependency diagram, and ADR-9 through ADR-14 (added post-sprint-review).
+- Design rationale:
+  - `grimoires/loa/context/blender-adapter-design-brief-2026-05-18.md` (canonical design doc · 4 substrate principles · 5 seams · 6 anti-patterns)
+  - `grimoires/k-hole/research-output/dig-session-2026-05-18.md` (foundational research · length-prefix framing pattern · main-thread queue pattern · DSL > raw code)
 
----
+- Memory primitives:
+  - `feedback_design-adapter-not-integrate-broken-tool`
+  - `reference_length-prefixed-framing-tcp-bug-class`
+  - `feedback_compass-learns-honeycomb-graduates`
+  - `feedback_over-structuring-causes-design-system-collapse`
+  - `honeycomb-substrate`
 
-## §11 · Open questions resolved in clarification round
+### External Reference
 
-All §8 brief questions answered by operator during PRD-prep AskUserQuestion round (2026-05-18):
+- Blender Python API: `docs.blender.org/api/current/`
+- ahujasid/blender-mcp (MIT) · structural reference for `addon.py` patterns (do NOT inherit bugs)
+- Effect Schema: `effect.website/docs/schema/introduction/`
+- UnrealMCP · prior art for length-prefixed framing in 3D-tool MCP space
+- FIX protocol · gold standard for zero-loss reconstruction over raw TCP
 
-| Q | Resolution |
-|---|---|
-| Q4 inspector shape | Side panel (Figma right-rail) |
-| Q5 composability placement | Left rail (Figma layers position) |
-| Q6 workspaces visual | Top tabs (Figma-shaped) |
-| Q7 regression mech | Hook + Vitest dual layer, both as substrate (`lib/regression/`) |
-| Q8 phosphor scope | Full lab + game-UI port via `IconRegistry` |
-| Q9 legacy 8 effects | S5 retrofit (overrides brief's "grandfather" recommendation) |
-| Composability panel shape | Sketch all 3 in vfx-lab, operator picks (explore-don't-lock) |
-| Cycle DoD | All 9 effects expose pointer chains + participate in Inspector |
-| PR shape | One draft PR per sprint, merged on operator approval |
-| Branch root | Commit in-flight · sprints branch off feat/ecs-leaves-2026-05-17 |
-| Bridgebuilder 3.5 | Run it |
+### Phase:Question References
 
----
-
-## §12 · Doctrine grounding (load-bearing references)
-
-The cycle materializes these doctrine commitments:
-
-- `feedback_kitchen-as-backend-composition-pattern.md` — the lab IS the kitchen; this cycle hardens its surface
-- `feedback_pointers-as-agentic-engine-infrastructure.md` — pointer-chain spine is the cycle's defining commitment
-- `feedback_figma-mental-anchor-for-composability.md` — Figma analogues lead every UX decision
-- `feedback_regression-checks-are-substrate-not-ceremony.md` — Sprint 1 ships this commitment as code
-- `feedback_compass-learns-honeycomb-graduates.md` — `lib/regression/` and `lib/ui/icons/` are graduation candidates
-- `feedback_substrate-not-ui-islands.md` — adapters are the seam between primitives and substrate
-- `feedback_explore-dont-lock.md` — Thread C ships 3 shapes for operator pick
-- `feedback_pair-validate-questions-before-firing.md` — pointer-trace before mutating validated surfaces
-- `feedback_creative-teaching-needs-visuals-not-text.md` — digs returned with visual refs (Prokopov screenshots, Linear Matrix View, Chromatic samples)
-- `feedback_recursive-candor-as-first-proof.md` — the canary test IS the regression substrate inhabiting its own spec
-
-External grounding (from digs):
-- Prokopov "Pointer Chips" + "Inspector Breadcrumbs" — validates our naming + structural choices
-- Mark Dalgleish / Playwright `boundingBox` JSON snapshots — direction-forming for FR-S1.3 (geometry as mathematical invariant)
-- Linear "Matrix View" + Storybook Addon Measure — direction-forming for permutation testing
-- Godot NodePath / RID + Unity `m_Modifications` — long-horizon doctrine for pointer-stability (cycle 23+)
-- Pixar Hydra Scene Delegate · Figma Component Properties · Bret Victor live-link — capability-driven rendering vision (post-cycle)
+- Phase 2 Q1 → operator selected "Handshake + all 5 CRUD ops + escape hatch"
+- Phase 4 Q2 → operator confirmed "test driven is important" → pytest discipline + parity-with-mock contract
+- Phase 5+6 Q3 → operator selected "tools/blender-addon/ in compass repo"
 
 ---
 
-## §13 · Success metrics
+## Authoring note
 
-| Metric | Target | Measurement |
-|---|---|---|
-| Render regressions caught by substrate | ≥1 in canary, 0 in operator review | Canary test status + post-cycle distillation |
-| Time to swap icon library | < 5 minutes end-to-end | Manual timing of provider swap in S5 |
-| Effects participating in inspector | 9/9 | Adapter registry count |
-| Hook latency P95 | < 8s | Hook telemetry to `.run/audit.jsonl` |
-| Operator-stated friction reduction | Operator names ≥2 of the 5 frictions (F1-F5) as resolved | Session 22+1 distillation |
-| Substrate ports graduation-ready | 2 (`lib/regression/`, `lib/ui/icons/`) | Honeycomb construct intake review post-cycle |
+Authored 2026-05-18 via `/plan-and-analyze` (minimal mode · batch pacing · 3 questions asked · 3 assumptions named + ratified · gate before generation honored).
 
----
+Same session as: TypeScript substrate (`lib/blender/` v0 landed · 10/10 tests passing) + design brief + 3 subagent dig + 9 candidate briefs across the day.
 
-## §14 · Flatline PRD review integration (2026-05-18)
-
-3-model Flatline (codex-headless + claude-headless + gemini-3.1-pro-preview) ran on this PRD. Result: **75% model agreement, 7 HIGH_CONSENSUS, 3 DISPUTED, 0 BLOCKERS**. Full output at `grimoires/loa/a2a/flatline/lab-evolution-prd-2026-05-18.json`.
-
-HIGH_CONSENSUS findings integrated into PRD:
-
-| Finding | Score | Resolved in |
-|---|---|---|
-| IMP-001 hook-timing causal inversion | 900 | FR-S1.2 stage-and-render execution model |
-| IMP-002 boundingBox vs pixel-diff hierarchy | 860 | FR-S1.3 assertion hierarchy table |
-| IMP-003 adapter location (lib/regression vs lib/lab) | 790 | FR-S4.3 + FR-S5.4 path corrections |
-| IMP-004 pre-sprint inventory task | 770 | G6 + S1.T0 + sprint shape preview |
-| IMP-005 zero-regression reference + threshold | 860 | G7 reference commit + capture method block |
-| IMP-006 R6/G6 contradiction (defer vs all-9) | 845 | R6 row revised to "no silent deferral" |
-| IMP-007 shared pointer-chain schema before S3 | 860 | New FR-S2.5 schema-lock requirement |
-
-DISPUTED items (3) presented to operator for ratification during Phase 2 HITL — outcomes folded into SDD §11 open questions.
-
----
-
-*PRD authored 2026-05-18 during /simstim Phase 1. Direction crystallized via 4-round AskUserQuestion clarification with operator. Flatline PRD review integrated (Phase 2). Sprints branch off `feat/ecs-leaves-2026-05-17` after in-flight work commits. Bridgebuilder 3.5 enabled for SDD review.*
+Next: `/architect` produces the SDD that translates these 13 functional requirements into module-level design decisions (threading shape · accept-loop lifecycle · pytest fixture pattern · error-handling envelope).
