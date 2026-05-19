@@ -260,3 +260,6 @@ grimoires/loa/ledger.json.bak*
 # Asset library sync artifacts (S0 T0.5 onward)
 .assets-backup-*/
 public/art-test/
+
+# Large binary assets (no Git LFS configured) - 2026-05-18
+public/art/landmarks/*/*.glb
