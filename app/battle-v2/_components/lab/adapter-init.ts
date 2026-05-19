@@ -19,11 +19,13 @@ import { runtime } from "@/lib/runtime/runtime";
 import { AdapterRegistry } from "@/lib/lab/adapter-registry/adapter-registry.port";
 import type { EffectAdapter } from "@/lib/lab/adapter-registry/types";
 import { cardCompositionAdapter } from "@/app/battle-v2/_components/vfx/effects/CardCompositionAdapter";
+import { hexSceneAdapter } from "@/app/battle-v2/_components/vfx/effects/HexSceneAdapter";
 
 // All known adapters · grows in S5
 const ADAPTERS: readonly EffectAdapter[] = [
   cardCompositionAdapter,
-  // S5 will add: cardLabAdapter, hexSceneAdapter, miniSceneAdapter,
+  hexSceneAdapter,
+  // S5 will add: cardLabAdapter, miniSceneAdapter,
   // bigRealmSceneAdapter, realmSceneAdapter, zoneSceneAdapter,
   // treeFallAdapter, waterSplashAdapter
 ];

@@ -1,18 +1,19 @@
 /**
- * Pointer-chain schema · @version draft-S1
+ * Pointer-chain schema · @version 1.0 (LOCKED 2026-05-19 · S3.T10)
  *
- * Per ADR-13 + Flatline SKP-005 (720): the schema is marked DRAFT in S1b
- * to defer locking until S3.T9 validates it against three composability
- * shape renderers + the breadcrumb + the Inspector.
+ * Schema lock validated against:
+ *   - PointerBreadcrumb (S2) — reads chain · clickable segments
+ *   - Inspector PointerChainTab (S2) — full chain vertical render
+ *   - ComposabilityPanel Shape A (S3) — flat layers panel
+ *   - ComposabilityPanel Shape B (S3) — inline chain subtitles
+ *   - ComposabilityPanel Shape C (S3) — Godot tree with source-path column
  *
- * TODO: lock after S3.T9 by:
- *   1. Removing the @version draft-S1 marker
- *   2. Bumping to @version 1.0
- *   3. Committing as a separate "schema lock" commit on the S3 PR
+ * All five renderers handle the 4 segment kinds without divergent fields.
+ * Schema is stable from this commit forward; additions go through
+ * a new schema version + breaking-change ADR.
  *
- * Per Flatline IMP-007: this schema is the single source of truth for
- * pointer-chain segments. Adapters reference it; views read from adapters;
- * NO inline duplication.
+ * Per Flatline IMP-007: single source of truth. Adapters reference it;
+ * views read from adapters; NO inline duplication.
  *
  * Per ADR-3: aligned with InspectableNode + EntityTreeNode for shared
  * rendering primitives across breadcrumb · inspector · composability.
@@ -58,9 +59,10 @@ export const PointerChain = S.Array(PointerSegment);
 export type PointerChain = S.Schema.Type<typeof PointerChain>;
 
 /**
- * Schema version marker. DRAFT for S1b/S2; locks at S3.T9.
+ * Schema version marker. LOCKED at S3.T10 (2026-05-19).
+ * Future changes require new version + breaking-change ADR.
  */
-export const SCHEMA_VERSION = "draft-S1" as const;
+export const SCHEMA_VERSION = "1.0" as const;
 
 /**
  * Helper: extract the human-readable label from a segment (uses label
