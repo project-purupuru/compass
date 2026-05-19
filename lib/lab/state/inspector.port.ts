@@ -11,7 +11,17 @@ import { Context, type Effect, type Stream } from "effect";
 export interface Selection {
   readonly primitiveId: string;
   readonly nodeId: string;
-  readonly source: "viewport-click" | "composability-click" | "breadcrumb-click";
+  /**
+   * S4.5 adds "scene-tree-click" for the new dock-shell SceneTreeSidebar
+   * (cycle-2 left region replaces cycle-1 ComposabilityPanel-with-FAB).
+   * "composability-click" preserved for backward compat with cycle-1 code
+   * that still uses the floating composability panel.
+   */
+  readonly source:
+    | "viewport-click"
+    | "composability-click"
+    | "scene-tree-click"
+    | "breadcrumb-click";
 }
 
 export interface InspectorState {

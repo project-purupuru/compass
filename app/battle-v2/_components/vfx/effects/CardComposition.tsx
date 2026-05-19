@@ -31,15 +31,14 @@ import type { CardCompositionConfigT } from "../VfxConfig";
 
 const CANVAS_W = 733;
 
-// vfx-lab page is a 3-col grid: 220px EffectPicker · 1fr PreviewPane · 300px
-// KnobPane. The kitchen pins to the PreviewPane bbox so picker + knobs stay
-// reachable.
+// The kitchen UI escapes the r3f reconciler via LabPortal, then re-anchors
+// inside the DockShell's center region so it tracks the resizable rails
+// instead of guessing viewport-relative pixel offsets. `position: absolute;
+// inset: 0` fills the host (the center slot's wrapper is `relative` and
+// `overflow-hidden` — see DockShell.tsx).
 const PORTAL_CONTAINER_STYLE: CSSProperties = {
-  position: "fixed",
-  top: 0,
-  bottom: 0,
-  left: 220,
-  right: 300,
+  position: "absolute",
+  inset: 0,
   zIndex: 10,
   display: "flex",
   flexDirection: "column",
@@ -92,7 +91,7 @@ export function CardCompositionPreview({
     <>
       {/* No-op for the r3f reconciler — the real UI is portaled below. */}
       <group />
-      <LabPortal>
+      <LabPortal targetSelector='[data-dock-region-host="center"]'>
         <div style={PORTAL_CONTAINER_STYLE}>
           <div
             style={{
