@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/resizable";
 import {
   DEFAULT_DOCK_SHELL_STATE,
+  PANEL_BOUNDS,
   decodeDockShellState,
   encodeDockShellState,
   STORAGE_KEY,
@@ -121,8 +122,8 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
         data-dock-region-group="main+bottom"
       >
         <ResizablePanel
-          defaultSize={state.bottomCollapsed ? 100 : 100 - state.bottomPanelSize}
-          minSize={50}
+          defaultSize={`${state.bottomCollapsed ? 100 : 100 - state.bottomPanelSize}%`}
+          minSize="50%"
           data-dock-region="main"
         >
           {/* MAIN region · horizontal split for left + center + right */}
@@ -132,13 +133,16 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
             data-dock-region-group="left+center+right"
           >
             <ResizablePanel
-              defaultSize={state.leftPanelSize}
-              minSize={15}
-              maxSize={40}
+              defaultSize={`${state.leftPanelSize}%`}
+              minSize={`${PANEL_BOUNDS.left.min}%`}
+              maxSize={`${PANEL_BOUNDS.left.max}%`}
               onResize={(size) => setState({ leftPanelSize: size.asPercentage })}
               data-dock-region="left"
             >
-              <div className="h-full w-full border-r border-puru-surface-border/30 overflow-auto">
+              <div
+                data-dock-region-host="left"
+                className="relative h-full w-full border-r border-puru-surface-border/30 overflow-auto"
+              >
                 {left}
               </div>
             </ResizablePanel>
@@ -151,10 +155,18 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
               className="!w-1.5 bg-puru-surface-border/60 hover:bg-puru-honey-base/60 after:!w-3 transition-colors z-20"
             />
 
-            <ResizablePanel defaultSize={100 - state.leftPanelSize - state.rightPanelSize} data-dock-region="center">
+            <ResizablePanel
+              defaultSize={`${100 - state.leftPanelSize - state.rightPanelSize}%`}
+              data-dock-region="center"
+            >
               {/* relative · gives absolute-positioned descendants (PostPane
-                  · cycle-1 PreviewPane overlays) a positioning context */}
-              <div className="h-full w-full overflow-hidden relative">
+                  · LabPortal hosts · cycle-1 PreviewPane overlays) a
+                  positioning context. Targetable via
+                  `[data-dock-region-host="center"]` for LabPortal slotting. */}
+              <div
+                data-dock-region-host="center"
+                className="relative h-full w-full overflow-hidden"
+              >
                 {center}
               </div>
             </ResizablePanel>
@@ -165,13 +177,16 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
             />
 
             <ResizablePanel
-              defaultSize={state.rightPanelSize}
-              minSize={18}
-              maxSize={45}
+              defaultSize={`${state.rightPanelSize}%`}
+              minSize={`${PANEL_BOUNDS.right.min}%`}
+              maxSize={`${PANEL_BOUNDS.right.max}%`}
               onResize={(size) => setState({ rightPanelSize: size.asPercentage })}
               data-dock-region="right"
             >
-              <div className="h-full w-full border-l border-puru-surface-border/30 overflow-auto">
+              <div
+                data-dock-region-host="right"
+                className="relative h-full w-full border-l border-puru-surface-border/30 overflow-auto"
+              >
                 {right}
               </div>
             </ResizablePanel>
@@ -185,13 +200,16 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
               className="!h-1.5 bg-puru-surface-border/60 hover:bg-puru-honey-base/60 after:!h-3 transition-colors z-20"
             />
             <ResizablePanel
-              defaultSize={state.bottomPanelSize}
-              minSize={10}
-              maxSize={50}
+              defaultSize={`${state.bottomPanelSize}%`}
+              minSize={`${PANEL_BOUNDS.bottom.min}%`}
+              maxSize={`${PANEL_BOUNDS.bottom.max}%`}
               onResize={(size) => setState({ bottomPanelSize: size.asPercentage })}
               data-dock-region="bottom"
             >
-              <div className="h-full w-full border-t border-puru-surface-border/30 overflow-auto">
+              <div
+                data-dock-region-host="bottom"
+                className="relative h-full w-full border-t border-puru-surface-border/30 overflow-auto"
+              >
                 {bottom}
               </div>
             </ResizablePanel>

@@ -25,9 +25,17 @@ import { createRoot, type Root } from "react-dom/client";
 
 interface LabPortalProps {
   readonly children: React.ReactNode;
+  /**
+   * CSS selector for the mount target. Defaults to `document.body`. Pass a
+   * selector like `[data-dock-region="center"]` to slot the portal inside a
+   * layout region — the inner UI can then use `position: absolute; inset: 0`
+   * to fill the host instead of guessing viewport-relative offsets. Falls
+   * back to body when the selector matches nothing.
+   */
+  readonly targetSelector?: string;
 }
 
-export function LabPortal({ children }: LabPortalProps) {
+export function LabPortal({ children, targetSelector }: LabPortalProps) {
   const rootRef = useRef<Root | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,7 +45,10 @@ export function LabPortal({ children }: LabPortalProps) {
     if (typeof document === "undefined") return;
     const container = document.createElement("div");
     container.dataset.labPortal = "card-lab";
-    document.body.appendChild(container);
+    const host =
+      (targetSelector && document.querySelector(targetSelector)) ||
+      document.body;
+    host.appendChild(container);
     const root = createRoot(container);
     rootRef.current = root;
     containerRef.current = container;

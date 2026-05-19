@@ -40,6 +40,20 @@ export type DockShellState = S.Schema.Type<typeof DockShellState>;
 
 export const DOCK_SHELL_SCHEMA_VERSION = "1.0" as const;
 
+/**
+ * Per-region size bounds (PERCENTAGES). Single source of truth — DockShell.tsx
+ * imports these for ResizablePanel `minSize` / `maxSize` (formatted as
+ * `"${n}%"` strings — react-resizable-panels v4 treats raw numbers as PIXELS,
+ * strings ending in `%` as percentages). `decodeDockShellState` clamps stored
+ * values into these ranges on hydration so the substrate self-heals if an
+ * operator's localStorage drifts out of band.
+ */
+export const PANEL_BOUNDS = {
+  left: { min: 15, max: 40 },
+  right: { min: 18, max: 45 },
+  bottom: { min: 10, max: 50 },
+} as const;
+
 export const DEFAULT_DOCK_SHELL_STATE: DockShellState = {
   schemaVersion: DOCK_SHELL_SCHEMA_VERSION,
   // Wider defaults so cycle-1 content (KnobPane tweakpane · SceneTreeSidebar
@@ -51,6 +65,10 @@ export const DEFAULT_DOCK_SHELL_STATE: DockShellState = {
 };
 
 export const STORAGE_KEY = "compass.honeycomb.dock-shell.v1" as const;
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(Math.max(n, min), max);
+}
 
 /**
  * Validates raw localStorage JSON against schema. Returns null on any
@@ -64,7 +82,25 @@ export function decodeDockShellState(raw: string | null): DockShellState | null 
   if (raw === null) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return S.decodeUnknownSync(DockShellState)(parsed);
+    const decoded = S.decodeUnknownSync(DockShellState)(parsed);
+    return {
+      ...decoded,
+      leftPanelSize: clamp(
+        decoded.leftPanelSize,
+        PANEL_BOUNDS.left.min,
+        PANEL_BOUNDS.left.max,
+      ),
+      rightPanelSize: clamp(
+        decoded.rightPanelSize,
+        PANEL_BOUNDS.right.min,
+        PANEL_BOUNDS.right.max,
+      ),
+      bottomPanelSize: clamp(
+        decoded.bottomPanelSize,
+        PANEL_BOUNDS.bottom.min,
+        PANEL_BOUNDS.bottom.max,
+      ),
+    };
   } catch {
     return null;
   }

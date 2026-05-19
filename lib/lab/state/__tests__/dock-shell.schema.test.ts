@@ -11,6 +11,7 @@ import { describe, expect, test } from "vitest";
 import {
   DEFAULT_DOCK_SHELL_STATE,
   DOCK_SHELL_SCHEMA_VERSION,
+  PANEL_BOUNDS,
   decodeDockShellState,
   encodeDockShellState,
   STORAGE_KEY,
@@ -70,5 +71,48 @@ describe("dock-shell.schema · S4 corruption + round-trip", () => {
     // silent old-state hydration with new code.
     expect(STORAGE_KEY).toMatch(/\.v\d+$/);
     expect(STORAGE_KEY).toContain("compass.honeycomb");
+  });
+
+  // Bug class — react-resizable-panels honors `defaultSize` verbatim and only
+  // enforces `minSize` during drag. Sub-floor values from stale localStorage
+  // (e.g. saved before floors were bumped in commit bea5376d) would render
+  // squeezed rails until manually cleared. The decoder clamps so the
+  // substrate self-heals on hydrate.
+  test("sub-floor leftPanelSize clamps up to PANEL_BOUNDS.left.min", () => {
+    const stale = JSON.stringify({
+      ...DEFAULT_DOCK_SHELL_STATE,
+      leftPanelSize: 3,
+    });
+    const decoded = decodeDockShellState(stale);
+    expect(decoded?.leftPanelSize).toBe(PANEL_BOUNDS.left.min);
+  });
+
+  test("over-ceiling rightPanelSize clamps down to PANEL_BOUNDS.right.max", () => {
+    const stale = JSON.stringify({
+      ...DEFAULT_DOCK_SHELL_STATE,
+      rightPanelSize: 80,
+    });
+    const decoded = decodeDockShellState(stale);
+    expect(decoded?.rightPanelSize).toBe(PANEL_BOUNDS.right.max);
+  });
+
+  test("clamp preserves other fields (e.g. bottomCollapsed)", () => {
+    const stale = JSON.stringify({
+      ...DEFAULT_DOCK_SHELL_STATE,
+      leftPanelSize: 2,
+      rightPanelSize: 3,
+      bottomCollapsed: false,
+    });
+    const decoded = decodeDockShellState(stale);
+    expect(decoded?.bottomCollapsed).toBe(false);
+    expect(decoded?.leftPanelSize).toBe(PANEL_BOUNDS.left.min);
+    expect(decoded?.rightPanelSize).toBe(PANEL_BOUNDS.right.min);
+  });
+
+  test("defaults survive round-trip without being clamped (in-range)", () => {
+    const decoded = decodeDockShellState(
+      encodeDockShellState(DEFAULT_DOCK_SHELL_STATE),
+    );
+    expect(decoded).toEqual(DEFAULT_DOCK_SHELL_STATE);
   });
 });
