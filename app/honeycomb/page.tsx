@@ -34,7 +34,14 @@ import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 import { IconProvider } from "@/lib/ui/icons/provider";
 import { ensureAdaptersRegistered } from "@/app/battle-v2/_components/lab/adapter-init";
 import { PointerBreadcrumb } from "@/app/battle-v2/_components/lab/PointerBreadcrumb";
-import { WorkspacesTabs, useActiveWorkspace } from "@/app/battle-v2/_components/lab/workspaces/WorkspacesTabs";
+import { ModeTabsBar } from "@/app/battle-v2/_components/lab/mode-tabs/ModeTabsBar";
+import { PlayButton } from "@/app/battle-v2/_components/lab/mode-tabs/PlayButton";
+import { useActiveWorkspace } from "@/app/battle-v2/_components/lab/workspaces/WorkspacesTabs";
+import {
+  HOT_JUMP_SCHEMA_VERSION,
+  serializeHotJumpState,
+  type HotJumpState,
+} from "@/lib/lab/state/hot-jump.schema";
 import type { PointerChain, PointerSegment } from "@/lib/lab/pointer-chain/schema";
 
 import {
@@ -100,7 +107,36 @@ export default function VfxLabPage() {
 
 function VfxLabPageInner() {
   const [activeId, setActiveId] = useState<string>(FIRST_EFFECT_ID);
-  const [workspace, setWorkspace] = useActiveWorkspace("compose");
+  const [workspace, setWorkspace] = useActiveWorkspace("build");
+
+  // S3.4 + S3.5: hot-jump handler · F5 or PlayButton click triggers this.
+  // Serializes current scene state to URL · navigates to /play.
+  const onHotJump = useCallback(() => {
+    const state: HotJumpState = {
+      schemaVersion: HOT_JUMP_SCHEMA_VERSION,
+      activeTab: workspace,
+      selectedAdapterId: activeId,
+      // selectedNodeId optional · cycle-2 S5+ wires composition drill-in
+    };
+    const encoded = serializeHotJumpState(state);
+    if (typeof window !== "undefined") {
+      window.location.href = `/play?state=${encoded}`;
+    }
+  }, [workspace, activeId]);
+
+  // S3.4: F5 keyboard listener (DockShell root stand-in · S4 will move this
+  // to the real DockShell). ⌘1 + ⌘2 already covered by useActiveWorkspace's
+  // cycle-1 keyboard handler (re-verbed via S3.1).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "F5") {
+        e.preventDefault();
+        onHotJump();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onHotJump]);
 
   const [composeMode, setComposeMode] = useState(false);
   const [, bumpKnob] = useReducer((x: number) => x + 1, 0);
@@ -318,15 +354,17 @@ function VfxLabPageInner() {
             </div>
 
             {/*
-              Lab-evolution spine · visible chrome inside the header (no overlay).
-              · WorkspacesTabs: Compose / Preview / Export · Cmd+1/2/3 keyboard
-              · PointerBreadcrumb: the active effect's pointer chain at the surface
-              Per ADR-13 schema · per Flatline IMP-007 (single source of truth).
+              Cycle-2 spine · visible chrome inside the header (no overlay).
+              S3 re-verb: ModeTabsBar (BUILD · LIBRARY) + PlayButton (F5 hot-jump)
+              replaces cycle-1 WorkspacesTabs (compose/preview/export).
+              PointerBreadcrumb: the active effect's pointer chain at the surface.
+              Per FR-4 (BARTH probe verdict) · per FR-25/26 (hot-jump round-trip).
             */}
             <div style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
               <div style={{ minWidth: 0 }}>
-                <WorkspacesTabs active={workspace} onChange={setWorkspace} />
+                <ModeTabsBar active={workspace} onChange={setWorkspace} />
               </div>
+              <PlayButton onHotJump={onHotJump} />
             </div>
             <div style={{ maxWidth: "calc(100vw - 580px)" }}>
               <PointerBreadcrumb chain={activeChain} />

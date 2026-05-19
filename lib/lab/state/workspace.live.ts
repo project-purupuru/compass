@@ -11,12 +11,11 @@ function makeLive() {
   return Effect.gen(function* () {
     const states = yield* Ref.make<Map<WorkspaceId, WorkspaceState>>(
       new Map([
-        ["compose", DEFAULT_WORKSPACE_STATE],
-        ["preview", DEFAULT_WORKSPACE_STATE],
-        ["export", DEFAULT_WORKSPACE_STATE],
+        ["build", DEFAULT_WORKSPACE_STATE],
+        ["library", DEFAULT_WORKSPACE_STATE],
       ]),
     );
-    const activeRef = yield* Ref.make<WorkspaceId>("compose");
+    const activeRef = yield* Ref.make<WorkspaceId>("build");
     const pubsub = yield* PubSub.unbounded<WorkspaceId>();
 
     return Workspace.of({

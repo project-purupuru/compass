@@ -23,7 +23,10 @@ import type { IconName } from "@/lib/ui/icons/names";
 
 const STORAGE_KEY = "lab.activeWorkspace";
 
-export type WorkspaceTabId = "compose" | "preview" | "export";
+// Cycle-2 S3.1 re-verb: was compose/preview/export (cycle-1 Studio exploration).
+// Cycle-2 commits to BUILD/LIBRARY + Play header button per FR-4.
+// PLAY moves to a header button (NOT a tab) · authored separately in S3.2.
+export type WorkspaceTabId = "build" | "library";
 
 const TABS: Array<{
   id: WorkspaceTabId;
@@ -31,9 +34,8 @@ const TABS: Array<{
   icon: IconName;
   shortcut: string;
 }> = [
-  { id: "compose", label: "Compose", icon: "workspace-compose", shortcut: "1" },
-  { id: "preview", label: "Preview", icon: "workspace-preview", shortcut: "2" },
-  { id: "export", label: "Export", icon: "workspace-export", shortcut: "3" },
+  { id: "build", label: "Build", icon: "workspace-compose", shortcut: "1" },
+  { id: "library", label: "Library", icon: "workspace-preview", shortcut: "2" },
 ];
 
 interface WorkspacesTabsProps {
@@ -95,7 +97,7 @@ export function WorkspacesTabs({ active, onChange }: WorkspacesTabsProps) {
  * Cycle-1 API preserved.
  */
 export function useActiveWorkspace(
-  initial: WorkspaceTabId = "compose",
+  initial: WorkspaceTabId = "build",
 ): [WorkspaceTabId, (id: WorkspaceTabId) => void] {
   const [active, setActive] = useState<WorkspaceTabId>(initial);
 
@@ -103,7 +105,9 @@ export function useActiveWorkspace(
     if (typeof window === "undefined") return;
     try {
       const saved = window.sessionStorage.getItem(STORAGE_KEY);
-      if (saved === "compose" || saved === "preview" || saved === "export") {
+      // S3.1 re-verb: accept new verbs · ignore legacy compose/preview/export
+      // (operator's old sessionStorage value will reset to default).
+      if (saved === "build" || saved === "library") {
         setActive(saved);
       }
     } catch {
