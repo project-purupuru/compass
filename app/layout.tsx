@@ -1,7 +1,6 @@
 import type { Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
-import { AgentationMount } from "@/components/AgentationMount";
 import { AnimatedFavicon } from "@/components/AnimatedFavicon";
 import { ThemeBoot } from "@/components/theme/ThemeBoot";
 import { rootMetadata, jsonLdWebSite } from "@/lib/seo/metadata";
@@ -77,7 +76,6 @@ export default async function RootLayout({
         />
         <AnimatedFavicon />
         {children}
-        {process.env.NODE_ENV === "development" && <AgentationMount />}
       </body>
     </html>
   );

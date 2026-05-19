@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { FenceLayerMount } from "@/app/battle-v2/_devtools/FenceLayerMount";
+import { AgentationMount } from "@/components/AgentationMount";
 
 export default function HoneycombLayout({ children }: { readonly children: ReactNode }) {
   // Force the Old Horai dark theme across the whole /honeycomb route. Matches
@@ -26,6 +27,7 @@ export default function HoneycombLayout({ children }: { readonly children: React
         {children}
       </TooltipProvider>
       <FenceLayerMount />
+      {process.env.NODE_ENV === "development" && <AgentationMount />}
     </div>
   );
 }
