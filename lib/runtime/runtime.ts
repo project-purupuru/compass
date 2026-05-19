@@ -24,6 +24,10 @@ import { MatchEngineLive } from "@/lib/cards/battle";
 // Env-gated: dev/test gets the Playwright-backed live layer; production gets
 // the noop layer so Playwright is NEVER in the production bundle.
 import { RegressionCheckNoopLive } from "@/lib/regression/regression.noop";
+// Lab evolution cycle · S1b UI substrate (ADR-2 + ADR-3 + ADR-12).
+import { AdapterRegistryLive } from "@/lib/lab/adapter-registry/adapter-registry.live";
+import { InspectorStateLive } from "@/lib/lab/state/inspector.live";
+import { PointerChainResolverLive } from "@/lib/lab/pointer-chain/pointer-chain.live";
 
 // THE single Effect.provide site for the app. Lint check: a grep for
 // `ManagedRuntime.make` in lib/ or app/ should return exactly one match
@@ -57,16 +61,22 @@ const PrimitivesLayer = Layer.mergeAll(
   // merges directly into PrimitivesLayer without provide-from.
   MatchEngineLive,
   RegressionLayer,
+  // S1b UI substrate: AdapterRegistry (R=never) + InspectorState (R=never).
+  AdapterRegistryLive,
+  InspectorStateLive,
 );
 const AwarenessOnPrimitives = Layer.provide(AwarenessLive, PrimitivesLayer);
 const ObservatoryOnAwareness = Layer.provide(ObservatoryLive, AwarenessOnPrimitives);
 // Match depends on Clash (already in PrimitivesLayer).
 const MatchOnClash = Layer.provide(MatchLive, PrimitivesLayer);
+// PointerChainResolver depends on AdapterRegistry (in PrimitivesLayer).
+const PointerChainOnRegistry = Layer.provide(PointerChainResolverLive, PrimitivesLayer);
 
 export const AppLayer = Layer.mergeAll(
   PrimitivesLayer,
   AwarenessOnPrimitives,
   ObservatoryOnAwareness,
   MatchOnClash,
+  PointerChainOnRegistry,
 );
 export const runtime = ManagedRuntime.make(AppLayer);
