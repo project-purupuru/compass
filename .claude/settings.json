@@ -573,6 +573,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/audit/write-mutation-logger.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/fagan-checkpoint.sh"
           }
         ]
       },
@@ -582,6 +586,19 @@
           {
             "type": "command",
             "command": ".claude/hooks/audit/write-mutation-logger.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/fagan-checkpoint.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/fagan-checkpoint.sh"
           }
         ]
       }
