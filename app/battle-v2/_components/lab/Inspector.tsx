@@ -1,19 +1,45 @@
 /**
- * Inspector · right-rail (Thread B · ADR-2)
+ * Inspector · cycle-2 S2.2 rebuild on shadcn Tabs + brand tokens
  *
- * V0 Inspector with Pointer-chain tab populated. Data/Render/Edit tabs are
- * stubs (intentional · land in follow-up sprint per "no big bang" principle).
+ * Right-rail Inspector showing selected entity's pointer chain · data ·
+ * render summary · edit affordances across 4 tabs (cycle-1 shape · S6
+ * collapses to 3 tabs PointerChain/Knobs/Data per FR-14).
  *
- * Width: 320px (per FR-S4.1). Collapsible (toggle in header). Persists collapse
- * state to sessionStorage (per SDD §2.2 persistence table).
+ * S2 decision (sprint plan: "Sheet OR persistent Resizable · decision inline"):
+ *   - Sheet rejected: shadcn Sheet hardcodes a black/50 overlay that dims
+ *     the rest of the surface (modal pattern). Cycle-1 behavior is non-
+ *     modal coexistence with the main viewport — overlay would break the
+ *     operator's mental model and conflict with the Three.js Canvas below.
+ *   - Resizable rejected: shadcn Resizable requires parent ResizablePanelGroup
+ *     which is S4 dock-shell work (FR-7). Adding it standalone in S2 would
+ *     introduce a panel group with one child — wasted scaffolding.
+ *   - DECISION: keep cycle-1's fixed-position aside + FAB-toggle behavior ·
+ *     rebuild internal tabs on shadcn Tabs · style with --puru-* tokens ·
+ *     defer Sheet/Resizable wrap to S4 dock-shell when the parent
+ *     ResizablePanelGroup lands and the cross-pane layout question
+ *     resolves naturally.
+ *
+ * Element-accent (artisan probe FR-17): 1px left-edge accent in the
+ * inspected adapter's wuxing element color. S6 wires this to the live
+ * selection state; S2 sets the visual primitive (default honey accent
+ * when no element-aware context yet).
+ *
+ * API PRESERVED: same props (selectedNode · pointerChain · onClose) ·
+ * sessionStorage key (lab.inspector.collapsed) · data-inspector attribute ·
+ * cycle-1 callers work unchanged.
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Icon } from "@/lib/ui/icons/Icon";
-import { segmentLabel, type PointerChain } from "@/lib/lab/pointer-chain/schema";
 import type { InspectableNode } from "@/lib/lab/adapter-registry/types";
+import {
+  segmentLabel,
+  type PointerChain,
+} from "@/lib/lab/pointer-chain/schema";
 
 const STORAGE_KEY = "lab.inspector.collapsed";
 
@@ -25,13 +51,17 @@ interface InspectorProps {
   onClose?: () => void;
 }
 
-export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProps) {
-  // Default to collapsed so the Inspector doesn't overlap existing rails on first mount;
+export function Inspector({
+  selectedNode,
+  pointerChain,
+  onClose,
+}: InspectorProps) {
+  // Default collapsed so the Inspector doesn't overlap existing rails on first mount;
   // operator opens via the side FAB.
   const [collapsed, setCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("pointer-chain");
 
-  // Hydrate collapse state from sessionStorage
+  // Hydrate collapse state from sessionStorage (cycle-1 persistence preserved)
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -57,21 +87,7 @@ export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProp
       <button
         type="button"
         onClick={() => setCollapsed(false)}
-        style={{
-          position: "fixed",
-          right: 0,
-          top: "50%",
-          transform: "translateY(-50%)",
-          background: "rgba(0, 0, 0, 0.6)",
-          border: "1px solid rgba(255, 255, 255, 0.15)",
-          borderRight: "none",
-          borderTopLeftRadius: 6,
-          borderBottomLeftRadius: 6,
-          padding: "8px 6px",
-          color: "rgba(255, 255, 255, 0.8)",
-          cursor: "pointer",
-          zIndex: 30,
-        }}
+        className="fixed right-0 top-1/2 -translate-y-1/2 bg-puru-cloud-deep/60 border border-puru-surface-border/40 border-r-0 rounded-l-md px-1.5 py-2 text-puru-ink-base hover:text-puru-honey-base transition-colors z-30 cursor-pointer"
         title="Open Inspector"
         data-inspector-collapsed
       >
@@ -82,48 +98,20 @@ export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProp
 
   return (
     <aside
-      style={{
-        position: "fixed",
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: 320,
-        background: "rgba(10, 10, 10, 0.92)",
-        backdropFilter: "blur(12px)",
-        borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
-        color: "rgba(255, 255, 255, 0.92)",
-        fontFamily: "ui-sans-serif, -apple-system, sans-serif",
-        fontSize: 12,
-        display: "flex",
-        flexDirection: "column",
-        zIndex: 25,
-      }}
+      className="fixed right-0 top-0 bottom-0 w-80 bg-puru-cloud-deep/92 backdrop-blur-md border-l-2 border-l-puru-honey-base/50 text-puru-ink-base font-puru-body text-xs flex flex-col z-25"
       data-inspector
       data-inspector-tab={activeTab}
     >
-      {/* Header */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "10px 12px",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        }}
-      >
+      {/* Header — element-accent edge per artisan FR-17 (the 1px left edge above
+          on the <aside> is the element-aware accent · honey default · S6 wires
+          to live selection element) */}
+      <header className="flex items-center gap-2 px-3 py-2.5 border-b border-puru-surface-border/30">
         <Icon name="inspect" size={14} />
-        <span style={{ flex: 1, fontWeight: 600 }}>Inspector</span>
+        <span className="flex-1 font-semibold">Inspector</span>
         <button
           type="button"
           onClick={() => setCollapsed(true)}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "inherit",
-            cursor: "pointer",
-            padding: 4,
-            display: "inline-flex",
-          }}
+          className="bg-transparent border-0 text-inherit cursor-pointer p-1 inline-flex hover:text-puru-honey-base transition-colors"
           title="Collapse"
         >
           <Icon name="visibility-off" size={12} />
@@ -132,14 +120,7 @@ export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProp
           <button
             type="button"
             onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "inherit",
-              cursor: "pointer",
-              padding: 4,
-              display: "inline-flex",
-            }}
+            className="bg-transparent border-0 text-inherit cursor-pointer p-1 inline-flex hover:text-puru-terra-base transition-colors"
             title="Close"
           >
             <Icon name="discard" size={12} />
@@ -147,141 +128,112 @@ export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProp
         )}
       </header>
 
-      {/* Tabs */}
-      <nav style={{ display: "flex", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-        {(["pointer-chain", "data", "render", "edit"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1,
-              padding: "8px 6px",
-              background: activeTab === tab ? "rgba(255, 170, 0, 0.12)" : "transparent",
-              border: "none",
-              borderBottom: activeTab === tab ? "2px solid #ffaa00" : "2px solid transparent",
-              color: activeTab === tab ? "#ffaa00" : "rgba(255, 255, 255, 0.7)",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "inherit",
-              textTransform: "capitalize",
-            }}
-          >
-            {tab.replace("-", " ")}
-          </button>
-        ))}
-      </nav>
-
-      {/* Body */}
-      <div style={{ flex: 1, overflow: "auto", padding: 12 }}>
-        {!selectedNode && (
-          <div style={{ color: "rgba(255, 255, 255, 0.4)", textAlign: "center", padding: 24 }}>
-            <p>Click an entity in the viewport to inspect.</p>
-          </div>
-        )}
-
-        {selectedNode && activeTab === "pointer-chain" && (
-          <div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedNode.label}</div>
-              <div style={{ fontSize: 11, color: "rgba(255, 255, 255, 0.5)" }}>
-                {selectedNode.kind}
-              </div>
-            </div>
-            {pointerChain && pointerChain.length > 0 ? (
-              <ol
-                style={{
-                  listStyle: "none",
-                  margin: 0,
-                  padding: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                {pointerChain.map((seg, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      padding: "8px 10px",
-                      background: "rgba(255, 255, 255, 0.04)",
-                      borderLeft: "2px solid rgba(255, 170, 0, 0.6)",
-                      borderRadius: 3,
-                      fontFamily: "ui-monospace, monospace",
-                    }}
-                  >
-                    <div style={{ fontSize: 10, color: "rgba(255, 255, 255, 0.5)", marginBottom: 2 }}>
-                      {seg._tag}
-                    </div>
-                    <div>{segmentLabel(seg)}</div>
-                    {("path" in seg) && (
-                      <div style={{ fontSize: 10, color: "rgba(255, 255, 255, 0.5)", marginTop: 2 }}>
-                        {seg.path}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <div style={{ color: "rgba(255, 255, 255, 0.5)" }}>No chain available.</div>
-            )}
-          </div>
-        )}
-
-        {selectedNode && activeTab === "data" && (
-          <pre
-            style={{
-              fontSize: 11,
-              fontFamily: "ui-monospace, monospace",
-              color: "rgba(255, 255, 255, 0.8)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-            }}
-          >
-            {JSON.stringify(selectedNode.metadata, null, 2)}
-          </pre>
-        )}
-
-        {selectedNode && activeTab === "render" && (
-          <div style={{ color: "rgba(255, 255, 255, 0.6)" }}>
-            <p>Render summary (V0 stub — populated in S4 workspace polish).</p>
-            <pre style={{ fontSize: 11 }}>id: {selectedNode.id}</pre>
-            <pre style={{ fontSize: 11 }}>kind: {selectedNode.kind}</pre>
-            <pre style={{ fontSize: 11 }}>inspectable: {String(selectedNode.inspectable)}</pre>
-          </div>
-        )}
-
-        {selectedNode && activeTab === "edit" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof navigator !== "undefined" && navigator.clipboard) {
-                  navigator.clipboard.writeText(JSON.stringify(pointerChain ?? [], null, 2));
-                }
-              }}
-              style={{
-                padding: "8px 12px",
-                background: "rgba(255, 170, 0, 0.12)",
-                border: "1px solid rgba(255, 170, 0, 0.4)",
-                borderRadius: 4,
-                color: "#ffaa00",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 12,
-                fontFamily: "inherit",
-              }}
+      {/* Tabs — shadcn primitive · brand-token styling overrides */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as Tab)}
+        className="flex-1 flex flex-col overflow-hidden gap-0"
+      >
+        <TabsList className="w-full justify-stretch rounded-none bg-transparent border-b border-puru-surface-border/30 p-0 h-auto">
+          {(["pointer-chain", "data", "render", "edit"] as const).map((tab) => (
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-puru-honey-base data-[state=active]:bg-puru-honey-base/10 data-[state=active]:text-puru-honey-base data-[state=active]:shadow-none text-puru-ink-soft hover:text-puru-ink-base text-xs py-2 capitalize"
             >
-              <Icon name="copy" size={12} /> Copy pointer chain
-            </button>
-            <div style={{ fontSize: 11, color: "rgba(255, 255, 255, 0.5)" }}>
-              Edit affordances · V0 stub · expanded in S4 polish.
+              {tab.replace("-", " ")}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <div className="flex-1 overflow-auto p-3">
+          {!selectedNode && (
+            <div className="text-puru-ink-dim text-center py-6">
+              <p>Click an entity in the viewport to inspect.</p>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {selectedNode && (
+            <>
+              <TabsContent value="pointer-chain" className="m-0">
+                <div className="mb-3">
+                  <div className="text-sm font-semibold text-puru-ink-rich">
+                    {selectedNode.label}
+                  </div>
+                  <div className="text-[11px] text-puru-ink-dim">
+                    {selectedNode.kind}
+                  </div>
+                </div>
+                {pointerChain && pointerChain.length > 0 ? (
+                  <ol className="list-none m-0 p-0 flex flex-col gap-2">
+                    {pointerChain.map((seg, i) => (
+                      <li
+                        key={i}
+                        className="px-2.5 py-2 bg-puru-cloud-base/8 border-l-2 border-puru-honey-base/60 rounded-sm font-puru-mono"
+                      >
+                        <div className="text-[10px] text-puru-ink-dim mb-0.5">
+                          {seg._tag}
+                        </div>
+                        <div className="text-puru-ink-base">
+                          {segmentLabel(seg)}
+                        </div>
+                        {"path" in seg && (
+                          <div className="text-[10px] text-puru-ink-dim mt-0.5 break-words">
+                            {seg.path}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <div className="text-puru-ink-dim">No chain available.</div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="data" className="m-0">
+                <pre className="text-[11px] font-puru-mono text-puru-ink-base whitespace-pre-wrap break-words">
+                  {JSON.stringify(selectedNode.metadata, null, 2)}
+                </pre>
+              </TabsContent>
+
+              <TabsContent value="render" className="m-0 text-puru-ink-soft">
+                <p>Render summary (V0 stub — S6 lands the live Data tab per FR-16).</p>
+                <pre className="text-[11px] font-puru-mono">id: {selectedNode.id}</pre>
+                <pre className="text-[11px] font-puru-mono">
+                  kind: {selectedNode.kind}
+                </pre>
+                <pre className="text-[11px] font-puru-mono">
+                  inspectable: {String(selectedNode.inspectable)}
+                </pre>
+              </TabsContent>
+
+              <TabsContent value="edit" className="m-0">
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        typeof navigator !== "undefined" &&
+                        navigator.clipboard
+                      ) {
+                        navigator.clipboard.writeText(
+                          JSON.stringify(pointerChain ?? [], null, 2),
+                        );
+                      }
+                    }}
+                    className="px-3 py-2 bg-puru-honey-base/12 border border-puru-honey-base/40 rounded text-puru-honey-base cursor-pointer inline-flex items-center gap-1.5 text-xs hover:bg-puru-honey-base/20 transition-colors font-puru-body"
+                  >
+                    <Icon name="copy" size={12} /> Copy pointer chain
+                  </button>
+                  <div className="text-[11px] text-puru-ink-dim">
+                    Edit affordances · V0 stub · S6 lands the live Knobs tab per FR-14.
+                  </div>
+                </div>
+              </TabsContent>
+            </>
+          )}
+        </div>
+      </Tabs>
     </aside>
   );
 }
