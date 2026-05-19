@@ -1,32 +1,19 @@
 /**
  * SceneTreeSidebar · cycle-2 S4.3 · left region of dock-shell
  *
- * Re-hosts cycle-1's ShapeC_GodotTree inside the new dock-shell left region.
- * Replaces the cycle-1 ComposabilityPanel's fixed-position aside (cycle-1
- * pattern is collapse-to-FAB · cycle-2 dock-shell is persistent left region
- * with operator-resizable width).
+ * Renders the active scene tree as a flat-list with honey-active state.
+ * Narrow-column-friendly (no source-path columns · no overflowing pointer-
+ * chain text). Cycle-1 ShapeC_GodotTree is fine for wide modal panels but
+ * cramps at 22-30% viewport width · this simpler renderer composes
+ * cleanly in the dock-shell left region.
  *
- * Row anatomy per sprint plan S4.3 spec (operator-visible · S4 ships the
- * scaffolding · S5 wires drill-in mutation · S6 wires Inspector live):
- *   - chevron (collapse/expand) — already in cycle-1 ShapeC_GodotTree
- *   - element-accent left-edge — added via ShapeC_GodotTree internal
- *     element-aware coloring (cycle-1 may not have this; future polish)
- *   - label — already in ShapeC_GodotTree
- *   - tier-stamp Badge — DEFERRED to S5/S6 (cycle-1 tree rows don't carry
- *     tier-stamp metadata yet · the metadata lives on adapter level not
- *     EntityTreeNode level)
- *   - tri-state eye Toggle (visibility · Eisel pattern from the-easel
- *     REF-3) — DEFERRED to S5+ (cycle-1 has no visibility state on tree)
- *   - ContextMenu — DEFERRED to S5+ (cycle-1 tree rows aren't context-
- *     menu-eligible yet)
+ * Row anatomy (sprint plan S4.3): cycle-2 minimum is label + kind + active
+ * state. Future row-anatomy enhancements (tier-stamp Badge · tri-state eye
+ * Toggle · ContextMenu) land in S5+ when the supporting metadata exists
+ * on EntityTreeNode.
  *
- * For S4 · this component delivers the LEFT-region scaffold · S5/S6 will
- * enhance the row anatomy as the supporting metadata lands. Documented
- * inline so the operator can review the deferral rationale.
- *
- * API: takes a `tree: readonly EntityTreeNode[]` (cycle-1 contract · no
- * changes to EntityTreeNode shape). Selection callback + selectedNodeId
- * preserved.
+ * API preserved (tree · selectedNodeId · onSelect) so callers swap
+ * SceneTreeSidebar ↔ ShapeC_GodotTree without prop changes.
  */
 
 "use client";
@@ -34,12 +21,59 @@
 import { Icon } from "@/lib/ui/icons/Icon";
 import type { EntityTreeNode } from "@/lib/lab/adapter-registry/types";
 
-import { ShapeC_GodotTree } from "../composability/ShapeC-GodotTree";
-
 interface SceneTreeSidebarProps {
   tree: readonly EntityTreeNode[];
   selectedNodeId?: string;
   onSelect?: (node: EntityTreeNode) => void;
+}
+
+function Row({
+  node,
+  selectedNodeId,
+  onSelect,
+  depth = 0,
+}: {
+  node: EntityTreeNode;
+  selectedNodeId?: string;
+  onSelect?: (node: EntityTreeNode) => void;
+  depth: number;
+}) {
+  const isSelected = selectedNodeId === node.id;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => onSelect?.(node)}
+        className={`w-full text-left inline-flex items-center gap-1.5 px-3 py-1.5 border-b border-puru-surface-border/20 font-puru-body text-xs cursor-pointer transition-colors ${
+          isSelected
+            ? "bg-puru-honey-base/15 text-puru-honey-base font-semibold"
+            : "text-puru-ink-base hover:bg-puru-cloud-bright/10 hover:text-puru-ink-rich"
+        }`}
+        style={{ paddingLeft: 12 + depth * 12 }}
+        data-tree-row
+        data-node-id={node.id}
+        data-active={isSelected ? "true" : undefined}
+      >
+        <Icon
+          name={node.children.length > 0 ? "layers" : "raw"}
+          size={11}
+        />
+        <span className="flex-1 truncate">{node.label}</span>
+        <span className="text-[9px] text-puru-ink-dim font-puru-mono uppercase tracking-wider">
+          {node.kind}
+        </span>
+      </button>
+      {node.children.map((child) => (
+        <Row
+          key={child.id}
+          node={child}
+          selectedNodeId={selectedNodeId}
+          onSelect={onSelect}
+          depth={depth + 1}
+        />
+      ))}
+    </>
+  );
 }
 
 export function SceneTreeSidebar({
@@ -58,21 +92,25 @@ export function SceneTreeSidebar({
           Scene Tree
         </span>
         <span className="text-[10px] text-puru-ink-dim font-puru-mono">
-          {tree.length} {tree.length === 1 ? "entity" : "entities"}
+          {tree.length}
         </span>
       </header>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {tree.length === 0 ? (
           <div className="p-4 text-puru-ink-dim text-center">
             No active entity
           </div>
         ) : (
-          <ShapeC_GodotTree
-            tree={tree}
-            selectedNodeId={selectedNodeId}
-            onSelect={onSelect}
-          />
+          tree.map((node) => (
+            <Row
+              key={node.id}
+              node={node}
+              selectedNodeId={selectedNodeId}
+              onSelect={onSelect}
+              depth={0}
+            />
+          ))
         )}
       </div>
     </aside>

@@ -104,9 +104,11 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
       data-dock-shell
       data-bottom-collapsed={state.bottomCollapsed ? "true" : "false"}
     >
-      {/* TOP region · fixed 48px · holds mode-tabs + breadcrumb + play button */}
+      {/* TOP region · 64px · holds mode-tabs + breadcrumb + play button.
+          Was 48px in S4.2 · bumped after S4.7 visual feedback (the row
+          with h1 + subtitle + tabs + button + breadcrumb didn't fit). */}
       <header
-        className="flex-none h-12 border-b border-puru-surface-border/30 bg-puru-cloud-deep/65 backdrop-blur-md flex items-center px-3 z-10"
+        className="flex-none h-16 border-b border-puru-surface-border/30 bg-puru-cloud-deep/65 backdrop-blur-md flex items-center px-3 z-10 overflow-hidden"
         data-dock-region="top"
       >
         {top}
@@ -144,7 +146,11 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
             <ResizableHandle className="bg-puru-surface-border/40 hover:bg-puru-honey-base/40 transition-colors" />
 
             <ResizablePanel defaultSize={100 - state.leftPanelSize - state.rightPanelSize} data-dock-region="center">
-              <div className="h-full overflow-hidden">{center}</div>
+              {/* relative · gives absolute-positioned descendants (PostPane
+                  · cycle-1 PreviewPane overlays) a positioning context */}
+              <div className="h-full w-full overflow-hidden relative">
+                {center}
+              </div>
             </ResizablePanel>
 
             <ResizableHandle className="bg-puru-surface-border/40 hover:bg-puru-honey-base/40 transition-colors" />

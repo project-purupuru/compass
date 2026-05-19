@@ -37,6 +37,10 @@ import { PointerBreadcrumb } from "@/app/battle-v2/_components/lab/PointerBreadc
 import { ModeTabsBar } from "@/app/battle-v2/_components/lab/mode-tabs/ModeTabsBar";
 import { PlayButton } from "@/app/battle-v2/_components/lab/mode-tabs/PlayButton";
 import { useActiveWorkspace } from "@/app/battle-v2/_components/lab/workspaces/WorkspacesTabs";
+import { DockShell } from "@/app/battle-v2/_components/lab/dock-shell/DockShell";
+import { SceneTreeSidebar } from "@/app/battle-v2/_components/lab/dock-shell/SceneTreeSidebar";
+import { LogConsole } from "@/app/battle-v2/_components/lab/dock-shell/LogConsole";
+import type { EntityTreeNode } from "@/lib/lab/adapter-registry/types";
 import {
   HOT_JUMP_SCHEMA_VERSION,
   serializeHotJumpState,
@@ -278,125 +282,72 @@ function VfxLabPageInner() {
     [activeDef.Preview],
   );
 
-  return (
-    <main
-      style={{
-        position: "fixed",
-        inset: 0,
-        display: "grid",
-        gridTemplateColumns: "220px minmax(0, 1fr) 300px",
-        background: "#0a0805",
-        color: "var(--puru-ink-base, #d8cdae)",
-        fontFamily: "var(--font-puru-body)",
-      }}
-    >
-      <EffectPicker
-        entries={VFX_REGISTRY}
-        activeId={activeId}
-        onSelect={(id) => {
-          setActiveId(id);
-          setComposeMode(false);
-          compositionRef.current?.cancel();
-        }}
-      />
+  // Cycle-2 S4.7: synthesize a flat scene-tree from VFX_REGISTRY · one root
+  // per adapter · clicking selects (replaces cycle-1 EffectPicker click).
+  const sceneTree = useMemo<EntityTreeNode[]>(
+    () =>
+      VFX_REGISTRY.map((def) => ({
+        id: def.id,
+        label: def.label,
+        kind: "effect" as const,
+        children: [],
+        pointerChain: [
+          {
+            _tag: "Primitive" as const,
+            name: def.id,
+            path: `app/battle-v2/_components/vfx/effects/${def.label.replace(/\s/g, "")}.tsx`,
+            label: def.label,
+          },
+          {
+            _tag: "Consumer" as const,
+            consumers: ["honeycomb"],
+          },
+        ],
+        inspectable: true,
+      })),
+    [],
+  );
 
-      <section
-        style={{
-          position: "relative",
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header strip */}
-        <header
-          style={{
-            position: "absolute",
-            top: 16,
-            left: 20,
-            right: 20,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            zIndex: 7,
-            pointerEvents: "none",
+  // Single-row top content · fits 64px region · h1 small + subtitle + tabs +
+  // button + breadcrumb (flex-1 + min-w-0 + truncate to prevent overflow).
+  const topContent = (
+    <div className="flex items-center gap-3 w-full min-w-0">
+      <h1 className="flex-none m-0 font-puru-display text-sm font-semibold text-puru-ink-rich tracking-wide">
+        vfx lab
+      </h1>
+      <span className="flex-none font-puru-mono text-[9px] uppercase tracking-[0.18em] text-puru-ink-soft truncate max-w-[180px]">
+        {composeMode
+          ? "compose · wood vs water"
+          : `${activeDef.label} · ${workspace}`}
+      </span>
+      <div className="flex-none flex items-center gap-2">
+        <ModeTabsBar active={workspace} onChange={setWorkspace} />
+        <PlayButton onHotJump={onHotJump} />
+      </div>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <PointerBreadcrumb chain={activeChain} />
+      </div>
+      {composeMode && (
+        <button
+          type="button"
+          onClick={() => {
+            compositionRef.current?.cancel();
+            setComposeMode(false);
           }}
+          className="flex-none px-3 py-1 font-puru-mono text-[10px] uppercase tracking-wider bg-puru-cloud-bright text-puru-ink-base border border-puru-surface-border rounded-md cursor-pointer hover:bg-puru-honey-base/20 transition-colors"
         >
-          <div style={{ pointerEvents: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-              <h1
-                style={{
-                  margin: 0,
-                  fontFamily: "var(--font-puru-display)",
-                  fontSize: 24,
-                  color: "var(--puru-ink-rich, #f3e9d2)",
-                  textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                vfx lab
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: "var(--font-puru-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "var(--puru-ink-soft, #c2b89c)",
-                  textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-                }}
-              >
-                {composeMode
-                  ? "compose · wood vs water · sequence"
-                  : `${activeDef.label} · ${workspace}`}
-              </p>
-            </div>
+          exit
+        </button>
+      )}
+    </div>
+  );
 
-            {/*
-              Cycle-2 spine · visible chrome inside the header (no overlay).
-              S3 re-verb: ModeTabsBar (BUILD · LIBRARY) + PlayButton (F5 hot-jump)
-              replaces cycle-1 WorkspacesTabs (compose/preview/export).
-              PointerBreadcrumb: the active effect's pointer chain at the surface.
-              Per FR-4 (BARTH probe verdict) · per FR-25/26 (hot-jump round-trip).
-            */}
-            <div style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
-              <div style={{ minWidth: 0 }}>
-                <ModeTabsBar active={workspace} onChange={setWorkspace} />
-              </div>
-              <PlayButton onHotJump={onHotJump} />
-            </div>
-            <div style={{ maxWidth: "calc(100vw - 580px)" }}>
-              <PointerBreadcrumb chain={activeChain} />
-            </div>
-          </div>
-
-          {composeMode && (
-            <button
-              type="button"
-              onClick={() => {
-                compositionRef.current?.cancel();
-                setComposeMode(false);
-              }}
-              style={{
-                pointerEvents: "auto",
-                padding: "6px 14px",
-                fontFamily: "var(--font-puru-mono)",
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                background: "var(--puru-cloud-bright, #2f291f)",
-                color: "var(--puru-ink-base, #d8cdae)",
-                border: "1px solid var(--puru-surface-border)",
-                borderRadius: "var(--radius-sm, 6px)",
-                cursor: "pointer",
-              }}
-            >
-              exit compose
-            </button>
-          )}
-        </header>
-
+  // Center content · preview area + PostPane absolute-positioned inside.
+  // The DockShell's center slot wraps this in a `relative` div · PostPane's
+  // position:absolute resolves against that wrapper (fixed in S4.7 retry).
+  const centerContent = (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 min-h-0 relative">
         {composeMode ? (
           <ComposePreviewPane
             treeFallConfig={treeFallConfigRef.current}
@@ -449,18 +400,36 @@ function VfxLabPageInner() {
             post={postRef.current}
           />
         )}
-
-        {/* Global post-process pane — persistent across effect switches. */}
         <PostPane config={postRef.current} onChange={bumpPost} />
-      </section>
+      </div>
+    </div>
+  );
 
-      <KnobPane
-        effectDef={activeDef}
-        config={activeConfigRef.current as unknown as Record<string, unknown>}
-        onChange={() => bumpKnob()}
-        onTrigger={triggerActive}
-      />
-    </main>
+  return (
+    <DockShell
+      top={topContent}
+      left={
+        <SceneTreeSidebar
+          tree={sceneTree}
+          selectedNodeId={activeId}
+          onSelect={(node) => {
+            setActiveId(node.id);
+            setComposeMode(false);
+            compositionRef.current?.cancel();
+          }}
+        />
+      }
+      center={centerContent}
+      right={
+        <KnobPane
+          effectDef={activeDef}
+          config={activeConfigRef.current as unknown as Record<string, unknown>}
+          onChange={() => bumpKnob()}
+          onTrigger={triggerActive}
+        />
+      }
+      bottom={<LogConsole entries={[]} />}
+    />
   );
 }
 
