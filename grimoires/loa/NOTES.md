@@ -34,6 +34,7 @@
 ## Decision Log
 | Date | Decision | Rationale | Decided By |
 |------|----------|-----------|------------|
+| 2026-05-19 | blender-adapter S0 ACs 1–4 marked [ACCEPTED-DEFERRED] | S0 is a calibration spike; ACs 1–4 require a running Blender 4.5 LTS GUI with a human installing addons + observing console output — outside an autonomous agent's reach. Closure gated on the operator completing the Task 0.2 runbook in sprint-0-COMPLETED.md. AC 5 (sprint-0-COMPLETED.md written) is ✓ Met. Not a coverage gap — the inherent shape of a real-Blender calibration spike. | claude (autonomous /run sprint-0) |
 | 2026-05-07 | 2D Pixi.js for main sim | 4-day clock; thousands of entities; 3D as optional polish | zerker |
 | 2026-05-07 | Use Loa framework (trimmed path) | Discipline + scope control on tight clock | zerker |
 | 2026-05-07 | Defer PRD to next session | Scope this session to scaffold only; user will run /plan separately for the actual implementation | zerker |
