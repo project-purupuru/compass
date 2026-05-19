@@ -93,4 +93,12 @@ echo "---"
 echo "verdict written to: $VERDICT_OUT"
 if [[ -f "$VERDICT_OUT" ]]; then
   jq '{verdict, summary, findings_count: (.findings | length)}' "$VERDICT_OUT" 2>/dev/null
+  # If APPROVED, clear the session log so the pre-commit gate sees a clean
+  # slate. CHANGES_REQUIRED keeps the log so the operator must address +
+  # re-sweep before the gate stops blocking.
+  verdict_str=$(jq -r '.verdict // empty' "$VERDICT_OUT" 2>/dev/null)
+  if [[ "$verdict_str" == "APPROVED" ]]; then
+    : > "$SESSION_LOG"
+    echo "✓ session log cleared (APPROVED verdict supersedes prior arch touches)"
+  fi
 fi

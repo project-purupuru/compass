@@ -57,11 +57,30 @@ The classifier in `.claude/hooks/fagan-checkpoint.sh` fires on paths matching ar
 
 ## How the hook behaves
 
+Two hooks compose into a soft-then-hard cadence — quiet mid-session, firm at the commit seam.
+
+### `.claude/hooks/fagan-checkpoint.sh` (soft · PostToolUse)
+
 1. PostToolUse fires after `Edit`/`Write`/`MultiEdit`.
 2. Path is classified. If creative → silent exit. If architectural → continue.
 3. Touched file is appended to `.run/fagan-checkpoint/session.jsonl`.
 4. **Debounce:** if a reminder fired in the last 5 minutes (`FAGAN_DEBOUNCE_SECONDS` overrides), this fire is silent — the file is still logged for batch review, but no new reminder injected. Avoids spamming mid-cluster.
 5. Otherwise: inject `hookSpecificOutput.additionalContext` with a soft prompt — "consider running `/reviewing-diffs` or `/reviewing-files` before declaring done." Agent decides.
+
+### `.claude/hooks/fagan-precommit-gate.sh` (hard · PreToolUse:Bash)
+
+Belt-and-suspenders: blocks `git commit` when the unreviewed-arch cluster exceeds threshold.
+
+1. PreToolUse fires on Bash invocations. Hook matches commands containing `git commit\b`.
+2. Reads `.run/fagan-checkpoint/session.jsonl`. Counts unique unreviewed paths.
+3. If count ≤ `FAGAN_PRECOMMIT_THRESHOLD` (default 3, override via env or `.loa.config.yaml::fagan_review.precommit_threshold`) → allow.
+4. If a fresh `last-verdict.json` with `verdict: APPROVED` exists newer than the session log → allow (sweep already cleared the cluster).
+5. Otherwise → **block** with exit 2 + structured stderr telling the agent to run `bash .claude/hooks/fagan-sweep.sh` first.
+6. Escape hatch: `FAGAN_PRECOMMIT_SKIP=1` for genuinely mechanical commits (version bumps, doc-only). Use sparingly; the gate exists because mechanical-feeling commits are often where invariants quietly drift.
+
+### Cycle closure
+
+`fagan-sweep.sh` truncates the session log when FAGAN returns `APPROVED`. `CHANGES_REQUIRED` leaves the log intact so the operator must fix + re-sweep before the gate stops blocking. This makes the cluster monotonic: arch touches accumulate until reviewed, never silently expire.
 
 ## What the agent should do when prompted
 
@@ -88,8 +107,13 @@ The hook materializes that split as substrate, not as discipline the agent has t
 | Setting | Default | Purpose |
 |---|---|---|
 | `.loa.config.yaml::fagan_review.enabled` | `true` | Master toggle |
-| `FAGAN_DEBOUNCE_SECONDS` env | `300` | Min seconds between reminders in a session |
-| `.run/fagan-checkpoint/session.jsonl` | — | Touched-arch-file log; agent reads to batch |
+| `.loa.config.yaml::fagan_review.precommit_threshold` | `3` | Unreviewed arch-file count above which commits block |
+| `FAGAN_DEBOUNCE_SECONDS` env | `300` | Min seconds between checkpoint reminders |
+| `FAGAN_PRECOMMIT_THRESHOLD` env | `3` | Pre-commit gate threshold override |
+| `FAGAN_PRECOMMIT_SKIP=1` env | unset | One-off escape hatch for mechanical commits |
+| `.run/fagan-checkpoint/session.jsonl` | — | Touched arch files (unreviewed) |
 | `.run/fagan-checkpoint/last-fire.epoch` | — | Last reminder fire timestamp |
+| `.run/fagan-checkpoint/last-verdict.json` | — | Latest sweep verdict (APPROVED clears the log) |
 
-Delete `.run/fagan-checkpoint/last-fire.epoch` to force-fire the next reminder.
+- Delete `last-fire.epoch` → force-fire the next reminder.
+- `bash .claude/hooks/fagan-sweep.sh --clear` → wipe everything, start fresh.

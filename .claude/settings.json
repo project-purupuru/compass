@@ -514,6 +514,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/safety/team-role-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/fagan-precommit-gate.sh"
           }
         ]
       },
