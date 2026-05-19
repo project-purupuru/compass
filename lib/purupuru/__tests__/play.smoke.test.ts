@@ -1,5 +1,8 @@
 /**
- * AC-10 smoke: /battle-v2 components import + server route loads pack
+ * AC-10 smoke: /play components import + server route loads pack
+ *
+ * Renamed from battle-v2.smoke.test.ts in cycle-2 S0 (route taxonomy
+ * /play + /honeycomb). Substrate at @/app/battle-v2/_components/ unchanged.
  *
  * Full Playwright E2E (AC-11 11-beat sequence visible) deferred to
  * operator-driven local run (`pnpm dev` + manual hover/click flow).
@@ -13,7 +16,7 @@ import { buildContentDatabase, loadPack } from "../content/loader";
 
 const PACK_DIR = resolve(__dirname, "..", "content/wood");
 
-describe("AC-10 smoke: /battle-v2 wiring", () => {
+describe("AC-10 smoke: /play wiring (renamed from /battle-v2)", () => {
   test("page.tsx server-side pack load returns valid ContentDatabase", () => {
     const pack = loadPack(PACK_DIR);
     const content = buildContentDatabase(pack);

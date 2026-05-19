@@ -17,6 +17,8 @@ import type { Schema as S } from "effect";
 import type { ComponentType } from "react";
 
 import {
+  CARD_COMPOSITION_DEFAULTS,
+  CardCompositionConfig,
   CARD_LAB_DEFAULTS,
   CardLabConfig,
   HEX_SCENE_DEFAULTS,
@@ -33,6 +35,7 @@ import {
   RealmSceneConfig,
   ZONE_SCENE_DEFAULTS,
   ZoneSceneConfig,
+  type CardCompositionConfigT,
   type CardLabConfigT,
   type HexSceneConfigT,
   type MiniSceneConfigT,
@@ -42,6 +45,7 @@ import {
   type WaterSplashConfigT,
   type ZoneSceneConfigT,
 } from "./VfxConfig";
+import { CardCompositionPreview } from "./effects/CardComposition";
 import { CardLabPreview } from "./effects/CardLab";
 import { HexScenePreview } from "./effects/HexScene";
 import { MiniScenePreview } from "./effects/MiniScene";
@@ -1122,6 +1126,64 @@ const CARD_LAB_DEF: VfxEffectDefinition<CardLabConfigT> = {
   },
 };
 
+// ── card-composition (Session 2026-05-18 — kitchen primitive) ──────────────
+//
+// The kitchen surface for codex-authored cards. Reads from
+// /codex/cards.jsonl + /codex/cards/<slug>/layers.json (vendored from
+// purupuru-codex PR #1 until pack sync delivers them natively). Sits beside
+// CARD_LAB — does NOT replace it. CARD_LAB is choreography substrate;
+// CARD_COMPOSITION is composition substrate.
+
+const CARD_COMPOSITION_DEF: VfxEffectDefinition<CardCompositionConfigT> = {
+  id: "card-composition",
+  label: "card-composition",
+  sub: "codex layer stack · gumi kitchen",
+  schema: CardCompositionConfig,
+  defaults: CARD_COMPOSITION_DEFAULTS,
+  Preview: CardCompositionPreview,
+  registerKnobs(pane, config) {
+    // Defensive backfill — same shape as CARD_LAB_DEF / BIG_REALM_SCENE_DEF.
+    const cfg = config as unknown as Record<string, unknown>;
+    const defaults = CARD_COMPOSITION_DEFAULTS as unknown as Record<string, unknown>;
+    for (const key of Object.keys(defaults)) {
+      if (cfg[key] === undefined) cfg[key] = defaults[key];
+    }
+
+    const ingredient = pane.addFolder({ title: "ingredient", expanded: true });
+    // Card picker — V0 hardcodes the known slugs. Future: populate from listCodexCards().
+    addEnumBinding(ingredient, config as unknown as Record<string, unknown>, "cardSlug", "card", [
+      { text: "earth-jani", value: "earth-jani" },
+    ]);
+
+    const view = pane.addFolder({ title: "view", expanded: true });
+    view.addBinding(config as unknown as Record<string, unknown>, "previewScale", {
+      label: "scale",
+      min: 0.2,
+      max: 1.0,
+      step: 0.01,
+    });
+    view.addBinding(config as unknown as Record<string, unknown>, "showComposite", {
+      label: "show composite",
+    });
+    view.addBinding(config as unknown as Record<string, unknown>, "showStatus", {
+      label: "show status",
+    });
+
+    const depth = pane.addFolder({ title: "depth (V1 preview)", expanded: false });
+    depth.addBinding(config as unknown as Record<string, unknown>, "depthStub", {
+      label: "pop-up tilt",
+      min: 0,
+      max: 1,
+      step: 0.01,
+    });
+
+    const dbg = pane.addFolder({ title: "debug", expanded: false });
+    dbg.addBinding(config as unknown as Record<string, unknown>, "debug", {
+      label: "outline layers + bboxes",
+    });
+  },
+};
+
 // ── Registry ───────────────────────────────────────────────────────────────
 
 /** Discriminated by `kind` on the underlying config. */
@@ -1133,9 +1195,11 @@ export type AnyVfxDefinition =
   | VfxEffectDefinition<ZoneSceneConfigT>
   | VfxEffectDefinition<RealmSceneConfigT>
   | VfxEffectDefinition<BigRealmSceneConfigT>
-  | VfxEffectDefinition<CardLabConfigT>;
+  | VfxEffectDefinition<CardLabConfigT>
+  | VfxEffectDefinition<CardCompositionConfigT>;
 
 export const VFX_REGISTRY: readonly AnyVfxDefinition[] = [
+  CARD_COMPOSITION_DEF,
   CARD_LAB_DEF,
   BIG_REALM_SCENE_DEF,
   REALM_SCENE_DEF,

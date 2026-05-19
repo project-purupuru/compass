@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lab regression harness</title>
+<style>
+  /*
+   * Lab regression harness · ADR-14 determinism playbook applied via Playwright:
+   *   - viewport locked 1280x800
+   *   - deviceScaleFactor: 1 (DPR-lock)
+   *   - reducedMotion: reduce
+   *   - locale: en-US
+   *   - timezoneId: UTC
+   *
+   * The harness uses CSS Custom Properties from app/globals.css. To keep this
+   * page self-contained for Playwright (no Next.js build needed), we inline
+   * a minimal subset and the consumer registers extra theme tokens via
+   * window.__mount__(args.theme) at mount time.
+   */
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0a0a0a;
+    color-scheme: dark;
+    font-family: -apple-system, "Segoe UI", "Cantarell", sans-serif;
+    font-size: 16px;
+  }
+  body[data-theme="light"] {
+    background: #fafafa;
+    color-scheme: light;
+  }
+  /* Mounted primitives are placed inside #stage. */
+  #stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+</style>
+</head>
+<body data-theme="dark">
+<div id="stage"></div>
+<script type="module">
+/**
+ * Render harness controller.
+ *
+ * Consumer (Playwright capture): page.evaluate(args => window.__mount__(args)).
+ * Args:
+ *   { primitive: string, scale: 0.5|1|2, theme: 'light'|'dark', props: object }
+ *
+ * Strategy: each primitive has a corresponding skeletal mount function in
+ * this harness (kept simple — no React/Next.js needed). For primitives that
+ * require React state, render-helpers.ts uses ReactDOMServer to produce
+ * static markup and feeds it via args.html (escape hatch).
+ *
+ * The mounted node MUST have `data-mounted` attribute so Playwright can
+ * boundingBox() it deterministically.
+ */
+const renderers = {
+  "static-fixture": ({ scale, theme }) => {
+    document.body.dataset.theme = theme;
+    const el = document.createElement("div");
+    el.setAttribute("data-mounted", "");
+    el.style.cssText = `
+      width: ${100 * scale}px;
+      height: ${50 * scale}px;
+      background: #ffaa00;
+      border: ${2 * scale}px solid #ffffff;
+      box-sizing: border-box;
+      border-radius: ${4 * scale}px;
+      color: #000;
+      font-size: ${12 * scale}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    el.textContent = "fixture";
+    document.getElementById("stage").appendChild(el);
+  },
+  "raw-html": ({ html, theme }) => {
+    document.body.dataset.theme = theme;
+    const wrap = document.createElement("div");
+    wrap.setAttribute("data-mounted", "");
+    wrap.innerHTML = html ?? "";
+    document.getElementById("stage").appendChild(wrap);
+  },
+};
+
+window.__mount__ = function(args) {
+  const stage = document.getElementById("stage");
+  stage.innerHTML = "";
+  const renderer = renderers[args.primitive] ?? renderers["raw-html"];
+  renderer(args);
+};
+</script>
+</body>
+</html>

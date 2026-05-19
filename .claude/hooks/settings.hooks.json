@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_comment": "Hook configuration for Loa. Merge into ~/.claude/settings.json",
-
   "hooks": {
     "PreCompact": [
       {
@@ -108,6 +107,15 @@
           {
             "type": "command",
             "command": ".claude/hooks/audit/write-mutation-logger.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-tool-use/lab-render-regression.sh"
           }
         ]
       }

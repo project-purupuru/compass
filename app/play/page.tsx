@@ -1,10 +1,10 @@
 /**
- * /battle-v2 — Server route shell for the cycle-1 vertical slice.
+ * /play — Server route shell for the cycle-1 vertical slice.
  *
- * Per PRD r2 FR-19 + SDD r1 §5.
+ * Renamed from /battle-v2 in cycle-2 S0 (route taxonomy /play + /honeycomb).
+ * Server-side pack load + ContentDatabase delegation unchanged.
  *
- * Loads the wood content pack server-side, then passes ContentDatabase + the
- * initial card hand + UI screen definition to the BattleV2 client component.
+ * Per cycle-1 PRD r2 FR-19 + SDD r1 §5 · cycle-2 PRD FR-1.
  */
 
 import { resolve } from "node:path";
@@ -19,8 +19,9 @@ import type {
   ZoneEventDefinition,
 } from "@/lib/purupuru/contracts/types";
 
-import { BattleV2 } from "./_components/BattleV2";
-import "./_styles/battle-v2.css";
+import { BattleV2 } from "@/app/battle-v2/_components/BattleV2";
+import { HotJumpReader } from "@/lib/lab/state/HotJumpReader";
+import "@/app/battle-v2/_styles/battle-v2.css";
 
 export const metadata = {
   title: "Battle v2 · Wood Vertical Slice (Purupuru Cycle 1)",
@@ -58,7 +59,9 @@ export default function BattleV2Page() {
 
   return (
     <main className="battle-v2-shell">
-      <BattleV2 pack={payload} />
+      <HotJumpReader>
+        <BattleV2 pack={payload} />
+      </HotJumpReader>
     </main>
   );
 }

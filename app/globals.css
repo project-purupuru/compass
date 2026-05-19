@@ -45,6 +45,8 @@
 :root {
   --puru-bleed-mix: 25%;
   --puru-bleed-stop: 62%;
+  /* shadcn HSL sidebar defaults removed · composed from --puru-* tokens
+     in the cycle-2 S1.3 composition block at the end of this file. */
 }
 [data-theme="old-horai"] {
   --puru-bleed-mix: 14%;
@@ -937,4 +939,105 @@ a,
     transition-duration: 0.01ms;
     scroll-behavior: auto;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   shadcn ↔ --puru-* composition  ·  cycle-2 S1.3 (FR per sprint plan)
+   ─────────────────────────────────────────────────────────────────────────────
+   shadcn/ui ships HSL-based zinc defaults. Compass uses OKLCH wuxing palette.
+   This block maps shadcn's expected CSS vars to compass --puru-* tokens so
+   shadcn components inherit compass craft material without per-component
+   override (per [[feedback_shadcn-for-kitchen-ui]]).
+
+   Strategy: declare in :root using `var(--puru-...)` references. The compass
+   dark theme block at `[data-theme="old-horai"]` (above) re-declares --puru-*
+   with dark values, so these shadcn vars auto-invert when the operator
+   surface is in Old Horai mode (enforced by /play and /honeycomb layouts).
+
+   The shadcn .dark block is removed (compass uses [data-theme="old-horai"]
+   not .dark; the .dark block was dead code in compass surfaces anyway).
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --background: var(--puru-cloud-base);
+  --foreground: var(--puru-ink-base);
+  --card: var(--puru-cloud-bright);
+  --card-foreground: var(--puru-ink-base);
+  --popover: var(--puru-cloud-bright);
+  --popover-foreground: var(--puru-ink-base);
+
+  /* Primary action — honey-grade (operator-facing primary CTA) */
+  --primary: var(--puru-honey-base);
+  --primary-foreground: oklch(0.15 0.04 80);
+
+  /* Secondary action — quieter surface */
+  --secondary: var(--puru-cloud-dim);
+  --secondary-foreground: var(--puru-ink-base);
+
+  /* Muted — subtle backgrounds */
+  --muted: var(--puru-cloud-dim);
+  --muted-foreground: var(--puru-ink-soft);
+
+  /* Accent — hover-highlights (honey-tint) */
+  --accent: var(--puru-honey-tint);
+  --accent-foreground: var(--puru-ink-rich);
+
+  /* Destructive — terracotta kiln-material (the warning surface) */
+  --destructive: var(--puru-terra-base);
+  --destructive-foreground: var(--puru-cloud-bright);
+
+  /* Form chrome */
+  --border: var(--puru-surface-border);
+  --input: var(--puru-surface-border);
+  --ring: var(--puru-honey-base);
+
+  /* Sidebar — composed from --puru-* (replaces shadcn HSL defaults) */
+  --sidebar: var(--puru-cloud-base);
+  --sidebar-foreground: var(--puru-ink-base);
+  --sidebar-primary: var(--puru-honey-base);
+  --sidebar-primary-foreground: oklch(0.15 0.04 80);
+  --sidebar-accent: var(--puru-honey-tint);
+  --sidebar-accent-foreground: var(--puru-ink-rich);
+  --sidebar-border: var(--puru-surface-border);
+  --sidebar-ring: var(--puru-honey-base);
+
+  /* Radii (shadcn convention · compose with compass --radius-puru-* if needed) */
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  /* Map shadcn vars → Tailwind utility classes (bg-background, text-foreground, ...) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Sidebar utility colors */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }

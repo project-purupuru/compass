@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_cycle": "burn-rite-2026-05-13",
+  "active_cycle": "honeycomb-engine-2026-05-19",
   "cycles": [
     {
       "id": "cycle-036",
@@ -1028,6 +1028,64 @@
           "global_id": 152,
           "label": "The /burn route + ceremony",
           "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "honeycomb-engine-2026-05-19",
+      "label": "Honeycomb Engine \u2014 Architectural Observability Surface",
+      "status": "active",
+      "created": "2026-05-19T03:30:27Z",
+      "prd": "grimoires/loa/cycles/honeycomb-engine-2026-05-19/prd.md",
+      "sdd": "grimoires/loa/cycles/honeycomb-engine-2026-05-19/sdd.md",
+      "sprints": [
+        {
+          "local_id": 1,
+          "global_id": 153,
+          "label": "Route renames + 2-tab framing spike",
+          "status": "planned"
+        },
+        {
+          "local_id": 2,
+          "global_id": 154,
+          "label": "shadcn install + --puru-* OKLCH override",
+          "status": "planned"
+        },
+        {
+          "local_id": 3,
+          "global_id": 155,
+          "label": "Cycle-1 chrome rebuild on shadcn primitives",
+          "status": "planned"
+        },
+        {
+          "local_id": 4,
+          "global_id": 156,
+          "label": "Mode-tabs BUILD + LIBRARY + PLAY \u00b7 keyboard \u00b7 hot-jump",
+          "status": "planned"
+        },
+        {
+          "local_id": 5,
+          "global_id": 157,
+          "label": "Dock-shell Resizable 4-region \u00b7 scene-tree \u00b7 log \u00b7 localStorage",
+          "status": "planned"
+        },
+        {
+          "local_id": 6,
+          "global_id": 158,
+          "label": "Nested adapters \u00b7 BigRealmScene drill-in",
+          "status": "planned"
+        },
+        {
+          "local_id": 7,
+          "global_id": 159,
+          "label": "Inspector live \u00b7 3 tabs \u00b7 element accent",
+          "status": "planned"
+        },
+        {
+          "local_id": 8,
+          "global_id": 160,
+          "label": "Craft-review gate + LIBRARY codex + E2E goal validation",
+          "status": "planned"
         }
       ]
     }

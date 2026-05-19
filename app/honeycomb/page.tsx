@@ -1,14 +1,17 @@
 /**
- * /battle-v2/vfx-lab — sandbox for VFX iteration.
+ * /honeycomb — engine surface for architectural observability.
  *
- * Session-14 build. 3-pane shape: EffectPicker (left) · PreviewPane (center)
- * · KnobPane (right). Substrate-coupled via @effect/schema configs in
+ * Renamed from /battle-v2/vfx-lab in cycle-2 S0 (route taxonomy /play +
+ * /honeycomb · same substrate). Cycle-1 3-pane shape preserved: EffectPicker
+ * (left) · PreviewPane (center) · KnobPane (right). Cycle-2 S2 rebuilds this
+ * surface on shadcn primitives; S3 re-verbs the tabs to BUILD + LIBRARY + Play.
+ *
+ * Substrate-coupled via @effect/schema configs in
  * `_components/vfx/VfxConfig.ts`; effects render in isolation; layering
- * primitive included via Composition.ts (sequence + parallel; trigger-chain
- * stubbed for v2).
+ * primitive included via Composition.ts.
  *
- * Operator-locked decisions (session 14):
- *   - sandbox-first (no gameplay wiring this session)
+ * Cycle-1 operator-locked decisions preserved (session 14):
+ *   - sandbox-first (no gameplay wiring)
  *   - vanilla tweakpane in useEffect
  *   - @effect/schema for configs (not Zod)
  *   - 2 effects ship v1: tree-fall + water-splash
@@ -18,13 +21,35 @@
 
 "use client";
 
-import { Suspense, useCallback, useMemo, useReducer, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 
+// Lab-evolution cycle · substrate + visible spine inside existing header.
+// IconProvider wraps the page · adapter-init registers all 9 adapters silently.
+// Visible spine (PointerBreadcrumb + WorkspacesTabs) lives INSIDE the existing
+// absolute-positioned header — no overlay, no FAB, no conflict with rails.
+import { IconProvider } from "@/lib/ui/icons/provider";
+import { ensureAdaptersRegistered } from "@/app/battle-v2/_components/lab/adapter-init";
+import { PointerBreadcrumb } from "@/app/battle-v2/_components/lab/PointerBreadcrumb";
+import { ModeTabsBar } from "@/app/battle-v2/_components/lab/mode-tabs/ModeTabsBar";
+import { PlayButton } from "@/app/battle-v2/_components/lab/mode-tabs/PlayButton";
+import { useActiveWorkspace } from "@/app/battle-v2/_components/lab/workspaces/WorkspacesTabs";
+import { DockShell } from "@/app/battle-v2/_components/lab/dock-shell/DockShell";
+import { SceneTreeSidebar } from "@/app/battle-v2/_components/lab/dock-shell/SceneTreeSidebar";
+import { LogConsole } from "@/app/battle-v2/_components/lab/dock-shell/LogConsole";
+import type { EntityTreeNode } from "@/lib/lab/adapter-registry/types";
 import {
+  HOT_JUMP_SCHEMA_VERSION,
+  serializeHotJumpState,
+  type HotJumpState,
+} from "@/lib/lab/state/hot-jump.schema";
+import type { PointerChain, PointerSegment } from "@/lib/lab/pointer-chain/schema";
+
+import {
+  CARD_LAB_DEFAULTS,
   HEX_SCENE_DEFAULTS,
   MINI_SCENE_DEFAULTS,
   BIG_REALM_SCENE_DEFAULTS,
@@ -32,6 +57,7 @@ import {
   TREE_FALL_DEFAULTS,
   WATER_SPLASH_DEFAULTS,
   ZONE_SCENE_DEFAULTS,
+  type CardLabConfigT,
   type HexSceneConfigT,
   type MiniSceneConfigT,
   type BigRealmSceneConfigT,
@@ -39,32 +65,83 @@ import {
   type TreeFallConfigT,
   type WaterSplashConfigT,
   type ZoneSceneConfigT,
-} from "../_components/vfx/VfxConfig";
+} from "@/app/battle-v2/_components/vfx/VfxConfig";
 import {
   COMPOSITION_WOOD_VS_WATER,
   runComposition,
-} from "../_components/vfx/Composition";
-import { TreeFallPreview } from "../_components/vfx/effects/TreeFall";
-import { WaterSplashPreview } from "../_components/vfx/effects/WaterSplash";
+} from "@/app/battle-v2/_components/vfx/Composition";
+import { TreeFallPreview } from "@/app/battle-v2/_components/vfx/effects/TreeFall";
+import { WaterSplashPreview } from "@/app/battle-v2/_components/vfx/effects/WaterSplash";
 import {
   VFX_REGISTRY,
   getDefinition,
   type PreviewProps,
-} from "../_components/vfx/VfxRegistry";
-import { EffectPicker } from "./_components/EffectPicker";
-import { KnobPane } from "./_components/KnobPane";
-import { PostPane } from "./_components/PostPane";
+} from "@/app/battle-v2/_components/vfx/VfxRegistry";
+import { EffectPicker } from "@/app/battle-v2/vfx-lab/_components/EffectPicker";
+import { KnobPane } from "@/app/battle-v2/vfx-lab/_components/KnobPane";
+import { PostPane } from "@/app/battle-v2/vfx-lab/_components/PostPane";
 import {
   deriveTiltShiftLine,
   POST_DEFAULTS,
   type PostConfig,
-} from "./_components/postConfig";
-import { PreviewPane } from "./_components/PreviewPane";
+} from "@/app/battle-v2/vfx-lab/_components/postConfig";
+import { PreviewPane } from "@/app/battle-v2/vfx-lab/_components/PreviewPane";
 
 const FIRST_EFFECT_ID = VFX_REGISTRY[0].id;
 
+/**
+ * /honeycomb — engine surface for architectural observability.
+ *
+ * Wrapped in IconProvider so the IconRegistry substrate works for any
+ * <Icon> consumers. Adapters register silently on mount (cycle-DoD).
+ * Visible chrome (breadcrumb · inspector · composability panel · workspaces)
+ * rebuilds on shadcn primitives in cycle-2 S2.
+ */
 export default function VfxLabPage() {
+  useEffect(() => {
+    void ensureAdaptersRegistered();
+  }, []);
+
+  return (
+    <IconProvider>
+      <VfxLabPageInner />
+    </IconProvider>
+  );
+}
+
+function VfxLabPageInner() {
   const [activeId, setActiveId] = useState<string>(FIRST_EFFECT_ID);
+  const [workspace, setWorkspace] = useActiveWorkspace("build");
+
+  // S3.4 + S3.5: hot-jump handler · F5 or PlayButton click triggers this.
+  // Serializes current scene state to URL · navigates to /play.
+  const onHotJump = useCallback(() => {
+    const state: HotJumpState = {
+      schemaVersion: HOT_JUMP_SCHEMA_VERSION,
+      activeTab: workspace,
+      selectedAdapterId: activeId,
+      // selectedNodeId optional · cycle-2 S5+ wires composition drill-in
+    };
+    const encoded = serializeHotJumpState(state);
+    if (typeof window !== "undefined") {
+      window.location.href = `/play?state=${encoded}`;
+    }
+  }, [workspace, activeId]);
+
+  // S3.4: F5 keyboard listener (DockShell root stand-in · S4 will move this
+  // to the real DockShell). ⌘1 + ⌘2 already covered by useActiveWorkspace's
+  // cycle-1 keyboard handler (re-verbed via S3.1).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "F5") {
+        e.preventDefault();
+        onHotJump();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onHotJump]);
+
   const [composeMode, setComposeMode] = useState(false);
   const [, bumpKnob] = useReducer((x: number) => x + 1, 0);
   const [treeFallTriggerKey, setTreeFallTriggerKey] = useState(0);
@@ -74,6 +151,7 @@ export default function VfxLabPage() {
   const [zoneSceneTriggerKey, setZoneSceneTriggerKey] = useState(0);
   const [realmSceneTriggerKey, setRealmSceneTriggerKey] = useState(0);
   const [bigRealmSceneTriggerKey, setBigRealmSceneTriggerKey] = useState(0);
+  const [cardLabTriggerKey, setCardLabTriggerKey] = useState(0);
   // Global post-process config (Scheimpflug DoF). Mutable ref so PostPane's
   // tweakpane writes back in place; bumpPost bumps a version so PreviewPane
   // re-reads.
@@ -96,11 +174,43 @@ export default function VfxLabPage() {
   const bigRealmSceneConfigRef = useRef<BigRealmSceneConfigT>({
     ...BIG_REALM_SCENE_DEFAULTS,
   });
+  const cardLabConfigRef = useRef<CardLabConfigT>({ ...CARD_LAB_DEFAULTS });
 
   const activeDef = useMemo(
     () => getDefinition(activeId) ?? VFX_REGISTRY[0],
     [activeId],
   );
+
+  // Pointer chain for the active effect · displayed in the header breadcrumb.
+  // Derived from the registered adapter shape — card-composition gets a Pantry
+  // segment (codex slug), others get Primitive + Consumer only.
+  const activeChain = useMemo<PointerChain>(() => {
+    const segments: PointerSegment[] = [];
+    if (activeDef.id === "card-composition") {
+      segments.push({
+        _tag: "Pantry",
+        slug: "earth-jani",
+        path: "/codex/cards/earth-jani",
+        label: "earth-jani",
+      });
+    }
+    segments.push({
+      _tag: "Primitive",
+      name: activeDef.id,
+      path: `app/battle-v2/_components/vfx/effects/${activeDef.label.replace(/\s/g, "")}.tsx`,
+      label: activeDef.label,
+    });
+    segments.push({
+      _tag: "Consumer",
+      consumers:
+        activeDef.id === "card-composition"
+          ? ["vfx-lab", "battle-v2", "card-showcase"]
+          : activeDef.id === "card-lab"
+            ? ["card-lab", "vfx-lab"]
+            : ["vfx-lab", "battle-v2"],
+    });
+    return segments;
+  }, [activeDef]);
 
   const activeConfigRef =
     activeDef.id === "tree-fall"
@@ -115,7 +225,9 @@ export default function VfxLabPage() {
               ? (zoneSceneConfigRef as React.RefObject<Record<string, unknown>>)
               : activeDef.id === "big-realm-scene"
                 ? (bigRealmSceneConfigRef as React.RefObject<Record<string, unknown>>)
-                : (realmSceneConfigRef as React.RefObject<Record<string, unknown>>);
+                : activeDef.id === "card-lab"
+                  ? (cardLabConfigRef as React.RefObject<Record<string, unknown>>)
+                  : (realmSceneConfigRef as React.RefObject<Record<string, unknown>>);
 
   const triggerActive = useCallback(() => {
     if (activeDef.id === "tree-fall") {
@@ -136,6 +248,8 @@ export default function VfxLabPage() {
       setZoneSceneTriggerKey((k) => k + 1);
     } else if (activeDef.id === "big-realm-scene") {
       setBigRealmSceneTriggerKey((k) => k + 1);
+    } else if (activeDef.id === "card-lab") {
+      setCardLabTriggerKey((k) => k + 1);
     } else {
       setRealmSceneTriggerKey((k) => k + 1);
     }
@@ -168,106 +282,72 @@ export default function VfxLabPage() {
     [activeDef.Preview],
   );
 
-  return (
-    <main
-      style={{
-        position: "fixed",
-        inset: 0,
-        display: "grid",
-        gridTemplateColumns: "220px minmax(0, 1fr) 300px",
-        background: "#0a0805",
-        color: "var(--puru-ink-base, #d8cdae)",
-        fontFamily: "var(--font-puru-body)",
-      }}
-    >
-      <EffectPicker
-        entries={VFX_REGISTRY}
-        activeId={activeId}
-        onSelect={(id) => {
-          setActiveId(id);
-          setComposeMode(false);
-          compositionRef.current?.cancel();
-        }}
-      />
+  // Cycle-2 S4.7: synthesize a flat scene-tree from VFX_REGISTRY · one root
+  // per adapter · clicking selects (replaces cycle-1 EffectPicker click).
+  const sceneTree = useMemo<EntityTreeNode[]>(
+    () =>
+      VFX_REGISTRY.map((def) => ({
+        id: def.id,
+        label: def.label,
+        kind: "effect" as const,
+        children: [],
+        pointerChain: [
+          {
+            _tag: "Primitive" as const,
+            name: def.id,
+            path: `app/battle-v2/_components/vfx/effects/${def.label.replace(/\s/g, "")}.tsx`,
+            label: def.label,
+          },
+          {
+            _tag: "Consumer" as const,
+            consumers: ["honeycomb"],
+          },
+        ],
+        inspectable: true,
+      })),
+    [],
+  );
 
-      <section
-        style={{
-          position: "relative",
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header strip */}
-        <header
-          style={{
-            position: "absolute",
-            top: 16,
-            left: 20,
-            right: 20,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            zIndex: 7,
-            pointerEvents: "none",
+  // Single-row top content · fits 64px region · h1 small + subtitle + tabs +
+  // button + breadcrumb (flex-1 + min-w-0 + truncate to prevent overflow).
+  const topContent = (
+    <div className="flex items-center gap-3 w-full min-w-0">
+      <h1 className="flex-none m-0 font-puru-display text-sm font-semibold text-puru-ink-rich tracking-wide">
+        vfx lab
+      </h1>
+      <span className="flex-none font-puru-mono text-[9px] uppercase tracking-[0.18em] text-puru-ink-soft truncate max-w-[180px]">
+        {composeMode
+          ? "compose · wood vs water"
+          : `${activeDef.label} · ${workspace}`}
+      </span>
+      <div className="flex-none flex items-center gap-2">
+        <ModeTabsBar active={workspace} onChange={setWorkspace} />
+        <PlayButton onHotJump={onHotJump} />
+      </div>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <PointerBreadcrumb chain={activeChain} />
+      </div>
+      {composeMode && (
+        <button
+          type="button"
+          onClick={() => {
+            compositionRef.current?.cancel();
+            setComposeMode(false);
           }}
+          className="flex-none px-3 py-1 font-puru-mono text-[10px] uppercase tracking-wider bg-puru-cloud-bright text-puru-ink-base border border-puru-surface-border rounded-md cursor-pointer hover:bg-puru-honey-base/20 transition-colors"
         >
-          <div style={{ pointerEvents: "auto" }}>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-puru-display)",
-                fontSize: 24,
-                color: "var(--puru-ink-rich, #f3e9d2)",
-                textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-                letterSpacing: "0.01em",
-              }}
-            >
-              vfx lab
-            </h1>
-            <p
-              style={{
-                margin: "4px 0 0 0",
-                fontFamily: "var(--font-puru-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--puru-ink-soft, #c2b89c)",
-                textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-              }}
-            >
-              {composeMode
-                ? "compose · wood vs water · sequence"
-                : `${activeDef.label} · isolated`}
-            </p>
-          </div>
+          exit
+        </button>
+      )}
+    </div>
+  );
 
-          {composeMode && (
-            <button
-              type="button"
-              onClick={() => {
-                compositionRef.current?.cancel();
-                setComposeMode(false);
-              }}
-              style={{
-                pointerEvents: "auto",
-                padding: "6px 14px",
-                fontFamily: "var(--font-puru-mono)",
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                background: "var(--puru-cloud-bright, #2f291f)",
-                color: "var(--puru-ink-base, #d8cdae)",
-                border: "1px solid var(--puru-surface-border)",
-                borderRadius: "var(--radius-sm, 6px)",
-                cursor: "pointer",
-              }}
-            >
-              exit compose
-            </button>
-          )}
-        </header>
-
+  // Center content · preview area + PostPane absolute-positioned inside.
+  // The DockShell's center slot wraps this in a `relative` div · PostPane's
+  // position:absolute resolves against that wrapper (fixed in S4.7 retry).
+  const centerContent = (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 min-h-0 relative">
         {composeMode ? (
           <ComposePreviewPane
             treeFallConfig={treeFallConfigRef.current}
@@ -293,7 +373,9 @@ export default function VfxLabPage() {
                         ? zoneSceneConfigRef.current
                         : activeDef.id === "big-realm-scene"
                           ? bigRealmSceneConfigRef.current
-                          : realmSceneConfigRef.current
+                          : activeDef.id === "card-lab"
+                            ? cardLabConfigRef.current
+                            : realmSceneConfigRef.current
             }
             triggerKey={
               activeDef.id === "tree-fall"
@@ -308,7 +390,9 @@ export default function VfxLabPage() {
                         ? zoneSceneTriggerKey
                         : activeDef.id === "big-realm-scene"
                           ? bigRealmSceneTriggerKey
-                          : realmSceneTriggerKey
+                          : activeDef.id === "card-lab"
+                            ? cardLabTriggerKey
+                            : realmSceneTriggerKey
             }
             onTrigger={triggerActive}
             onCompose={triggerCompose}
@@ -316,18 +400,36 @@ export default function VfxLabPage() {
             post={postRef.current}
           />
         )}
-
-        {/* Global post-process pane — persistent across effect switches. */}
         <PostPane config={postRef.current} onChange={bumpPost} />
-      </section>
+      </div>
+    </div>
+  );
 
-      <KnobPane
-        effectDef={activeDef}
-        config={activeConfigRef.current as unknown as Record<string, unknown>}
-        onChange={() => bumpKnob()}
-        onTrigger={triggerActive}
-      />
-    </main>
+  return (
+    <DockShell
+      top={topContent}
+      left={
+        <SceneTreeSidebar
+          tree={sceneTree}
+          selectedNodeId={activeId}
+          onSelect={(node) => {
+            setActiveId(node.id);
+            setComposeMode(false);
+            compositionRef.current?.cancel();
+          }}
+        />
+      }
+      center={centerContent}
+      right={
+        <KnobPane
+          effectDef={activeDef}
+          config={activeConfigRef.current as unknown as Record<string, unknown>}
+          onChange={() => bumpKnob()}
+          onTrigger={triggerActive}
+        />
+      }
+      bottom={<LogConsole entries={[]} />}
+    />
   );
 }
 

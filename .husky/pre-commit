@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Lab evolution cycle · S1a regression substrate gate (ADR-10)
+#
+# Authoritative substrate fuse — fires for ALL agents (Claude/Codex/Loa/manual).
+# Pre-commit time (NOT pre-tool-use) — decoupled from per-edit latency.
+#
+# Behavior:
+#   - Resolve staged files in protected paths
+#   - If any, run `pnpm regression:check` on affected primitives
+#   - GeometryDrift → BLOCK (exit 1)
+#   - BaselineMissing → BLOCK (forces explicit `pnpm regression:approve`)
+#   - PixelDrift → ADVISORY (warn but allow)
+#   - Match → allow
+#
+# Bypass (per ADR-11 · audited):
+#   LOA_REGRESSION_HOOK_BYPASS=1 git commit ...
+#
+# Rollback: see grimoires/loa/runbooks/regression-hook-rollback.md
+set -e
+
+# Bypass gate (audited)
+if [ "${LOA_REGRESSION_HOOK_BYPASS:-}" = "1" ]; then
+  echo "[regression-substrate] BYPASSED (LOA_REGRESSION_HOOK_BYPASS=1)" >&2
+  mkdir -p .run
+  echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"kind\":\"regression.bypass\",\"actor\":\"${USER:-unknown}\"}" >> .run/audit.jsonl
+  exit 0
+fi
+
+# Resolve protected-path matches in staged files
+PROTECTED_REGEX='^(app/battle-v2/_components/cards/|app/battle-v2/_components/vfx/effects/|app/battle-v2/_components/CardFace\.tsx|lib/cards/codex/)'
+STAGED_PROTECTED=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "$PROTECTED_REGEX" || true)
+
+if [ -z "$STAGED_PROTECTED" ]; then
+  exit 0  # nothing to check
+fi
+
+echo "[regression-substrate] checking staged protected paths:"
+echo "$STAGED_PROTECTED" | sed 's/^/  /'
+
+# Map staged files → primitive names. For S1a we have one wired primitive
+# (static-fixture) that proves the substrate. Real primitives (CodexCardFace,
+# CardComposition, HexScene) land their resolver in S2 via the adapter pattern.
+# Until then, this hook PASSES with informational note.
+# Per ADR-13: until the schema locks + adapters land, we WARN but don't BLOCK.
+echo "[regression-substrate] note: primitive resolvers land in S2 (CardComposition adapter)."
+echo "[regression-substrate] until then, this hook checks the canary fixture."
+
+# Run the substrate canary as the proxy gate
+if ! pnpm exec tsx scripts/regression-check.ts --primitive static-fixture --scale 1 --theme dark > /tmp/regression-check.json 2>&1; then
+  RC=$?
+  if [ "$RC" -eq 1 ]; then
+    echo "[regression-substrate] BLOCKED: substrate canary detected drift" >&2
+    cat /tmp/regression-check.json >&2
+    echo "" >&2
+    echo "To approve: pnpm regression:approve --primitive static-fixture --reason '...'" >&2
+    echo "To bypass (audited): LOA_REGRESSION_HOOK_BYPASS=1 git commit ..." >&2
+    exit 1
+  fi
+  echo "[regression-substrate] WARN: substrate canary returned exit $RC (advisory)" >&2
+fi
+
+exit 0
