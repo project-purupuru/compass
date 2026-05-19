@@ -133,12 +133,12 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
           >
             <ResizablePanel
               defaultSize={state.leftPanelSize}
-              minSize={12}
+              minSize={15}
               maxSize={40}
               onResize={(size) => setState({ leftPanelSize: size.asPercentage })}
               data-dock-region="left"
             >
-              <div className="h-full border-r border-puru-surface-border/30 overflow-auto">
+              <div className="h-full w-full border-r border-puru-surface-border/30 overflow-auto">
                 {left}
               </div>
             </ResizablePanel>
@@ -157,12 +157,12 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
 
             <ResizablePanel
               defaultSize={state.rightPanelSize}
-              minSize={15}
+              minSize={18}
               maxSize={45}
               onResize={(size) => setState({ rightPanelSize: size.asPercentage })}
               data-dock-region="right"
             >
-              <div className="h-full border-l border-puru-surface-border/30 overflow-auto">
+              <div className="h-full w-full border-l border-puru-surface-border/30 overflow-auto">
                 {right}
               </div>
             </ResizablePanel>
@@ -179,7 +179,7 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
               onResize={(size) => setState({ bottomPanelSize: size.asPercentage })}
               data-dock-region="bottom"
             >
-              <div className="h-full border-t border-puru-surface-border/30 overflow-auto">
+              <div className="h-full w-full border-t border-puru-surface-border/30 overflow-auto">
                 {bottom}
               </div>
             </ResizablePanel>

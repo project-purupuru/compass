@@ -42,8 +42,10 @@ export const DOCK_SHELL_SCHEMA_VERSION = "1.0" as const;
 
 export const DEFAULT_DOCK_SHELL_STATE: DockShellState = {
   schemaVersion: DOCK_SHELL_SCHEMA_VERSION,
-  leftPanelSize: 22,
-  rightPanelSize: 25,
+  // Wider defaults so cycle-1 content (KnobPane tweakpane · SceneTreeSidebar
+  // adapter labels) fits without squeeze on 1280-1440 viewports.
+  leftPanelSize: 20,
+  rightPanelSize: 24,
   bottomPanelSize: 25,
   bottomCollapsed: true,
 };
