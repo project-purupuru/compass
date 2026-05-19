@@ -1,18 +1,40 @@
 /**
- * PointerBreadcrumb · Thread A (per ADR-2 + ADR-13)
+ * PointerBreadcrumb · cycle-2 S2.1 rebuild on shadcn Breadcrumb
  *
  * Sticky top strip showing the full pointer chain for the active entity.
- * Reads chain from S1b's pointer-chain schema (currently @version draft-S1).
+ * Reads chain from the LOCKED v1.0 pointer-chain schema.
  *
- * Visual: pantry/earth-jani › primitive:card-composition › consumers: [card-lab · battle · showcase]
- * Each segment is clickable (TODO in S3: wire to navigation).
+ * Visual: pantry/earth-jani › primitive:card-composition › consumers: [...]
+ * Each segment is clickable (onSegmentClick).
+ *
+ * Cycle-2 rebuild swaps cycle-1's inline-style chrome for shadcn Breadcrumb
+ * + brand tokens (--puru-* OKLCH composition + font-puru-mono) per
+ * [[feedback_shadcn-for-kitchen-ui]] and the artisan v1 probe recommendation
+ * (use brand mono stack, not generic ui-monospace).
+ *
+ * Element-accent (artisan probe FR-17) is a property of the Inspector's
+ * selection-aware accent — for the breadcrumb this lands as a subtle
+ * honey-accent on hover.
+ *
+ * API PRESERVED: same props · same data-pointer-breadcrumb attribute · same
+ * onSegmentClick signature · cycle-1 callers work unchanged.
  */
 
 "use client";
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Icon } from "@/lib/ui/icons/Icon";
 import type { IconName } from "@/lib/ui/icons/names";
-import { segmentLabel, type PointerChain, type PointerSegment } from "@/lib/lab/pointer-chain/schema";
+import {
+  segmentLabel,
+  type PointerChain,
+  type PointerSegment,
+} from "@/lib/lab/pointer-chain/schema";
 
 interface PointerBreadcrumbProps {
   chain: PointerChain;
@@ -33,22 +55,17 @@ function iconNameForSegment(seg: PointerSegment): IconName {
   }
 }
 
-export function PointerBreadcrumb({ chain, className, onSegmentClick }: PointerBreadcrumbProps) {
+export function PointerBreadcrumb({
+  chain,
+  className,
+  onSegmentClick,
+}: PointerBreadcrumbProps) {
   if (chain.length === 0) {
     return (
       <div
-        className={className}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "8px 12px",
-          background: "rgba(0, 0, 0, 0.4)",
-          color: "rgba(255, 255, 255, 0.4)",
-          fontSize: 12,
-          fontFamily: "ui-monospace, monospace",
-          minHeight: 32,
-        }}
+        className={`flex items-center px-3 py-2 min-h-8 font-puru-mono text-xs text-puru-ink-dim bg-puru-cloud-deep/55 backdrop-blur-md sticky top-0 z-20 ${className ?? ""}`}
         data-pointer-breadcrumb
+        data-segments="0"
       >
         <span>no active entity</span>
       </div>
@@ -56,56 +73,36 @@ export function PointerBreadcrumb({ chain, className, onSegmentClick }: PointerB
   }
 
   return (
-    <div
-      className={className}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "8px 12px",
-        background: "rgba(0, 0, 0, 0.55)",
-        backdropFilter: "blur(8px)",
-        color: "rgba(255, 255, 255, 0.85)",
-        fontSize: 12,
-        fontFamily: "ui-monospace, monospace",
-        position: "sticky",
-        top: 0,
-        zIndex: 20,
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        flexWrap: "wrap",
-      }}
+    <Breadcrumb
+      className={`flex items-center px-3 py-2 font-puru-mono text-xs text-puru-ink-base bg-puru-cloud-deep/55 backdrop-blur-md sticky top-0 z-20 border-b border-puru-surface-border/40 ${className ?? ""}`}
       data-pointer-breadcrumb
       data-segments={chain.length}
     >
-      {chain.map((seg, i) => (
-        <span key={`${seg._tag}-${i}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          {i > 0 && (
-            <span style={{ opacity: 0.4, display: "inline-flex", alignItems: "center" }} aria-hidden>
-              <Icon name="breadcrumb-separator" size={12} />
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => onSegmentClick?.(seg, i)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              background: "transparent",
-              border: "none",
-              color: "inherit",
-              cursor: onSegmentClick ? "pointer" : "default",
-              padding: 0,
-              fontFamily: "inherit",
-              fontSize: "inherit",
-            }}
-            data-segment-tag={seg._tag}
+      <BreadcrumbList className="flex-wrap gap-1.5">
+        {chain.map((seg, i) => (
+          <span
+            key={`${seg._tag}-${i}`}
+            className="inline-flex items-center gap-1.5"
           >
-            <Icon name={iconNameForSegment(seg)} size={12} />
-            <span>{segmentLabel(seg)}</span>
-          </button>
-        </span>
-      ))}
-    </div>
+            {i > 0 && (
+              <BreadcrumbSeparator className="opacity-40">
+                <Icon name="breadcrumb-separator" size={12} />
+              </BreadcrumbSeparator>
+            )}
+            <BreadcrumbItem>
+              <button
+                type="button"
+                onClick={() => onSegmentClick?.(seg, i)}
+                className={`inline-flex items-center gap-1 bg-transparent border-0 text-puru-ink-base hover:text-puru-honey-base transition-colors p-0 font-inherit text-inherit ${onSegmentClick ? "cursor-pointer" : "cursor-default"}`}
+                data-segment-tag={seg._tag}
+              >
+                <Icon name={iconNameForSegment(seg)} size={12} />
+                <span>{segmentLabel(seg)}</span>
+              </button>
+            </BreadcrumbItem>
+          </span>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
