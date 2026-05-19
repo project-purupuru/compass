@@ -24,15 +24,15 @@ import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 
-// Lab-evolution cycle · substrate registration only (no chrome overlay yet).
-// The IconProvider context wraps the page so anything that uses <Icon> works.
-// adapter-init registers all 9 adapters silently at module-load.
-// Surface chrome (PointerBreadcrumb · Inspector · ComposabilityPanel ·
-// WorkspacesTabs) is intentionally NOT mounted here — the existing rails
-// (EffectPicker · KnobPane · PostPane) own the surface. Chrome ships in a
-// follow-up cycle after operator pair-points on placement.
+// Lab-evolution cycle · substrate + visible spine inside existing header.
+// IconProvider wraps the page · adapter-init registers all 9 adapters silently.
+// Visible spine (PointerBreadcrumb + WorkspacesTabs) lives INSIDE the existing
+// absolute-positioned header — no overlay, no FAB, no conflict with rails.
 import { IconProvider } from "@/lib/ui/icons/provider";
 import { ensureAdaptersRegistered } from "../_components/lab/adapter-init";
+import { PointerBreadcrumb } from "../_components/lab/PointerBreadcrumb";
+import { WorkspacesTabs, useActiveWorkspace } from "../_components/lab/workspaces/WorkspacesTabs";
+import type { PointerChain, PointerSegment } from "@/lib/lab/pointer-chain/schema";
 
 import {
   CARD_LAB_DEFAULTS,
@@ -97,6 +97,7 @@ export default function VfxLabPage() {
 
 function VfxLabPageInner() {
   const [activeId, setActiveId] = useState<string>(FIRST_EFFECT_ID);
+  const [workspace, setWorkspace] = useActiveWorkspace("compose");
 
   const [composeMode, setComposeMode] = useState(false);
   const [, bumpKnob] = useReducer((x: number) => x + 1, 0);
@@ -136,6 +137,37 @@ function VfxLabPageInner() {
     () => getDefinition(activeId) ?? VFX_REGISTRY[0],
     [activeId],
   );
+
+  // Pointer chain for the active effect · displayed in the header breadcrumb.
+  // Derived from the registered adapter shape — card-composition gets a Pantry
+  // segment (codex slug), others get Primitive + Consumer only.
+  const activeChain = useMemo<PointerChain>(() => {
+    const segments: PointerSegment[] = [];
+    if (activeDef.id === "card-composition") {
+      segments.push({
+        _tag: "Pantry",
+        slug: "earth-jani",
+        path: "/codex/cards/earth-jani",
+        label: "earth-jani",
+      });
+    }
+    segments.push({
+      _tag: "Primitive",
+      name: activeDef.id,
+      path: `app/battle-v2/_components/vfx/effects/${activeDef.label.replace(/\s/g, "")}.tsx`,
+      label: activeDef.label,
+    });
+    segments.push({
+      _tag: "Consumer",
+      consumers:
+        activeDef.id === "card-composition"
+          ? ["vfx-lab", "battle-v2", "card-showcase"]
+          : activeDef.id === "card-lab"
+            ? ["card-lab", "vfx-lab"]
+            : ["vfx-lab", "battle-v2"],
+    });
+    return segments;
+  }, [activeDef]);
 
   const activeConfigRef =
     activeDef.id === "tree-fall"
@@ -251,34 +283,51 @@ function VfxLabPageInner() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ pointerEvents: "auto" }}>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-puru-display)",
-                fontSize: 24,
-                color: "var(--puru-ink-rich, #f3e9d2)",
-                textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-                letterSpacing: "0.01em",
-              }}
-            >
-              vfx lab
-            </h1>
-            <p
-              style={{
-                margin: "4px 0 0 0",
-                fontFamily: "var(--font-puru-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--puru-ink-soft, #c2b89c)",
-                textShadow: "0 1px 0 rgba(0,0,0,0.6)",
-              }}
-            >
-              {composeMode
-                ? "compose · wood vs water · sequence"
-                : `${activeDef.label} · isolated`}
-            </p>
+          <div style={{ pointerEvents: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-puru-display)",
+                  fontSize: 24,
+                  color: "var(--puru-ink-rich, #f3e9d2)",
+                  textShadow: "0 1px 0 rgba(0,0,0,0.6)",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                vfx lab
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-puru-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "var(--puru-ink-soft, #c2b89c)",
+                  textShadow: "0 1px 0 rgba(0,0,0,0.6)",
+                }}
+              >
+                {composeMode
+                  ? "compose · wood vs water · sequence"
+                  : `${activeDef.label} · ${workspace}`}
+              </p>
+            </div>
+
+            {/*
+              Lab-evolution spine · visible chrome inside the header (no overlay).
+              · WorkspacesTabs: Compose / Preview / Export · Cmd+1/2/3 keyboard
+              · PointerBreadcrumb: the active effect's pointer chain at the surface
+              Per ADR-13 schema · per Flatline IMP-007 (single source of truth).
+            */}
+            <div style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+              <div style={{ minWidth: 0 }}>
+                <WorkspacesTabs active={workspace} onChange={setWorkspace} />
+              </div>
+            </div>
+            <div style={{ maxWidth: "calc(100vw - 580px)" }}>
+              <PointerBreadcrumb chain={activeChain} />
+            </div>
           </div>
 
           {composeMode && (
