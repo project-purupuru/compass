@@ -24,19 +24,15 @@ import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 
-// Lab-evolution cycle chrome (S2-S5 spine):
+// Lab-evolution cycle · substrate registration only (no chrome overlay yet).
+// The IconProvider context wraps the page so anything that uses <Icon> works.
+// adapter-init registers all 9 adapters silently at module-load.
+// Surface chrome (PointerBreadcrumb · Inspector · ComposabilityPanel ·
+// WorkspacesTabs) is intentionally NOT mounted here — the existing rails
+// (EffectPicker · KnobPane · PostPane) own the surface. Chrome ships in a
+// follow-up cycle after operator pair-points on placement.
 import { IconProvider } from "@/lib/ui/icons/provider";
 import { ensureAdaptersRegistered } from "../_components/lab/adapter-init";
-import { IconSwapToggle } from "../_components/lab/IconSwapToggle";
-import { PointerBreadcrumb } from "../_components/lab/PointerBreadcrumb";
-import { Inspector } from "../_components/lab/Inspector";
-import { ComposabilityPanel } from "../_components/lab/composability/ComposabilityPanel";
-import { WorkspacesTabs, useActiveWorkspace } from "../_components/lab/workspaces/WorkspacesTabs";
-import { Effect } from "effect";
-import { runtime } from "@/lib/runtime/runtime";
-import { AdapterRegistry } from "@/lib/lab/adapter-registry/adapter-registry.port";
-import type { InspectableNode, EntityTreeNode } from "@/lib/lab/adapter-registry/types";
-import type { PointerChain } from "@/lib/lab/pointer-chain/schema";
 
 import {
   CARD_LAB_DEFAULTS,
@@ -80,11 +76,18 @@ import { PreviewPane } from "./_components/PreviewPane";
 const FIRST_EFFECT_ID = VFX_REGISTRY[0].id;
 
 /**
- * /battle-v2/vfx-lab — wrapped in IconProvider so the lab-evolution spine
- * (Inspector · ComposabilityPanel · IconSwapToggle · PointerBreadcrumb ·
- * WorkspacesTabs) can swap Phosphor↔Stub icons live.
+ * /battle-v2/vfx-lab — sandbox for VFX iteration.
+ *
+ * Wrapped in IconProvider so the IconRegistry substrate works for any
+ * <Icon> consumers. Adapters register silently on mount (cycle-DoD).
+ * Visible chrome (breadcrumb · inspector · composability panel · workspaces)
+ * deferred to follow-up cycle.
  */
 export default function VfxLabPage() {
+  useEffect(() => {
+    void ensureAdaptersRegistered();
+  }, []);
+
   return (
     <IconProvider>
       <VfxLabPageInner />
@@ -94,81 +97,6 @@ export default function VfxLabPage() {
 
 function VfxLabPageInner() {
   const [activeId, setActiveId] = useState<string>(FIRST_EFFECT_ID);
-  const [activeWorkspace, setActiveWorkspace] = useActiveWorkspace("compose");
-
-  // Lab-evolution spine state
-  const [selectedNode, setSelectedNode] = useState<InspectableNode | null>(null);
-  const [entityTree, setEntityTree] = useState<readonly EntityTreeNode[]>([]);
-
-  // Register all 9 adapters at module-load (per ADR-12 static registration).
-  useEffect(() => {
-    void ensureAdaptersRegistered();
-  }, []);
-
-  // Refresh adapter view when active effect changes
-  useEffect(() => {
-    // Wait a tick to ensure adapters registered, then read.
-    const handle = setTimeout(() => {
-      void runtime
-        .runPromise(
-          Effect.gen(function* () {
-            const registry = yield* AdapterRegistry;
-            const inspector = yield* registry.inspector(activeId);
-            const composability = yield* registry.composability(activeId);
-            if (!inspector || !composability) {
-              return { nodes: [] as readonly InspectableNode[], tree: [] as readonly EntityTreeNode[] };
-            }
-            const state =
-              activeId === "card-composition"
-                ? { slug: "earth-jani", layerCount: 4 }
-                : activeId === "hex-scene"
-                  ? { plotCount: 7 }
-                  : { childCount: 3 };
-            return {
-              nodes: inspector.listInspectableNodes(state),
-              tree: composability.tree(state),
-            };
-          }),
-        )
-        .then(({ nodes, tree }) => {
-          setEntityTree(tree);
-          if (nodes.length > 0) {
-            setSelectedNode(nodes[0]);
-          } else {
-            setSelectedNode(null);
-          }
-        })
-        .catch(() => {
-          setEntityTree([]);
-          setSelectedNode(null);
-        });
-    }, 50);
-    return () => clearTimeout(handle);
-  }, [activeId]);
-
-  const handleTreeSelect = useCallback(
-    (node: EntityTreeNode) => {
-      void runtime
-        .runPromise(
-          Effect.gen(function* () {
-            const registry = yield* AdapterRegistry;
-            const inspector = yield* registry.inspector(activeId);
-            if (!inspector) return null;
-            const state =
-              activeId === "card-composition"
-                ? { slug: "earth-jani", layerCount: 4 }
-                : activeId === "hex-scene"
-                  ? { plotCount: 7 }
-                  : { childCount: 3 };
-            return inspector.listInspectableNodes(state).find((n) => n.id === node.id) ?? null;
-          }),
-        )
-        .then((inspectable) => {
-          if (inspectable) setSelectedNode(inspectable);
-        });
-    },
-    [activeId],
-  );
 
   const [composeMode, setComposeMode] = useState(false);
   const [, bumpKnob] = useReducer((x: number) => x + 1, 0);
@@ -280,16 +208,6 @@ function VfxLabPageInner() {
   );
 
   return (
-    <>
-    {/* Lab-evolution chrome (S2-S5 spine · all overlays · default-collapsed) */}
-    <IconSwapToggle />
-    <Inspector selectedNode={selectedNode} pointerChain={selectedNode?.pointerChain ?? null} />
-    <ComposabilityPanel
-      tree={entityTree}
-      selectedNodeId={selectedNode?.id}
-      onSelect={handleTreeSelect}
-    />
-
     <main
       style={{
         position: "fixed",
@@ -453,29 +371,6 @@ function VfxLabPageInner() {
         onTrigger={triggerActive}
       />
     </main>
-
-    {/* Top spine · WorkspacesTabs over the viewport (z above main) */}
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 220, // start past EffectPicker
-        right: 300, // stop before KnobPane
-        zIndex: 23,
-        pointerEvents: "none",
-      }}
-    >
-      <div style={{ pointerEvents: "auto" }}>
-        <WorkspacesTabs active={activeWorkspace} onChange={setActiveWorkspace} />
-        <PointerBreadcrumb
-          chain={selectedNode?.pointerChain ?? []}
-          onSegmentClick={(seg, i) => {
-            console.log("[breadcrumb] clicked", { tag: seg._tag, index: i });
-          }}
-        />
-      </div>
-    </div>
-    </>
   );
 }
 
