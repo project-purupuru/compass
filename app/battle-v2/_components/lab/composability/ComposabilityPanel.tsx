@@ -34,7 +34,8 @@ interface ComposabilityPanelProps {
 
 export function ComposabilityPanel({ tree, selectedNodeId, onSelect }: ComposabilityPanelProps) {
   const [shape, setShape] = useState<ShapeId>("A");
-  const [collapsed, setCollapsed] = useState(false);
+  // Default collapsed so doesn't overlap EffectPicker on first mount.
+  const [collapsed, setCollapsed] = useState(true);
 
   // Hydrate shape + collapse from sessionStorage
   useEffect(() => {
@@ -43,7 +44,7 @@ export function ComposabilityPanel({ tree, selectedNodeId, onSelect }: Composabi
       const s = window.sessionStorage.getItem(STORAGE_KEY);
       if (s === "A" || s === "B" || s === "C") setShape(s);
       const c = window.sessionStorage.getItem("lab.composabilityCollapsed");
-      if (c === "1") setCollapsed(true);
+      if (c === "0") setCollapsed(false);
     } catch {
       // silent
     }

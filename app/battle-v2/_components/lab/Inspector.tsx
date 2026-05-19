@@ -26,7 +26,9 @@ interface InspectorProps {
 }
 
 export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  // Default to collapsed so the Inspector doesn't overlap existing rails on first mount;
+  // operator opens via the side FAB.
+  const [collapsed, setCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("pointer-chain");
 
   // Hydrate collapse state from sessionStorage
@@ -34,7 +36,7 @@ export function Inspector({ selectedNode, pointerChain, onClose }: InspectorProp
     if (typeof window === "undefined") return;
     try {
       const v = window.sessionStorage.getItem(STORAGE_KEY);
-      if (v === "1") setCollapsed(true);
+      if (v === "0") setCollapsed(false);
     } catch {
       // silent
     }
