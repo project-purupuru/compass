@@ -20,6 +20,10 @@ import { CollectionLive } from "@/lib/honeycomb/collection.live";
 // lib/runtime/react.ts. Was authored alongside battle-v2 but never wired
 // into AppLayer — restoring the missing provision here (2026-05-17).
 import { MatchEngineLive } from "@/lib/cards/battle";
+// Lab evolution cycle · regression substrate (ADR-1 + ADR-9).
+// Env-gated: dev/test gets the Playwright-backed live layer; production gets
+// the noop layer so Playwright is NEVER in the production bundle.
+import { RegressionCheckNoopLive } from "@/lib/regression/regression.noop";
 
 // THE single Effect.provide site for the app. Lint check: a grep for
 // `ManagedRuntime.make` in lib/ or app/ should return exactly one match
@@ -30,6 +34,15 @@ import { MatchEngineLive } from "@/lib/cards/battle";
 // depends on Population + Activity. Observatory depends on Awareness.
 // Each tier is provided into the next so the AppLayer surface has
 // R = never (all deps resolved).
+// Lab evolution cycle · regression substrate env-gating (ADR-9).
+// At MODULE LOAD TIME we pick which RegressionCheck implementation feeds
+// AppLayer. Production (NODE_ENV !== 'development' AND LOA_REGRESSION !== '1')
+// MUST get the noop layer so Playwright never enters the production bundle.
+// The dynamic import dance lives in the live layer; here we wire the static
+// noop. Dev/test wires the live layer via the Vitest setup helper at
+// `tests/regression/setup.ts` which calls `runtime.runWith(RegressionCheckLive)`.
+const RegressionLayer = RegressionCheckNoopLive;
+
 const PrimitivesLayer = Layer.mergeAll(
   WeatherLive,
   SonifierLive,
@@ -43,6 +56,7 @@ const PrimitivesLayer = Layer.mergeAll(
   // MatchEngine is R=never (closes over pure ./match functions), so it
   // merges directly into PrimitivesLayer without provide-from.
   MatchEngineLive,
+  RegressionLayer,
 );
 const AwarenessOnPrimitives = Layer.provide(AwarenessLive, PrimitivesLayer);
 const ObservatoryOnAwareness = Layer.provide(ObservatoryLive, AwarenessOnPrimitives);

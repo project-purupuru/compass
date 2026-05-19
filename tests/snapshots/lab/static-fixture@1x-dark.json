@@ -1,0 +1,16 @@
+{
+  "primitive": "static-fixture",
+  "scale": 1,
+  "theme": "dark",
+  "boundingBox": {
+    "x": 590,
+    "y": 375,
+    "width": 100,
+    "height": 50
+  },
+  "sha256": "27f15c09e1d465c7c913df2a74af1b0202e1aaf1d45ff6b8cc808cce99390093",
+  "pngBytes": 938,
+  "capturedAt": "2026-05-19T00:57:09.092Z",
+  "capturedIn": "local",
+  "approvedReason": "S1a.T11 · initial canary baseline (static fixture 100x50)"
+}
