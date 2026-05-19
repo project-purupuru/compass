@@ -37,7 +37,7 @@ related_artifacts:
 
 ## 0. Scope of This Document
 
-> **⚠️ r2 · 2026-05-19 · GLOBAL SUPERSEDE**: This SDD was authored at r1 with the FR-12 escape hatch in scope. **FR-12 is deferred to v1** (operator decision 2026-05-19 · see Revision Notes r2 + companion PRD r2). **Every reference below to FR-12 / `run_python_code` / `escape.py` / `lib/ops/escape.py` / `lib/safety/timeout.py` / the auth-gate / bearer tokens / `~/.blender-mcp/` / `auth_token` / `BLENDER_MCP_ENABLE_ESCAPE` / Q-SDD-8 / Q-SDD-9 / AP-7 is SUPERSEDED** — retained verbatim as v1 design input, NOT a v0 requirement. The normative v0 module shape is `sprint.md` r3 Appendix D. r2 also adopts: `lib/wire/` is a package (not flat `wire.py`); schema source-of-truth at `lib/wire/wire.schema.json` exported from TS Effect Schema; Python validation is stdlib-only (no `jsonschema`).
+> **⚠️ r2 · 2026-05-19 · GLOBAL SUPERSEDE**: This SDD was authored at r1 with the FR-12 escape hatch in scope. **FR-12 is deferred to v1** (operator decision 2026-05-19 · see Revision Notes r2 + companion PRD r2). **Every reference below to FR-12 / `run_python_code` / `escape.py` / `lib/ops/escape.py` / `lib/safety/timeout.py` / the auth-gate / bearer tokens / `~/.blender-mcp/` / `auth_token` / `BLENDER_MCP_ENABLE_ESCAPE` / Q-SDD-8 / Q-SDD-9 / AP-7 is SUPERSEDED** — retained verbatim as v1 design input, NOT a v0 requirement. The normative v0 module shape is `sprint.md` r3 Appendix D. r2 also adopts: `lib/wire/` is a package (not flat `wire.py`); schema source-of-truth at `lib/wire/wire.schema.json` exported from TS Effect Schema; Python validation is stdlib-only (no `jsonschema`). **r2 environment retarget (S0 calibration 2026-05-19)**: target is **Blender 5.1.x / Python 3.13**, NOT the 4.5 LTS / 3.11 r1 assumed — every "4.5 LTS" / "Python 3.11" reference below is superseded. S0's 4 calibration probes all PASSED on 5.1.1 (echo round-trip · 60 FPS timer p99 ≈ 0.07 ms · `temp_override` reachable from timer cb · multi-file package loads) — see `cycles/blender-adapter-2026-05-18/sprint-0-COMPLETED.md`.
 
 In scope:
 - Module + class shape inside `tools/blender-addon/` (PRD §5.3 · **normative tree: sprint.md r3 Appendix D**)
@@ -821,7 +821,7 @@ Why we don't use `fake-bpy-module`'s runtime instead:
 - It's stubs, not implementations. Our `MagicMock`-based fixture is small (~80 LOC), explicit about what semantics we model, and gives test authors a clear surface to extend per-test.
 
 **Acceptance** (becomes pyproject.toml config):
-- `requirements-dev.txt` includes `fake-bpy-module-latest` (pinned to the version matching Blender 4.5 LTS)
+- `requirements-dev.txt` includes `fake-bpy-module-latest` (pinned to the version matching Blender 5.1.x · r2 retarget — S0 calibration)
 - `pyproject.toml` `[tool.pytest.ini_options]` declares `markers = ["integration: requires running Blender", "slow: stress tests"]`
 - CI runs `pytest -m 'not integration and not slow'`
 - Operator runs `pytest -m integration` manually during R-2 mitigation

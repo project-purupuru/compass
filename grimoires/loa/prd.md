@@ -336,8 +336,8 @@ The Python wire payloads MUST remain schema-conformant with the TypeScript `Wire
 
 ### 5.1 Platform
 
-- **Blender**: 4.x (currently 4.5 LTS / 4.6) · Assumption 2 ratified
-- **Python**: 3.11 (Blender 4.x bundled version)
+- **Blender**: **5.1.x** (operator's machine · ratified by S0 calibration 2026-05-19 · `bl_info` min declared `4.5.0` so 4.x also loads). *r2-note: r1 assumed 4.5 LTS — S0 surfaced the operator runs 5.1.1; cycle retargeted to empirical reality per operator decision.*
+- **Python**: **3.13** (Blender 5.1.x bundled version · ratified by S0 Probe D). *r2-note: r1 assumed 3.11 — addon uses stdlib only, ran clean on 3.13.*
 - **OS**: macOS 14+ (operator's machine) · should work on Linux + Windows with minor port (don't break for them, but don't validate either)
 
 ### 5.2 Wire Protocol
