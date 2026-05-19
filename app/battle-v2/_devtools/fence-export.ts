@@ -81,7 +81,7 @@ export function toAgentBrief(fences: readonly Fence[]): string {
 export function toJSON(fences: readonly Fence[]): string {
   return JSON.stringify(
     {
-      route: "/battle-v2",
+      route: typeof window !== "undefined" ? window.location.pathname : "/play",
       capturedAt: new Date().toISOString(),
       viewport:
         typeof window !== "undefined"

@@ -1,6 +1,7 @@
 /**
- * Battle substrate — barrel. The card-game loop for /battle-v2, ported from
- * Gumi's purupuru-game engine and built on lib/cards/synergy.
+ * Battle substrate — barrel. The card-game loop for /play (renamed from
+ * /battle-v2 in cycle-2 S0), ported from Gumi's purupuru-game engine and built
+ * on lib/cards/synergy.
  */
 
 export {
