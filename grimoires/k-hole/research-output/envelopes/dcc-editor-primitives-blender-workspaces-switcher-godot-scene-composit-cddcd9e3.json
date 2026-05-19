@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "dcc-editor-primitives-blender-workspaces-switcher-godot-scene-composit-cddcd9e3",
+  "ref": {
+    "name": "DCC editor primitives — Blender workspaces switcher · Godot scene composition + sub-scene instancing · Unity prefab variants · how these tools expose stable pointers to entities, the inspector pattern",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "dcc-editor-primitives-blender-workspaces-switcher-godot-scene-composit"
+  },
+  "resonance": {
+    "strength": 0.6,
+    "evidence": [
+      "Juan Linietsky's \"Everything is a Scene\" philosophy in Godot collapses the distinction between a single entity and a complex assembly, treating them both as recursive trees of Nodes. This creates a powerful affordance for your Next.js Lab: any card being composed is itself a \"Scene\" that can be instanced into a larger deck or playfield without losing its local state. To maintain stability during these deep nests, Godot uses NodePath (`^\"Player/Sprite\"`) for editor-facing pointers and RIDs (Resource IDs) for low-level server handles, ensuring that even if an artist renames a node in the UI, the",
+      "Nikoline Høgh and Steen Lund revolutionized Unity’s workflow by introducing the Delta-based Override system for Nested Prefabs. Instead of a \"Copy-on-Write\" model which duplicates data, Unity stores a list of `m_Modifications`—atomic diffs that sit on top of a base asset. This \"Box within a Box\" metaphor allows a card variant (e.g., a \"Golden\" version of a base card) to exist only as the delta between itself and the original, ensuring that a change to the base card’s template cascades through all variants unless explicitly overridden. This \"Delta-as-Asset\" approach creates a \"CSS Specificity\" ",
+      "Dalai Felinto's 2.8 \"Workspaces\" refactor for Blender decoupled the UI's layout and interaction modes from the underlying `.blend` data, effectively turning the editor into a \"view\" on a persistent database. By using RNA (Runtime Navigable Access), Blender maps raw C-structs (DNA) to UI-addressable paths, allowing the \"Inspector\" to be a purely data-driven projection of the model's memory addresses. In a Next.js environment, this suggests that the Lab's workspace state (which panels are open, the zoom level) should be stored in a separate \"Session\" store, while the card data remains an immutab",
+      "Omar Cornut’s Dear ImGui defines the \"Inspector\" not as a widget library, but as an \"interactive print of live data.\" His philosophy rejects the \"Sync Hell\" of retained-mode UIs (like standard React) in favor of a UI that exists only for the duration of a frame, directly reading and writing to the memory addresses of the objects it inspects. For a card lab, this implies the \"Inspector\" should not manage its own state but instead act as a transparent lens over the card's `m_Modifications` (bridge). This mirrors the \"Property Grid\" pattern in Windows Forms, where metadata-driven reflection gener"
+    ]
+  },
+  "why": {
+    "design": "Dig on \"DCC editor primitives — Blender workspaces switcher · Godot scene composition + sub-scene instancing · Unity prefab variants · how these tools expose stable pointers to entities, the inspector pattern, and the asset browser. Want visual references: blog posts with screenshots, video links, official docs with screenshots. Context: building a 2D card composition lab in Next.js that needs the SAME affordances — workspaces, scene tree, inspector, variants. Lab is the kitchen where Gumi (asset author) and operator iterate before content ships to the game frontend.\" surfaced 9 sources at + depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-dcc-primitives-2026-05-18.md",
+    "ratified_at": "2026-05-18",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "Project Atelier (Autodesk Research)",
+    "GlobalObjectId (Unity 2020+)",
+    "Godot Scene Unique Nodes (`%`)",
+    "The \"Blender DNA\" Memory Mapping"
+  ]
+}

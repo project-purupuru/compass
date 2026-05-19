@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "exportedAt": "2026-05-18T19:48:46.347Z",
+  "card": {
+    "defId": "",
+    "name": "Earth Jani",
+    "cardType": "jani",
+    "set": "Elemental Jani",
+    "flavorText": "a petal falls onto jani's head. jani waits for the bus. jani is unbothered by falling petals. the petals will land exactly where they want to be. ",
+    "element": "earth"
+  },
+  "canvas": {
+    "width": 733,
+    "height": 1024,
+    "backgroundColor": "#ffffff",
+    "border": {
+      "enabled": true,
+      "width": 27,
+      "color": "#fde0bc",
+      "radius": 24,
+      "texture": "none",
+      "textureOpacity": 0.3,
+      "dropShadow": {
+        "offsetX": -1,
+        "offsetY": 4,
+        "blur": 16,
+        "spread": 0,
+        "color": "rgba(0,0,0,0.4)"
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "b490197f-2c33-4005-846f-2c62d8b991f4",
+      "kind": "image",
+      "name": "Earth Icon",
+      "position": {
+        "x": 72,
+        "y": 72
+      },
+      "size": {
+        "width": 120,
+        "height": 120
+      },
+      "rotation": 0,
+      "opacity": 1,
+      "zIndex": 4,
+      "image": {
+        "assetRef": "earth.png",
+        "crop": null
+      }
+    },
+    {
+      "id": "aa5ca4f8-7b1e-4323-a71e-fce5fa78cbf2",
+      "kind": "text",
+      "name": "Text",
+      "position": {
+        "x": 140,
+        "y": 888
+      },
+      "size": {
+        "width": 456,
+        "height": 60
+      },
+      "rotation": 0,
+      "opacity": 1,
+      "zIndex": 3,
+      "text": {
+        "content": "Earth Jani",
+        "style": {
+          "fontFamily": "FOT-Yuruka Std",
+          "fontSize": 69,
+          "fontWeight": 400,
+          "fontStyle": "normal",
+          "color": "#fdebd2",
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "letterSpacing": 0,
+          "lineHeight": 1.4,
+          "textShadow": {
+            "offsetX": 2,
+            "offsetY": 2,
+            "blur": 13,
+            "color": "#000000"
+          },
+          "textStroke": null,
+          "gradient": null
+        },
+        "binding": null
+      }
+    },
+    {
+      "id": "2ae8fc4f-9dd5-4769-9cbb-ff2af3a3f64a",
+      "kind": "image",
+      "name": "earth.png",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "size": {
+        "width": 733,
+        "height": 1024.4584206848358
+      },
+      "rotation": 0,
+      "opacity": 1,
+      "zIndex": 2,
+      "image": {
+        "assetRef": "earth.png",
+        "crop": null
+      }
+    }
+  ]
+}

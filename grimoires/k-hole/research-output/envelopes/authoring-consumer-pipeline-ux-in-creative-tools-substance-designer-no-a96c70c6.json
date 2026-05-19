@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1.0",
+  "envelope_id": "authoring-consumer-pipeline-ux-in-creative-tools-substance-designer-no-a96c70c6",
+  "ref": {
+    "name": "Authoring → consumer pipeline UX in creative tools: Substance Designer node graph for material authoring · Figma components + variants + properties · Photoshop smart objects · how master assets propag",
+    "type": "concept"
+  },
+  "direction": {
+    "name": "authoring-consumer-pipeline-ux-in-creative-tools-substance-designer-no"
+  },
+  "resonance": {
+    "strength": 0.8,
+    "evidence": [
+      "*Sébastien Deguy’s Substance Engine architecture treats the export not as a static asset, but as a \"Recipe\"—a directed acyclic graph (DAG) exported in a \"renderer-agnostic\" bytecode format. This allows the authoring tool to remain the \"kitchen\" while the frontend acts as a \"player\" that interprets the recipe at runtime [1][9]. (adjacent) This mirrors the PostScript / PDF model, where the source file describes *how* to draw a path or fill a shape rather than providing the final pixels, enabling the printer (renderer) to remain oblivious to the specific creative tool used to generate the primiti",
+      "*Pixar’s Hydra framework, a core component of Universal Scene Description (USD), enforces a strict separation between the Scene Delegate (the data source) and the Render Delegate (the display engine). By utilizing a \"decoupling layer\" that maps arbitrary data attributes—like `get_property(\"health\")`—to a generic attribute API, authors can introduce new properties in the \"kitchen\" without the \"frontend\" requiring a recompile to handle the data shape change. (bridge) This structure suggests that Gumi’s Codex should function as a \"Scene Delegate\" that emits attribute-change events, while Compass ",
+      "*Sho Kuwamoto’s Figma Component Properties architecture solved the \"variant explosion\" problem by storing only the \"diff\" or metadata overrides against a master schema. Similarly, Native Instruments' NKS (Native Kontrol Standard) uses a JSON metadata wrapper to map dynamic software parameters in the \"kitchen\" to a fixed set of physical hardware knobs. (adjacent) This maps onto Biological Epigenetics, where the DNA (the Master Codex) remains static, but \"methyl tags\" (overrides) determine which parts are \"rendered\" or expressed in a specific environment, allowing for drastic variation without a",
+      "*Bret Victor’s \"Ladder of Abstraction\" argues that an author requires a \"direct connection\" to their medium, necessitating a live-link where the \"frontend reacts without a build step.\" (adjacent) This philosophy echoes the Smalltalk-80 environment, where the distinction between \"tool\" and \"result\" is erased, and every object is \"live\" and inspectable in its final environment. (bridge) For the `purupuru-cards` pipeline, this implies moving away from an \"Export\" button toward a Shared Memory Buffer, where Compass renders directly from the current state of the authoring tool, treating the Codex n"
+    ]
+  },
+  "why": {
+    "design": "Dig on \"Authoring → consumer pipeline UX in creative tools: Substance Designer node graph for material authoring · Figma components + variants + properties · Photoshop smart objects · how master assets propagate to instances and how edits round-trip. Context: Gumi authors cards in a separate tool (purupuru-cards), exports to a codex; compass renders. Need UX patterns for keeping the kitchen (authoring) and frontend (game) in sync without rebuilding render code each time the export shape changes.\" surfaced 20 sources at ++ depth — synthesis grounded the direction."
+  },
+  "provenance": {
+    "surfaced_by": "/Users/zksoju/Documents/GitHub/compass/grimoires/k-hole/research-output/dig-authoring-pipeline-2026-05-18.md",
+    "ratified_at": "2026-05-18",
+    "candidate": true
+  },
+  "threads_to_pull": [
+    "Pixar USD Hydra SceneIndex API specification",
+    "Native Instruments NKS metadata schema documentation",
+    "Rive Runtime state machine 'Inputs' vs 'Layers' logic",
+    "Figma Component Properties 'Instance-level overrides' storage model"
+  ]
+}

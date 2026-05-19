@@ -25,6 +25,7 @@ import { Canvas } from "@react-three/fiber";
 import { EffectComposer, TiltShift2 } from "@react-three/postprocessing";
 
 import {
+  CARD_LAB_DEFAULTS,
   HEX_SCENE_DEFAULTS,
   MINI_SCENE_DEFAULTS,
   BIG_REALM_SCENE_DEFAULTS,
@@ -32,6 +33,7 @@ import {
   TREE_FALL_DEFAULTS,
   WATER_SPLASH_DEFAULTS,
   ZONE_SCENE_DEFAULTS,
+  type CardLabConfigT,
   type HexSceneConfigT,
   type MiniSceneConfigT,
   type BigRealmSceneConfigT,
@@ -74,6 +76,7 @@ export default function VfxLabPage() {
   const [zoneSceneTriggerKey, setZoneSceneTriggerKey] = useState(0);
   const [realmSceneTriggerKey, setRealmSceneTriggerKey] = useState(0);
   const [bigRealmSceneTriggerKey, setBigRealmSceneTriggerKey] = useState(0);
+  const [cardLabTriggerKey, setCardLabTriggerKey] = useState(0);
   // Global post-process config (Scheimpflug DoF). Mutable ref so PostPane's
   // tweakpane writes back in place; bumpPost bumps a version so PreviewPane
   // re-reads.
@@ -96,6 +99,7 @@ export default function VfxLabPage() {
   const bigRealmSceneConfigRef = useRef<BigRealmSceneConfigT>({
     ...BIG_REALM_SCENE_DEFAULTS,
   });
+  const cardLabConfigRef = useRef<CardLabConfigT>({ ...CARD_LAB_DEFAULTS });
 
   const activeDef = useMemo(
     () => getDefinition(activeId) ?? VFX_REGISTRY[0],
@@ -115,7 +119,9 @@ export default function VfxLabPage() {
               ? (zoneSceneConfigRef as React.RefObject<Record<string, unknown>>)
               : activeDef.id === "big-realm-scene"
                 ? (bigRealmSceneConfigRef as React.RefObject<Record<string, unknown>>)
-                : (realmSceneConfigRef as React.RefObject<Record<string, unknown>>);
+                : activeDef.id === "card-lab"
+                  ? (cardLabConfigRef as React.RefObject<Record<string, unknown>>)
+                  : (realmSceneConfigRef as React.RefObject<Record<string, unknown>>);
 
   const triggerActive = useCallback(() => {
     if (activeDef.id === "tree-fall") {
@@ -136,6 +142,8 @@ export default function VfxLabPage() {
       setZoneSceneTriggerKey((k) => k + 1);
     } else if (activeDef.id === "big-realm-scene") {
       setBigRealmSceneTriggerKey((k) => k + 1);
+    } else if (activeDef.id === "card-lab") {
+      setCardLabTriggerKey((k) => k + 1);
     } else {
       setRealmSceneTriggerKey((k) => k + 1);
     }
@@ -293,7 +301,9 @@ export default function VfxLabPage() {
                         ? zoneSceneConfigRef.current
                         : activeDef.id === "big-realm-scene"
                           ? bigRealmSceneConfigRef.current
-                          : realmSceneConfigRef.current
+                          : activeDef.id === "card-lab"
+                            ? cardLabConfigRef.current
+                            : realmSceneConfigRef.current
             }
             triggerKey={
               activeDef.id === "tree-fall"
@@ -308,7 +318,9 @@ export default function VfxLabPage() {
                         ? zoneSceneTriggerKey
                         : activeDef.id === "big-realm-scene"
                           ? bigRealmSceneTriggerKey
-                          : realmSceneTriggerKey
+                          : activeDef.id === "card-lab"
+                            ? cardLabTriggerKey
+                            : realmSceneTriggerKey
             }
             onTrigger={triggerActive}
             onCompose={triggerCompose}
