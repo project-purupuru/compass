@@ -263,3 +263,6 @@ public/art-test/
 
 # Large binary assets (no Git LFS configured) - 2026-05-18
 public/art/landmarks/*/*.glb
+
+# S0 calibration spike working output (artifacts go to grimoires/)
+spike-output/
