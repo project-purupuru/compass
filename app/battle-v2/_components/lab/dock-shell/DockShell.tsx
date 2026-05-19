@@ -143,7 +143,13 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="bg-puru-surface-border/40 hover:bg-puru-honey-base/40 transition-colors" />
+            {/* Custom-styled handle · shadcn default is 1px-wide invisible ·
+                we use !w-1.5 (6px visible bar) + after:!w-3 (12px grab hit-
+                target) + honey on hover for clear affordance. */}
+            <ResizableHandle
+              withHandle
+              className="!w-1.5 bg-puru-surface-border/60 hover:bg-puru-honey-base/60 after:!w-3 transition-colors z-20"
+            />
 
             <ResizablePanel defaultSize={100 - state.leftPanelSize - state.rightPanelSize} data-dock-region="center">
               {/* relative · gives absolute-positioned descendants (PostPane
@@ -153,7 +159,10 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
               </div>
             </ResizablePanel>
 
-            <ResizableHandle className="bg-puru-surface-border/40 hover:bg-puru-honey-base/40 transition-colors" />
+            <ResizableHandle
+              withHandle
+              className="!w-1.5 bg-puru-surface-border/60 hover:bg-puru-honey-base/60 after:!w-3 transition-colors z-20"
+            />
 
             <ResizablePanel
               defaultSize={state.rightPanelSize}
@@ -171,7 +180,10 @@ export function DockShell({ top, left, center, right, bottom }: DockShellProps) 
 
         {bottom && !state.bottomCollapsed && (
           <>
-            <ResizableHandle className="bg-puru-surface-border/40 hover:bg-puru-honey-base/40 transition-colors" />
+            <ResizableHandle
+              withHandle
+              className="!h-1.5 bg-puru-surface-border/60 hover:bg-puru-honey-base/60 after:!h-3 transition-colors z-20"
+            />
             <ResizablePanel
               defaultSize={state.bottomPanelSize}
               minSize={10}
