@@ -8,7 +8,13 @@
 
 import { Context, type Effect, type Stream } from "effect";
 
-export type WorkspaceId = "compose" | "preview" | "export";
+/**
+ * Cycle-2 S3.1 re-verb: was `"compose" | "preview" | "export"` (cycle-1 ·
+ * Studio-mode 3-workspace exploration). Cycle-2 commits to BUILD/LIBRARY +
+ * Play header button per FR-4 (BARTH probe verdict · operator-ratified).
+ * PLAY is a header button, not a tab — so this type covers tabs only.
+ */
+export type WorkspaceId = "build" | "library";
 
 export interface WorkspaceState {
   readonly activeEntityId: string | null;

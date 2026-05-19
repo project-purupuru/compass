@@ -20,6 +20,7 @@ import type {
 } from "@/lib/purupuru/contracts/types";
 
 import { BattleV2 } from "@/app/battle-v2/_components/BattleV2";
+import { HotJumpReader } from "@/lib/lab/state/HotJumpReader";
 import "@/app/battle-v2/_styles/battle-v2.css";
 
 export const metadata = {
@@ -58,7 +59,9 @@ export default function BattleV2Page() {
 
   return (
     <main className="battle-v2-shell">
-      <BattleV2 pack={payload} />
+      <HotJumpReader>
+        <BattleV2 pack={payload} />
+      </HotJumpReader>
     </main>
   );
 }
